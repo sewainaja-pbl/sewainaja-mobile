@@ -50,3 +50,8 @@ GoogleService-Info.plist
 firebase-debug.log
 firebase-debug.*.log
 *.firebase_app_distribution_last_upload_info
+
+lib/firebase_options.dart
+.env
+.env.local
+.env.example
