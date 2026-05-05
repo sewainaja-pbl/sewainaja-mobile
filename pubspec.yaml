@@ -158,3 +158,233 @@ flutter:
 #       background_color: "#1B4332"
 #       text_color: "#FFF8EF"
 #       text: "Next"
+
+# ==========================================
+# RAW FIGMA EXPORT DATA: ONBOARDING STEP 2
+# (MAXIMIZE YOUR CRAFT - EXPERIMENTAL DATA)
+# ==========================================
+# screen_info:
+#   asset_image: "assets/images/onboarding2.jpg" # Foto perkakas sesuai instruksi
+# 
+# nodes:
+#   - id: '511:2147'
+#     name: "iPhone 16 - 56"
+#     type: FRAME
+#     children:
+#       - id: '511:2232'
+#         name: "MAXIMIZE YOUR CRAFT, MINIMIZE YOUR SPEND."
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#         style:
+#           fontFamily: "Poppins"
+#           fontSize: 32 # Diatur agar proporsional dengan slide lain
+#           fontWeight: 700
+#       - id: '511:2233'
+#         name: "Selesaikan proyek impianmu tanpa harus membeli alat baru. Temukan perkakas berkualitas tinggi langsung dari komunitas di sekitarmu."
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#         style:
+#           fontFamily: "Poppins"
+#           fontSize: 14
+#       - id: '511:2234'
+#         name: "Rectangle 145" # Button Container
+#         fills: "color_1B4332"
+#         borderRadius: "30px"
+#       - id: '511:2235'
+#         name: "Next" # Button Text
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#   - id: '559:1603'
+#     name: "Group 105" # Step Tracker Step 2
+#     children:
+#       - id: '559:1604' # Indicator 1 (Inactive)
+#         strokes: "stroke_1B4332"
+#       - id: '559:1605' # Indicator 2 (Active)
+#         strokes: "stroke_FFF8EF"
+#       - id: '559:1606' # Indicator 3 (Inactive)
+#         strokes: "stroke_1B4332"
+
+# ==========================================
+# RAW FIGMA EXPORT DATA: ONBOARDING STEP 3
+# (ELEVATE YOUR STYLE - EXPERIMENTAL DATA)
+# ==========================================
+# screen_info:
+#   asset_image: "assets/images/onboarding3.jpg" # Foto fashion sesuai instruksi
+# 
+# nodes:
+#   - id: '532:2382'
+#     name: "iPhone 16 - 60"
+#     type: FRAME
+#     children:
+#       - id: '532:2472'
+#         name: "ELEVATE YOUR STYLE, FREE YOUR CLOSET."
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#         style:
+#           fontFamily: "Poppins"
+#           fontSize: 40
+#           fontWeight: 600
+#       - id: '532:2473'
+#         name: "Tampil memukau di setiap momen tanpa menumpuk pakaian. Sewa outfit eksklusif hanya untuk acara spesialmu, kapan pun kamu butuh."
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#         style:
+#           fontFamily: "Inter"
+#           fontSize: 14
+#       - id: '532:2474'
+#         name: "Rectangle 145" # Button Container
+#         fills: "color_1B4332"
+#         borderRadius: "30px"
+#       - id: '532:2475'
+#         name: "Lets Get Started" # Button Text
+#         type: "TEXT"
+#         fills: "color_FFFFFF"
+#   - id: '559:1608'
+#     name: "Group 105" # Step Tracker Step 3
+#     children:
+#       - id: '559:1609' # Indicator 1 (Inactive)
+#         strokes: "stroke_1B4332"
+#       - id: '559:1610' # Indicator 2 (Inactive)
+#         strokes: "stroke_1B4332"
+#       - id: '559:1611' # Indicator 3 (Active)
+#         strokes: "stroke_1B4332"
+
+# ==========================================
+# RAW FIGMA EXPORT DATA: LOGIN SCREEN
+# (FULL DATA - POPPINS, GOOGLE FULL WIDTH + LOGO, SUBTITLE 14)
+# ==========================================
+# metadata:
+#   name: SewaIn Aja
+# nodes:
+#   - id: '123:712'
+#     name: iPhone 16 - 17
+#     type: FRAME
+#     layout: layout_8UFT8Z
+#     children:
+#       - id: '123:809'
+#         name: Login slide up
+#         type: FRAME
+#         layout: layout_1P5TEL
+#         fills: color_FFF8EF
+#         children:
+#           - id: '123:864'
+#             name: Daftar akun
+#             type: TEXT
+#             fills: color_2F6743
+#             text: Daftar akun
+#             textStyle: style_2OV3G4
+#           - id: '123:862'
+#             name: Hello
+#             type: TEXT
+#             fills: color_012D1D
+#             text: Hello
+#             textStyle: style_EWWAHF
+#           - id: '123:863'
+#             name: Masuk ke akun Anda untuk melanjutkan penjelajahan.
+#             type: TEXT
+#             fills: color_414844
+#             text: "Masuk ke akun Anda untuk melanjutkan\npenjelajahan."
+#             textStyle: style_7GV619
+#           - id: '123:813'
+#             name: Email Input
+#             type: FRAME
+#             children:
+#               - id: '123:815'
+#                 name: Email
+#                 type: TEXT
+#                 text: Email
+#                 textStyle: style_65ZN1U
+#               - id: '123:819'
+#                 name: nama@email.com
+#                 type: TEXT
+#                 text: nama@email.com
+#                 textStyle: style_B7JQRP
+#           - id: '123:823'
+#             name: Password Input
+#             type: FRAME
+#             children:
+#               - id: '123:826'
+#                 name: Password
+#                 type: TEXT
+#                 text: Password
+#                 textStyle: style_9TCZ4I
+#               - id: '123:828'
+#                 name: Forgot password?
+#                 type: TEXT
+#                 fills: color_7B5804
+#                 text: Forgot password?
+#                 textStyle: style_S5V2UE
+#               - id: '123:832'
+#                 name: Masukkan password
+#                 type: TEXT
+#                 text: Masukkan password
+#                 textStyle: style_AI1KA6
+#           - id: '123:839'
+#             name: Login Button → Button
+#             type: FRAME
+#             fills: color_7B5804
+#             borderRadius: 9999px
+#             children:
+#               - id: '123:840'
+#                 name: Sign In
+#                 type: TEXT
+#                 fills: color_FFFFFF
+#                 text: Sign In
+#                 textStyle: style_U5WEE3
+#           - id: '123:841'
+#             name: Divider
+#             type: FRAME
+#             children:
+#               - id: '123:846'
+#                 name: ATAU LANJUT DENGAN
+#                 type: TEXT
+#                 text: ATAU LANJUT DENGAN
+#                 textStyle: style_UBAT7L
+#           - id: '123:847'
+#             name: Social Login (Visual Enhancement)
+#             type: FRAME
+#             layout: layout_FULL_WIDTH_CONTAINER
+#             children:
+#               - id: '123:852'
+#                 name: Google Button
+#                 type: FRAME
+#                 fills: color_FFFFFF
+#                 strokes: stroke_C1C8C2
+#                 strokeWeight: 1px
+#                 borderRadius: 12px
+#                 layout: layout_GOOGLE_BTN_ROW # Diubah ke layout khusus row
+#                 children:
+#                   - id: '123:logo_google' # Node baru untuk gambar
+#                     name: Google Logo
+#                     type: IMAGE
+#                     asset: "assets/images/google.png"
+#                     dimensions: { width: 14, height: 14 } # Sesuai dengan ukuran font
+#                   - id: '123:861'
+#                     name: Google
+#                     type: TEXT
+#                     text: Google
+#                     textStyle: style_HSH76Q
+#
+# globalVars:
+#   styles:
+#     style_EWWAHF: { fontFamily: Poppins, fontWeight: 600, fontSize: 60, textAlignHorizontal: CENTER }
+#     style_7GV619: { fontFamily: Poppins, fontWeight: 400, fontSize: 14, textAlignHorizontal: CENTER }
+#     style_65ZN1U: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_B7JQRP: { fontFamily: Poppins, fontWeight: 400, fontSize: 16 }
+#     style_9TCZ4I: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_AI1KA6: { fontFamily: Poppins, fontWeight: 400, fontSize: 16 }
+#     style_U5WEE3: { fontFamily: Poppins, fontWeight: 700, fontSize: 16 }
+#     style_2OV3G4: { fontFamily: Poppins, fontWeight: 600, fontSize: 14 }
+#     style_S5V2UE: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
+#     style_UBAT7L: { fontFamily: Poppins, fontWeight: 700, fontSize: 12, textAlignHorizontal: CENTER }
+#     style_HSH76Q: { fontFamily: Poppins, fontWeight: 700, fontSize: 14, textAlignHorizontal: CENTER }
+#     layout_FULL_WIDTH_CONTAINER: { sizing: { horizontal: fill }, justifyContent: center, alignItems: center }
+#     layout_GOOGLE_BTN_ROW: { mode: row, gap: 8px, sizing: { horizontal: fill }, padding: "14px 0", justifyContent: center, alignItems: center } # Set layout menjadi Row dengan gap 8px
+#     color_012D1D: ['#012D1D']
+#     color_717973: ['#717973']
+#     color_7B5804: ['#7B5804']
+#     color_FFFFFF: ['#FFFFFF']
+#     color_2F6743: ['#2F6743']
+#     color_414844: ['#414844']
+#     color_FFF8EF: ['#FFF8EF']
+#     stroke_C1C8C2: ['#C1C8C2']
