@@ -388,3 +388,196 @@ flutter:
 #     color_414844: ['#414844']
 #     color_FFF8EF: ['#FFF8EF']
 #     stroke_C1C8C2: ['#C1C8C2']
+
+############################################################
+# METADATA APLIKASI - SewaIn Aja
+############################################################
+# app_metadata:
+#   name: "SewaIn Aja"
+#   platform: "iPhone 16"
+#   dimensions: "393x852"
+#
+############################################################
+# IDENTITAS VISUAL & WARNA
+############################################################
+# theme_colors:
+#   primary_brown: "#7B5804"   # Digunakan untuk tombol & link
+#   primary_green: "#012D1D"   # Digunakan untuk heading & label
+#   bg_krem: "#FDF9F4"         # Latar belakang utama
+#   bg_input: "#FFF8EF"        # Latar belakang field input
+#   nature_accent: "#C1ECD4"   # Dekorasi elemen organik
+#
+############################################################
+# KOMPONEN LAYAR: REGISTRASI (SLIDE UP)
+############################################################
+# screen_registration:
+#   header:
+#     title: "Sign up"
+#     description: "Daftar akun anda melanjutkan penjelajahan."
+#
+#   form_fields:
+#     - id: "nama"
+#       label: "Nama"
+#       placeholder: "Nama Lengkap"
+#       icon: "person_icon"
+#     - id: "phone"
+#       label: "Nomor Telepon"
+#       prefix: "+62"
+#       icon: "phone_icon"
+#     - id: "email"
+#       label: "Email"
+#       placeholder: "nama@email.com"
+#       icon: "mail_icon"
+#     - id: "password"
+#       label: "Password"
+#       placeholder: "Masukkan password"
+#       helper: "Forgot password?"
+#
+#   buttons:
+#     submit: "Sign Up"
+#     divider: "ATAU LANJUT DENGAN"
+#     social: ["Facebook", "Google"]
+#
+
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (OTP Verification)
+############################################################
+# app_info:
+#   project_name: "SewaIn Aja"
+#   device: "iPhone 16"
+#   canvas_size: "393x852"
+#
+############################################################
+# SKEMA WARNA UTAMA
+############################################################
+# palette:
+#   primary_brown: "#7B5804"   # Digunakan pada tombol 'Konfirmasi OTP'
+#   dark_green: "#012D1D"      # Digunakan pada Heading 'Verifikasi OTP'
+#   soft_white: "#FFFFFF"      # Latar belakang slot input kode
+#   bg_surface: "#FFF8EF"     # Latar belakang frame slide up
+#   nature_accent: "#C1ECD4"   # Elemen dekoratif daun/alam
+#   text_muted: "#414844"      # Teks instruksi & timer
+#
+############################################################
+# STRUKTUR KOMPONEN: LAYAR VERIFIKASI OTP
+############################################################
+# screen_otp:
+#   id: "61:1413"
+#   layout_type: "FRAME"
+#
+#   #--- ELEMEN VISUAL ---
+#   illustration:
+#     name: "mobilephone-action-otp-message"
+#     style: "streamline-freehand"
+#     container_size: "200x200"
+#
+#   #--- BAGIAN TEKS ---
+#   header:
+#     text: "Verfikasi OTP"
+#     font_family: "Poppins"
+#     font_weight: 600
+#     font_size: 40
+#
+#   instruction:
+#     text: "Masukan 6 digit kode dari aplikasi authenticator..."
+#     font_family: "Inter"
+#     font_size: 15
+#
+#   #--- INPUT FIELD KODE ---
+#   otp_input_group:
+#     total_slots: 6
+#     box_style:
+#       border_radius: "10px"
+#       border_color: "#7B5804"
+#       background: "#FFFFFF"
+#
+#   #--- TIMER & RESEND ---
+#   timer:
+#     current_value: "2:53"
+#     text_style: "Poppins, 16px"
+#
+#   action_resend:
+#     label: "Kirim ulang OTP? RESEND"
+#     style: "PingFang SC, 16px"
+#
+#   #--- TOMBOL KONFIRMASI ---
+#   submit_button:
+#     id: "73:64"
+#     label: "Konfirmasi OTP"
+#     background: "#7B5804"
+#     text_color: "#FFFFFF"
+#     border_radius: "9999px" # Pill shape style
+#
+############################################################
+# ELEMEN STATUS BAR (IPHONE STANDARD)
+############################################################
+# status_bar:
+#   time: "9:41"
+#   elements: ["Cellular Connection", "Wifi", "Battery Capacity"]
+############################################################
+
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Profile Setup)
+############################################################
+# app_context:
+#   name: "SewaIn Aja"
+#   screen_name: "Set photo profile (optional)"
+#   device: "iPhone 16"
+#
+############################################################
+# IDENTITAS VISUAL & WARNA
+############################################################
+# palette:
+#   primary_action: "#7B5804"   # Coklat (Tombol Confirm & Skip)
+#   avatar_placeholder: "#D9D9D9" # Abu-abu (Lingkaran Foto)
+#   bg_surface: "#FFF8EF"      # Krem (Latar Belakang Slide Up)
+#   icon_color: "#000000"      # Hitam (Icon Kamera)
+#   white: "#FFFFFF"           # Putih (Teks & Background Icon)
+#
+############################################################
+# STRUKTUR KOMPONEN: PENGATURAN FOTO PROFIL
+############################################################
+# profile_setup_module:
+#   id: "94:2418"
+#   type: "GROUP"
+#
+#   #--- KOMPONEN AVATAR ---
+#   avatar_display:
+#     shape: "ELLIPSE"
+#     id: "82:2324"
+#     background: "#D9D9D9"
+#     overlay_icon:
+#       type: "camera-solid"
+#       id: "82:2331"
+#
+#   #--- ELEMEN EDIT/UBAH ---
+#   edit_control:
+#     button_shape: "ELLIPSE"
+#     border_color: "#7B5804"
+#     icon: "edit-rounded"
+#     icon_color: "#7B5804"
+#
+#   #--- NAVIGASI & AKSI ---
+#   actions:
+#     - type: "button"
+#       id: "82:2325"
+#       label: "Skip"
+#       style: "pill_shape"
+#       background: "#7B5804"
+#       text_color: "#FFFFFF"
+#
+#     - type: "button"
+#       id: "82:2328"
+#       label: "Confirm"
+#       style: "pill_shape"
+#       background: "#7B5804"
+#       text_color: "#FFFFFF"
+#
+############################################################
+# ELEMEN STATUS BAR (SISTEM)
+############################################################
+# status_bar_config:
+#   component_id: "29:6"
+#   time_display: "9:41"
+#   indicators: ["Cellular", "Wifi", "Battery"]
+############################################################
