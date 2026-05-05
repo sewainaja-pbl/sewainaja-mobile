@@ -51,9 +51,16 @@ flutter:
         - asset: assets/fonts/BebasNeue-Regular.ttf
     - family: Poppins
       fonts:
+        - asset: assets/fonts/Poppins-Light.ttf
+          weight: 300
         - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
         - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
 
 # ==========================================
 # AI PROMPT SPEC: SEWAINAJA ANIMATED SPLASH (V4 - Final Final)
@@ -249,121 +256,204 @@ flutter:
 #       - id: '559:1611' # Indicator 3 (Active)
 #         strokes: "stroke_1B4332"
 
+  # ==========================================
+  # AI PROMPT SPEC: SEWAINAJA LOGIN SCREEN (Final)
+  # (Final design spec based on lib/login_screen.dart)
+  # ==========================================
+  # screen_info:
+  #   name: "LoginScreen"
+  #   background_color: "#012D1D"
+  #   sheet_color: "#FFF8EF"
+  #   sheet_border_radius: 24.0
+  #   padding: { horizontal: 32, top: 24, bottom: 40 }
+  # 
+  # components:
+  #   header:
+  #     title: "Hello"
+  #     title_style: { family: "Poppins", size: 60, weight: 600, color: "#012D1D" }
+  #     subtitle: "Masuk ke akun Anda untuk melanjutkan penjelajahan."
+  #     subtitle_style: { family: "Poppins", size: 14, weight: 400, color: "#414844" }
+  #     register_link: "Daftar akun"
+  #     register_style: { family: "Poppins", size: 14, weight: 600, color: "#2F6743" }
+  # 
+  #   inputs:
+  #     label_style: { family: "Poppins", size: 14, weight: 700, color: "#012D1D" }
+  #     hint_style: { family: "Poppins", size: 12, weight: 300, color: "#717973", opacity: 0.25 }
+  #     text_style: { family: "Poppins", size: 16, color: "#012D1D" }
+  #     border_radius: 12.0
+  #     fill_color: "#FFFFFF"
+  #     spacing_between: 24.0
+  # 
+  #   buttons:
+  #     primary_signin:
+  #       text: "Sign In"
+  #       background_color: "#7B5804"
+  #       text_color: "#FFFFFF"
+  #       style: { family: "Poppins", size: 16, weight: 700 }
+  #       border_radius: 9999.0
+  #       padding_vertical: 16
+  #     google_social:
+  #       text: "Google"
+  #       background_color: "#FFFFFF"
+  #       border_color: "#C1C8C2"
+  #       text_color: "#012D1D"
+  #       style: { family: "Poppins", size: 14, weight: 700 }
+  #       logo_asset: "assets/images/google.png"
+  #       logo_size: 14
+  #       border_radius: 12
+  #       padding_vertical: 14
+  # 
+  #   divider:
+  #     text: "ATAU LANJUT DENGAN"
+  #     style: { family: "Poppins", size: 12, weight: 700, color: "#717973" }
+  #     color: "#717973"
+  # 
+  # design_tokens:
+  #   colors:
+  #     primary_dark: "#012D1D"
+  #     accent_brown: "#7B5804"
+  #     success_green: "#2F6743"
+  #     off_white: "#FFF8EF"
+  #     neutral_gray: "#717973"
+  #     border_gray: "#C1C8C2"
+  #     text_main: "#414844"
+
 # ==========================================
-# RAW FIGMA EXPORT DATA: LOGIN SCREEN
-# (FULL DATA - POPPINS, GOOGLE FULL WIDTH + LOGO, SUBTITLE 14)
+# FULL FIGMA EXPORT DATA: SIGN UP SCREEN
+# (STRICT DESIGN SPEC - POPPINS FONT ONLY)
 # ==========================================
 # metadata:
 #   name: SewaIn Aja
+#   components:
+#     '82:1785': { id: '82:1785', name: Component 1 }
+#     '29:6': { id: '29:6', name: Status bar - iPhone }
+#
 # nodes:
-#   - id: '123:712'
-#     name: iPhone 16 - 17
+#   - id: '82:1942'
+#     name: iPhone 16 - 12 (Sign Up Screen)
 #     type: FRAME
-#     layout: layout_8UFT8Z
+#     layout: layout_9IG5KW
+#     fills: "#012D1D" # Background hijau utama
 #     children:
-#       - id: '123:809'
+#       - id: '82:1963'
 #         name: Login slide up
 #         type: FRAME
-#         layout: layout_1P5TEL
-#         fills: color_FFF8EF
+#         layout: layout_RRCNNX
+#         fills: "#FDF9F4" # Warna sheet sesuai figma
+#         borderRadius: "24px (Top Only)"
 #         children:
-#           - id: '123:864'
-#             name: Daftar akun
+#           # --- 1. HEADER SECTION ---
+#           - id: '82:2080'
+#             name: Back Button
+#             type: FRAME
+#             layout: layout_179OF0
+#             action: "Navigator.pop" # Fungsi kembali ke Login
+#           - id: '82:1780'
+#             name: Sign up Title
 #             type: TEXT
-#             fills: color_2F6743
-#             text: Daftar akun
-#             textStyle: style_2OV3G4
-#           - id: '123:862'
-#             name: Hello
+#             text: "Sign up"
+#             textStyle: style_VZYKL5
+#           - id: '82:1781'
+#             name: Subtitle
 #             type: TEXT
-#             fills: color_012D1D
-#             text: Hello
-#             textStyle: style_EWWAHF
-#           - id: '123:863'
-#             name: Masuk ke akun Anda untuk melanjutkan penjelajahan.
-#             type: TEXT
-#             fills: color_414844
-#             text: "Masuk ke akun Anda untuk melanjutkan\npenjelajahan."
-#             textStyle: style_7GV619
-#           - id: '123:813'
-#             name: Email Input
+#             text: "Daftar akun anda melanjutkan\npenjelajahan."
+#             textStyle: style_8N3E5E
+#
+#           # --- 2. FORM SECTION ---
+#           - id: '82:1707'
+#             name: Sign Up Form
 #             type: FRAME
 #             children:
-#               - id: '123:815'
-#                 name: Email
-#                 type: TEXT
-#                 text: Email
-#                 textStyle: style_65ZN1U
-#               - id: '123:819'
-#                 name: nama@email.com
-#                 type: TEXT
-#                 text: nama@email.com
-#                 textStyle: style_B7JQRP
-#           - id: '123:823'
-#             name: Password Input
+#               # Nama
+#               - id: '82:1708'
+#                 name: Nama Input
+#                 children:
+#                   - id: '82:1710'
+#                     name: Label Nama
+#                     text: "Nama"
+#                     textStyle: style_FGDEPN
+#                   - id: '82:1714'
+#                     name: Hint Nama
+#                     text: "Nama Lengkap"
+#                     textStyle: style_HINT_SPEC
+#               
+#               # Nomor Telepom (Typo sesuai desain)
+#               - id: '82:1719'
+#                 name: Phone Input
+#                 children:
+#                   - id: '82:1721'
+#                     name: Label Telepom
+#                     text: "Nomor Telepom"
+#                     textStyle: style_EM7YF9
+#                   - id: '82:1725'
+#                     name: Prefix
+#                     text: "+62"
+#                     textStyle: style_HINT_SPEC
+#
+#               # Email
+#               - id: '82:1731'
+#                 name: Email Input
+#                 children:
+#                   - id: '82:1733'
+#                     name: Label Email
+#                     text: "Email"
+#                     textStyle: style_UXM332
+#                   - id: '82:1737'
+#                     name: Hint Email
+#                     text: "nama@email.com"
+#                     textStyle: style_HINT_SPEC
+#
+#               # Password
+#               - id: '82:1741'
+#                 name: Password Input
+#                 children:
+#                   - id: '82:1744'
+#                     name: Label Password
+#                     text: "Password"
+#                     textStyle: style_ZN23AO
+#                   - id: '82:1746'
+#                     name: Forgot Password Link
+#                     text: "Forgot password?"
+#                     textStyle: style_01LDMG
+#                   - id: '82:1750'
+#                     name: Hint Password
+#                     text: "Masukkan password"
+#                     textStyle: style_HINT_SPEC
+#
+#           # --- 3. BUTTON SECTION ---
+#           - id: '82:1757'
+#             name: Sign Up Button
 #             type: FRAME
-#             children:
-#               - id: '123:826'
-#                 name: Password
-#                 type: TEXT
-#                 text: Password
-#                 textStyle: style_9TCZ4I
-#               - id: '123:828'
-#                 name: Forgot password?
-#                 type: TEXT
-#                 fills: color_7B5804
-#                 text: Forgot password?
-#                 textStyle: style_S5V2UE
-#               - id: '123:832'
-#                 name: Masukkan password
-#                 type: TEXT
-#                 text: Masukkan password
-#                 textStyle: style_AI1KA6
-#           - id: '123:839'
-#             name: Login Button → Button
-#             type: FRAME
-#             fills: color_7B5804
+#             fills: "#7B5804"
 #             borderRadius: 9999px
 #             children:
-#               - id: '123:840'
-#                 name: Sign In
-#                 type: TEXT
-#                 fills: color_FFFFFF
-#                 text: Sign In
-#                 textStyle: style_U5WEE3
-#           - id: '123:841'
+#               - id: '82:1758'
+#                 name: Sign Up Text
+#                 text: "Sign Up"
+#                 textStyle: style_B9SCF8
+#
+#           - id: '82:1759'
 #             name: Divider
+#             text: "ATAU LANJUT DENGAN"
+#             textStyle: style_9WXNCL
+#
+#           # --- 4. SOCIAL LOGIN (GOOGLE ONLY - FULL WIDTH) ---
+#           - id: '82:1771'
+#             name: Google Button (Full Width)
 #             type: FRAME
+#             layout: layout_FULL_WIDTH
+#             fills: "#FFFFFF"
+#             strokes: "#C1C8C2"
+#             borderRadius: 12px
 #             children:
-#               - id: '123:846'
-#                 name: ATAU LANJUT DENGAN
-#                 type: TEXT
-#                 text: ATAU LANJUT DENGAN
-#                 textStyle: style_UBAT7L
-#           - id: '123:847'
-#             name: Social Login (Visual Enhancement)
-#             type: FRAME
-#             layout: layout_FULL_WIDTH_CONTAINER
-#             children:
-#               - id: '123:852'
-#                 name: Google Button
-#                 type: FRAME
-#                 fills: color_FFFFFF
-#                 strokes: stroke_C1C8C2
-#                 strokeWeight: 1px
-#                 borderRadius: 12px
-#                 layout: layout_GOOGLE_BTN_ROW # Diubah ke layout khusus row
-#                 children:
-#                   - id: '123:logo_google' # Node baru untuk gambar
-#                     name: Google Logo
-#                     type: IMAGE
-#                     asset: "assets/images/google.png"
-#                     dimensions: { width: 14, height: 14 } # Sesuai dengan ukuran font
-#                   - id: '123:861'
-#                     name: Google
-#                     type: TEXT
-#                     text: Google
-#                     textStyle: style_HSH76Q
+#               - name: Google Logo
+#                 type: IMAGE
+#                 asset: "assets/images/logo_google.jpg"
+#                 dimensions: { width: 14, height: 14 }
+#               - id: '82:1779'
+#                 name: Google Text
+#                 text: "Google"
+#                 textStyle: style_WNB82T
 #
 # globalVars:
 #   styles:
@@ -378,8 +468,26 @@ flutter:
 #     style_S5V2UE: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
 #     style_UBAT7L: { fontFamily: Poppins, fontWeight: 700, fontSize: 12, textAlignHorizontal: CENTER }
 #     style_HSH76Q: { fontFamily: Poppins, fontWeight: 700, fontSize: 14, textAlignHorizontal: CENTER }
+#     
+#     # Typography - Sign Up Poppins
+#     style_VZYKL5: { fontFamily: Poppins, fontWeight: 600, fontSize: 48, textAlignHorizontal: CENTER }
+#     style_8N3E5E: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, textAlignHorizontal: CENTER }
+#     style_FGDEPN: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_EM7YF9: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_UXM332: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_ZN23AO: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_01LDMG: { fontFamily: Poppins, fontWeight: 700, fontSize: 12, color: "#7B5804" }
+#     style_B9SCF8: { fontFamily: Poppins, fontWeight: 700, fontSize: 16 }
+#     style_WNB82T: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
+#     style_9WXNCL: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
+#     
+#     # Input Hint Spec (Matches Login Screen)
+#     style_HINT_SPEC: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, color: "#717973", opacity: 0.25 }
+#
+#     # Layout Helpers
 #     layout_FULL_WIDTH_CONTAINER: { sizing: { horizontal: fill }, justifyContent: center, alignItems: center }
-#     layout_GOOGLE_BTN_ROW: { mode: row, gap: 8px, sizing: { horizontal: fill }, padding: "14px 0", justifyContent: center, alignItems: center } # Set layout menjadi Row dengan gap 8px
+#     layout_GOOGLE_BTN_ROW: { mode: row, gap: 8px, sizing: { horizontal: fill }, padding: "14px 0", justifyContent: center, alignItems: center }
+#     layout_FULL_WIDTH: { sizing: { horizontal: fill }, justifyContent: center, alignItems: center, padding: "14px 0" }
 #     color_012D1D: ['#012D1D']
 #     color_717973: ['#717973']
 #     color_7B5804: ['#7B5804']
@@ -388,18 +496,18 @@ flutter:
 #     color_414844: ['#414844']
 #     color_FFF8EF: ['#FFF8EF']
 #     stroke_C1C8C2: ['#C1C8C2']
-
-############################################################
-# METADATA APLIKASI - SewaIn Aja
-############################################################
+# 
+# ############################################################
+# # METADATA APLIKASI - SewaIn Aja
+# ############################################################
 # app_metadata:
 #   name: "SewaIn Aja"
 #   platform: "iPhone 16"
 #   dimensions: "393x852"
 #
-############################################################
-# IDENTITAS VISUAL & WARNA
-############################################################
+# ############################################################
+# # IDENTITAS VISUAL & WARNA
+# ############################################################
 # theme_colors:
 #   primary_brown: "#7B5804"   # Digunakan untuk tombol & link
 #   primary_green: "#012D1D"   # Digunakan untuk heading & label
@@ -407,9 +515,9 @@ flutter:
 #   bg_input: "#FFF8EF"        # Latar belakang field input
 #   nature_accent: "#C1ECD4"   # Dekorasi elemen organik
 #
-############################################################
-# KOMPONEN LAYAR: REGISTRASI (SLIDE UP)
-############################################################
+# ############################################################
+# # KOMPONEN LAYAR: REGISTRASI (SLIDE UP)
+# ############################################################
 # screen_registration:
 #   header:
 #     title: "Sign up"
@@ -438,18 +546,18 @@ flutter:
 #     divider: "ATAU LANJUT DENGAN"
 #     social: ["Facebook", "Google"]
 #
-
-############################################################
-# METADATA DESAIN FIGMA - SewaIn Aja (OTP Verification)
-############################################################
+#
+# ############################################################
+# # METADATA DESAIN FIGMA - SewaIn Aja (OTP Verification)
+# ############################################################
 # app_info:
 #   project_name: "SewaIn Aja"
 #   device: "iPhone 16"
 #   canvas_size: "393x852"
 #
-############################################################
-# SKEMA WARNA UTAMA
-############################################################
+# ############################################################
+# # SKEMA WARNA UTAMA
+# ############################################################
 # palette:
 #   primary_brown: "#7B5804"   # Digunakan pada tombol 'Konfirmasi OTP'
 #   dark_green: "#012D1D"      # Digunakan pada Heading 'Verifikasi OTP'
@@ -458,9 +566,9 @@ flutter:
 #   nature_accent: "#C1ECD4"   # Elemen dekoratif daun/alam
 #   text_muted: "#414844"      # Teks instruksi & timer
 #
-############################################################
-# STRUKTUR KOMPONEN: LAYAR VERIFIKASI OTP
-############################################################
+# ############################################################
+# # STRUKTUR KOMPONEN: LAYAR VERIFIKASI OTP
+# ############################################################
 # screen_otp:
 #   id: "61:1413"
 #   layout_type: "FRAME"
@@ -508,25 +616,25 @@ flutter:
 #     text_color: "#FFFFFF"
 #     border_radius: "9999px" # Pill shape style
 #
-############################################################
-# ELEMEN STATUS BAR (IPHONE STANDARD)
-############################################################
+# ############################################################
+# # ELEMEN STATUS BAR (IPHONE STANDARD)
+# ############################################################
 # status_bar:
 #   time: "9:41"
 #   elements: ["Cellular Connection", "Wifi", "Battery Capacity"]
-############################################################
-
-############################################################
-# METADATA DESAIN FIGMA - SewaIn Aja (Profile Setup)
-############################################################
+# ############################################################
+#
+# ############################################################
+# # METADATA DESAIN FIGMA - SewaIn Aja (Profile Setup)
+# ############################################################
 # app_context:
 #   name: "SewaIn Aja"
 #   screen_name: "Set photo profile (optional)"
 #   device: "iPhone 16"
 #
-############################################################
-# IDENTITAS VISUAL & WARNA
-############################################################
+# ############################################################
+# # IDENTITAS VISUAL & WARNA
+# ############################################################
 # palette:
 #   primary_action: "#7B5804"   # Coklat (Tombol Confirm & Skip)
 #   avatar_placeholder: "#D9D9D9" # Abu-abu (Lingkaran Foto)
@@ -534,9 +642,9 @@ flutter:
 #   icon_color: "#000000"      # Hitam (Icon Kamera)
 #   white: "#FFFFFF"           # Putih (Teks & Background Icon)
 #
-############################################################
-# STRUKTUR KOMPONEN: PENGATURAN FOTO PROFIL
-############################################################
+# ############################################################
+# # STRUKTUR KOMPONEN: PENGATURAN FOTO PROFIL
+# ############################################################
 # profile_setup_module:
 #   id: "94:2418"
 #   type: "GROUP"
@@ -573,11 +681,11 @@ flutter:
 #       background: "#7B5804"
 #       text_color: "#FFFFFF"
 #
-############################################################
-# ELEMEN STATUS BAR (SISTEM)
-############################################################
+# ############################################################
+# # ELEMEN STATUS BAR (SISTEM)
+# ############################################################
 # status_bar_config:
 #   component_id: "29:6"
 #   time_display: "9:41"
 #   indicators: ["Cellular", "Wifi", "Battery"]
-############################################################
+# ############################################################

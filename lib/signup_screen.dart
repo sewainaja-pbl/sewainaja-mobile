@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:sewainaja/signup_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class SignUpScreen extends StatefulWidget {
+  const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>
+class _SignUpScreenState extends State<SignUpScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
@@ -36,6 +35,64 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
+  Widget _buildInputField({
+    required String label,
+    required String hint,
+    bool isPassword = false,
+    Widget? prefixIcon,
+    Widget? rightLabel,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+            if (rightLabel != null) rightLabel,
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          obscureText: isPassword,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            color: Color(0xFF012D1D),
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF717973).withValues(alpha: 0.25),
+            ),
+            prefixIcon: prefixIcon,
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,7 +106,9 @@ class _LoginScreenState extends State<LoginScreen>
               child: Container(
                 width: double.infinity,
                 decoration: const BoxDecoration(
-                  color: Color(0xFFFFF8EF),
+                  color: Color(
+                    0xFFFFF8EF,
+                  ), // Changed to match Login design tokens
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
@@ -66,35 +125,29 @@ class _LoginScreenState extends State<LoginScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // Daftar akun
+                      const SizedBox(height: 40),
+                      // Header - Go back to Login
                       Align(
-                        alignment: Alignment.centerRight,
+                        alignment: Alignment.centerLeft,
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                            );
+                            Navigator.pop(context);
                           },
-                          child: const Text(
-                            "Daftar akun",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF2F6743),
-                            ),
+                          child: const Icon(
+                            Icons.arrow_back,
+                            color: Color(0xFF012D1D),
+                            size: 24,
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
                       const Text(
-                        "Hello",
+                        "Sign up",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 60,
+                          fontSize: 48,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF012D1D),
                           height: 1.0,
@@ -102,126 +155,66 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        "Masuk ke akun Anda untuk melanjutkan\npenjelajahan.",
+                        "Daftar akun anda melanjutkan\npenjelajahan.",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 14,
+                          fontSize: 16,
                           fontWeight: FontWeight.w400,
                           color: Color(0xFF414844),
                         ),
                       ),
                       const SizedBox(height: 32),
 
-                      // Email Input
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Email",
+                      // Inputs
+                      _buildInputField(label: "Nama", hint: "Nama Lengkap"),
+                      const SizedBox(height: 24),
+                      _buildInputField(
+                        label: "Nomor Telepom",
+                        hint: "+62",
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.only(
+                            left: 16,
+                            right: 8,
+                            top: 15,
+                            bottom: 15,
+                          ),
+                          child: Text(
+                            "+62",
                             style: TextStyle(
                               fontFamily: 'Poppins',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF012D1D),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
                               fontSize: 12,
-                              color: Color(0xFF012D1D),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: "nama@email.com",
-                              hintStyle: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w300,
-                                color:
-                                    const Color(0xFF717973).withValues(alpha: 0.25),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
+                              fontWeight: FontWeight.w400,
+                              color: const Color(
+                                0xFF717973,
+                              ).withValues(alpha: 0.25),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 24),
-
-                      // Password Input
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                "Password",
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF012D1D),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {},
-                                child: const Text(
-                                  "Forgot password?",
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF7B5804),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            obscureText: true,
-                            style: const TextStyle(
+                      _buildInputField(label: "Email", hint: "nama@email.com"),
+                      const SizedBox(height: 24),
+                      _buildInputField(
+                        label: "Password",
+                        hint: "Masukkan password",
+                        isPassword: true,
+                        rightLabel: GestureDetector(
+                          onTap: () {},
+                          child: const Text(
+                            "Forgot password?",
+                            style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
-                              color: Color(0xFF012D1D),
-                            ),
-                            decoration: InputDecoration(
-                              hintText: "Masukkan password",
-                              hintStyle: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w300,
-                                color:
-                                    const Color(0xFF717973).withValues(alpha: 0.25),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 16,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF7B5804),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 32),
 
-                      // Login Button
+                      // Sign Up Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -236,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen>
                             elevation: 0,
                           ),
                           child: const Text(
-                            "Sign In",
+                            "Sign Up",
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 16,
@@ -272,7 +265,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 24),
 
-                      // Full Width Google Button
+                      // Social Login (Google Only - Full Width)
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
@@ -280,9 +273,7 @@ class _LoginScreenState extends State<LoginScreen>
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(
-                              color: Color(0xFFC1C8C2),
-                            ),
+                            side: const BorderSide(color: Color(0xFFC1C8C2)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
