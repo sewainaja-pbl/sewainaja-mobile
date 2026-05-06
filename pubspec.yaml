@@ -1,5 +1,5 @@
 name: sewainaja
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -23,6 +23,18 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# ==========================================
+# KONFIGURASI FLUTTER LAUNCHER ICONS
+# ==========================================
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/logo-white.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/logo.png"
+  min_sdk_android: 21
 
 # ==========================================
 # KONFIGURASI FLUTTER NATIVE SPLASH
@@ -30,10 +42,10 @@ dev_dependencies:
 flutter_native_splash:
   # Background color: menggunakan warna gelap dari radial gradient (#012D1D)
   # agar transisi dari native splash ke animated splash tidak patah/flicker
-  color: "#012D1D"
+  color: '#012D1D'
   image: assets/images/logo.png
   android_12:
-    color: "#012D1D"
+    color: '#012D1D'
     image: assets/images/logo.png
   ios: true
 
@@ -69,7 +81,7 @@ flutter:
 # screen_info:
 #   name: "AnimatedSplashScreen"
 #   background_color: "Black Screen initially, then fades into Radial Gradient (#1B4332 to #012D1D)"
-# 
+#
 # components:
 #   logo_group:
 #     type: "Column"
@@ -79,11 +91,11 @@ flutter:
 #       scale: 0.8
 #     layout:
 #       text_translation_y: -15.0 # Teks ditarik ke atas mendekati logo
-#   
+#
 #   logo_image:
 #     asset: "assets/images/logo.png"
 #     size: 250 # Ukuran akhir yang disepakati
-# 
+#
 #   text_title:
 #     font_family: "BebasNeue"
 #     font_size: 47 # Ukuran akhir yang disepakati
@@ -94,30 +106,30 @@ flutter:
 #         color: "#FFF8EF"
 #       - text: "AJA"
 #         color: "#D5BF87"
-# 
+#
 # animation_sequence:
 #   step_0_black_screen_delay:
 #     description: "Layar hitam murni selama 1 detik (pembukaan eksklusif bioskop)"
 #     trigger: "on_load"
 #     duration: "1000ms"
-# 
+#
 #   step_0_bg_fade_in:
 #     description: "Warna radial gradient memudar muncul"
 #     trigger: "after_step_0 (delay: 1000ms)"
 #     duration: "500ms"
 #     easing: "Curves.easeIn"
-# 
+#
 #   step_1_rise_and_fade:
 #     description: "Logo & Teks muncul dari bawah dan fade in ke tengah"
 #     trigger: "after_bg_fade_in (delay: 100ms)"
 #     duration: "800ms"
 #     easing: "Curves.easeOutBack"
 #     animations:
-#       logo_group: 
+#       logo_group:
 #         opacity: "0.0 -> 1.0 (clamped to 1.0 to prevent overshoot errors)"
 #         offset_y: "100.0 -> 0.0"
 #         scale: "0.8 -> 1.0"
-# 
+#
 #   step_2_text_tighten:
 #     description: "Merapatkan spasi antar huruf sesuai video Figma"
 #     trigger: "after_step_1 (delay: 200ms)"
@@ -125,7 +137,7 @@ flutter:
 #     easing: "Curves.easeInOut"
 #     animations:
 #       text_title: {letter_spacing: "25.0 -> 0.0"} # Sesuai Figma spec
-# 
+#
 #   step_3_navigate:
 #     trigger: "after_step_2 (delay: 1000ms)"
 #     action: "Navigator.pushReplacement to OnboardingScreen"
@@ -136,12 +148,12 @@ flutter:
 # screen_info:
 #   name: "OnboardingScreen"
 #   layout: "Stack with Background Image"
-# 
+#
 # components:
 #   background_image:
 #     asset: "assets/images/onboarding1.jpg" # Sesuai file yang baru kamu taro
 #     fit: "BoxFit.cover"
-# 
+#
 #   gradient_overlay:
 #     type: "Container"
 #     description: "Layer rectangle fade out warna hitam ke transparan"
@@ -150,12 +162,12 @@ flutter:
 #       end: "Alignment.topCenter"
 #       colors: ["#000000", "transparent"]
 #       stops: [0.0, 0.6]
-# 
+#
 #   content:
 #     font_color: "#FFF8EF"
 #     head_1: "Limitless Potential at a Fraction of the Cost."
 #     sub_head: "Nikmati teknologi premium dengan syaratmu sendiri. Sewa apa yang kamu butuhkan, hanya saat kamu membutuhkannya."
-# 
+#
 #   ui_elements:
 #     tracker:
 #       active_step: 1
@@ -172,7 +184,7 @@ flutter:
 # ==========================================
 # screen_info:
 #   asset_image: "assets/images/onboarding2.jpg" # Foto perkakas sesuai instruksi
-# 
+#
 # nodes:
 #   - id: '511:2147'
 #     name: "iPhone 16 - 56"
@@ -217,7 +229,7 @@ flutter:
 # ==========================================
 # screen_info:
 #   asset_image: "assets/images/onboarding3.jpg" # Foto fashion sesuai instruksi
-# 
+#
 # nodes:
 #   - id: '532:2382'
 #     name: "iPhone 16 - 60"
@@ -376,7 +388,7 @@ flutter:
 #                     name: Hint Nama
 #                     text: "Nama Lengkap"
 #                     textStyle: style_HINT_SPEC
-#               
+#
 #               # Nomor Telepom (Typo sesuai desain)
 #               - id: '82:1719'
 #                 name: Phone Input
@@ -470,7 +482,7 @@ flutter:
 #     style_S5V2UE: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
 #     style_UBAT7L: { fontFamily: Poppins, fontWeight: 700, fontSize: 12, textAlignHorizontal: CENTER }
 #     style_HSH76Q: { fontFamily: Poppins, fontWeight: 700, fontSize: 14, textAlignHorizontal: CENTER }
-#     
+#
 #     # Typography - Sign Up Poppins
 #     style_VZYKL5: { fontFamily: Poppins, fontWeight: 600, fontSize: 48, textAlignHorizontal: CENTER }
 #     style_8N3E5E: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, textAlignHorizontal: CENTER }
@@ -482,7 +494,7 @@ flutter:
 #     style_B9SCF8: { fontFamily: Poppins, fontWeight: 700, fontSize: 16 }
 #     style_WNB82T: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
 #     style_9WXNCL: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
-#     
+#
 #     # Input Hint Spec (Matches Login Screen)
 #     style_HINT_SPEC: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, color: "#717973", opacity: 0.25 }
 #
@@ -498,7 +510,7 @@ flutter:
 #     color_414844: ['#414844']
 #     color_FFF8EF: ['#FFF8EF']
 #     stroke_C1C8C2: ['#C1C8C2']
-# 
+#
 # ############################################################
 # # METADATA APLIKASI - SewaIn Aja
 # ############################################################
