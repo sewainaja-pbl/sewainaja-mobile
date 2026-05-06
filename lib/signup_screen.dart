@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'otp_verification_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -218,7 +219,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const OtpVerificationScreen(),
+                              ),
+                            );
+                          },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF7B5804),
                             foregroundColor: Colors.white,
@@ -269,13 +277,20 @@ class _SignUpScreenState extends State<SignUpScreen>
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const OtpVerificationScreen(),
+                              ),
+                            );
+                          },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             side: const BorderSide(color: Color(0xFFC1C8C2)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(9999),
                             ),
                           ),
                           child: Row(

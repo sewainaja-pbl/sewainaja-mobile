@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'profile_setup_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({super.key});
@@ -10,10 +11,11 @@ class OtpVerificationScreen extends StatefulWidget {
 
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   // State untuk 6 slot input OTP
-  final List<TextEditingController> _otpControllers =
-      List.generate(6, (index) => TextEditingController());
-  final List<FocusNode> _focusNodes =
-      List.generate(6, (index) => FocusNode());
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (index) => TextEditingController(),
+  );
+  final List<FocusNode> _focusNodes = List.generate(6, (index) => FocusNode());
 
   @override
   void dispose() {
@@ -28,35 +30,29 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF), // Warna bg_surface
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 24),
+              const Spacer(flex: 2),
 
               // ==========================================
-              // ILLUSTRATION PLACEHOLDER
+              // ILLUSTRATION
               // ==========================================
-              Container(
-                width: 200,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFC1ECD4).withOpacity(0.3), // nature_accent opsional bg
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.mark_email_read_outlined,
-                    size: 80,
-                    color: Color(0xFF7B5804), // primary_brown
-                  ),
-                ),
+              Image.asset(
+                'assets/images/otp_illustration.png',
+                height:
+                    screenHeight *
+                    0.28, // Responsif: 28% dari tinggi layar agar gambar tetap besar tapi aman dari overflow
+                fit: BoxFit.contain,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               // ==========================================
               // HEADER & INSTRUCTION
@@ -66,22 +62,23 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 40,
-                  fontWeight: FontWeight.w600, // SemiBold
+                  fontWeight: FontWeight.w700, // Bold
                   color: Color(0xFF012D1D), // dark_green
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               const Text(
                 'Masukan 6 digit kode dari aplikasi authenticator...',
                 style: TextStyle(
-                  fontFamily: 'Inter', // Fallback ke default sistem jika Inter tidak diregistrasi
+                  fontFamily: 'Poppins',
                   fontSize: 15,
                   color: Color(0xFF414844), // text_muted
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 40),
+
+              const Spacer(flex: 2),
 
               // ==========================================
               // OTP INPUT GROUP (6 SLOTS)
@@ -104,9 +101,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF012D1D),
                       ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         counterText: "", // Sembunyikan counter karakter
                         filled: true,
@@ -140,7 +135,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   );
                 }),
               ),
-              const SizedBox(height: 32),
+
+              const Spacer(flex: 2),
 
               // ==========================================
               // TIMER & RESEND ACTION
@@ -150,26 +146,37 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                   color: Color(0xFF414844),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               GestureDetector(
                 onTap: () {
                   // TODO: Aksi kirim ulang OTP
                 },
-                child: const Text(
-                  'Kirim ulang OTP? RESEND',
-                  style: TextStyle(
-                    fontFamily: 'Poppins', // Menggunakan Poppins karena PingFang SC tidak ada di config
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF7B5804), // primary_brown
+                child: Text.rich(
+                  const TextSpan(
+                    text: 'Kirim ulang OTP? ',
+                    children: [
+                      TextSpan(
+                        text: 'RESEND',
+                        style: TextStyle(
+                          color: Color(0xFF7B5804), // primary_brown
+                        ),
+                      ),
+                    ],
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF414844), // text_muted
                   ),
                 ),
               ),
-              const SizedBox(height: 48),
+
+              const Spacer(flex: 3),
 
               // ==========================================
               // SUBMIT BUTTON
@@ -178,7 +185,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: Aksi konfirmasi OTP
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfileSetupScreen(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF7B5804), // primary_brown
