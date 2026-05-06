@@ -300,7 +300,7 @@ flutter:
   #       style: { family: "Poppins", size: 14, weight: 700 }
   #       logo_asset: "assets/images/google.png"
   #       logo_size: 14
-  #       border_radius: 12
+  #       border_radius: 9999.0
   #       padding_vertical: 14
   # 
   #   divider:
@@ -426,6 +426,7 @@ flutter:
 #             type: FRAME
 #             fills: "#7B5804"
 #             borderRadius: 9999px
+#             action: "Navigator.push to OtpVerificationScreen" # Diperbarui
 #             children:
 #               - id: '82:1758'
 #                 name: Sign Up Text
@@ -444,11 +445,12 @@ flutter:
 #             layout: layout_FULL_WIDTH
 #             fills: "#FFFFFF"
 #             strokes: "#C1C8C2"
-#             borderRadius: 12px
+#             borderRadius: 9999.0
+#             action: "Navigator.push to OtpVerificationScreen" # Diperbarui
 #             children:
 #               - name: Google Logo
 #                 type: IMAGE
-#                 asset: "assets/images/logo_google.jpg"
+#                 asset: "assets/images/google.png"
 #                 dimensions: { width: 14, height: 14 }
 #               - id: '82:1779'
 #                 name: Google Text
@@ -559,71 +561,75 @@ flutter:
 # # SKEMA WARNA UTAMA
 # ############################################################
 # palette:
-#   primary_brown: "#7B5804"   # Digunakan pada tombol 'Konfirmasi OTP'
-#   dark_green: "#012D1D"      # Digunakan pada Heading 'Verifikasi OTP'
-#   soft_white: "#FFFFFF"      # Latar belakang slot input kode
-#   bg_surface: "#FFF8EF"     # Latar belakang frame slide up
-#   nature_accent: "#C1ECD4"   # Elemen dekoratif daun/alam
-#   text_muted: "#414844"      # Teks instruksi & timer
+#   primary_brown: "#7B5804"   
+#   dark_green: "#012D1D"      
+#   soft_white: "#FFFFFF"      
+#   bg_surface: "#FFF8EF"     
+#   text_muted: "#414844"      
 #
 # ############################################################
 # # STRUKTUR KOMPONEN: LAYAR VERIFIKASI OTP
 # ############################################################
 # screen_otp:
 #   id: "61:1413"
-#   layout_type: "FRAME"
+#   layout_type: "COLUMN"
+#   main_alignment: "CENTER"
 #
-#   #--- ELEMEN VISUAL ---
-#   illustration:
-#     name: "mobilephone-action-otp-message"
-#     style: "streamline-freehand"
-#     container_size: "200x200"
+#   #--- GRUP HIERARKI UTAMA (ICON + HEADER) ---
+#   header_group:
+#     spacing: "16px" # Jarak diperapat agar icon tidak terasa terpisah dari judul
+#     items:
+#       - illustration:
+#           name: "mobilephone-action-otp-message"
+#           size: "responsive (height: screenHeight * 0.28)" # Responsif & aman dari overflow
+#       - header:
+#           text: "Verifikasi OTP"
+#           font_family: "Poppins"
+#           font_weight: 700 # Dibuat lebih tebal sesuai hierarki visual
+#           font_size: 40
+#           color: "dark_green"
 #
-#   #--- BAGIAN TEKS ---
-#   header:
-#     text: "Verfikasi OTP"
-#     font_family: "Poppins"
-#     font_weight: 600
-#     font_size: 40
-#
-#   instruction:
-#     text: "Masukan 6 digit kode dari aplikasi authenticator..."
-#     font_family: "Inter"
-#     font_size: 15
+#   #--- BAGIAN INSTRUKSI ---
+#   content_group:
+#     top_margin: "8px"
+#     instruction:
+#       text: "Masukan 6 digit kode dari aplikasi authenticator..."
+#       font_family: "Poppins" # Konsisten dengan brand
+#       font_size: 15
+#       text_align: "CENTER"
 #
 #   #--- INPUT FIELD KODE ---
 #   otp_input_group:
+#     margin_vertical: "32px"
 #     total_slots: 6
 #     box_style:
+#       width: "48px"
+#       height: "56px"
 #       border_radius: "10px"
-#       border_color: "#7B5804"
-#       background: "#FFFFFF"
+#       border_color: "primary_brown"
+#       background: "soft_white"
 #
 #   #--- TIMER & RESEND ---
-#   timer:
-#     current_value: "2:53"
-#     text_style: "Poppins, 16px"
-#
-#   action_resend:
-#     label: "Kirim ulang OTP? RESEND"
-#     style: "PingFang SC, 16px"
+#   footer_actions:
+#     spacing: "12px"
+#     timer:
+#       current_value: "2:53"
+#       style: { family: "Poppins", size: 16, weight: 600 }
+#     action_resend:
+#       label: "Kirim ulang OTP? RESEND"
+#       style_rich:
+#         prefix: { text: "Kirim ulang OTP? ", color: "text_muted" }
+#         action: { text: "RESEND", color: "primary_brown" }
+#       style: { family: "Poppins", size: 14, weight: 700 }
 #
 #   #--- TOMBOL KONFIRMASI ---
 #   submit_button:
 #     id: "73:64"
 #     label: "Konfirmasi OTP"
-#     background: "#7B5804"
+#     background: "primary_brown"
 #     text_color: "#FFFFFF"
-#     border_radius: "9999px" # Pill shape style
-#
-# ############################################################
-# # ELEMEN STATUS BAR (IPHONE STANDARD)
-# ############################################################
-# status_bar:
-#   time: "9:41"
-#   elements: ["Cellular Connection", "Wifi", "Battery Capacity"]
-# ############################################################
-#
+#     border_radius: "9999px"
+#     width: "full"
 # ############################################################
 # # METADATA DESAIN FIGMA - SewaIn Aja (Profile Setup)
 # ############################################################

@@ -73,7 +73,9 @@ class _LoginScreenState extends State<LoginScreen>
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                              MaterialPageRoute(
+                                builder: (context) => const SignUpScreen(),
+                              ),
                             );
                           },
                           child: const Text(
@@ -139,8 +141,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w300,
-                                color:
-                                    const Color(0xFF717973).withValues(alpha: 0.25),
+                                color: const Color(
+                                  0xFF717973,
+                                ).withValues(alpha: 0.25),
                               ),
                               filled: true,
                               fillColor: Colors.white,
@@ -202,8 +205,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.w300,
-                                color:
-                                    const Color(0xFF717973).withValues(alpha: 0.25),
+                                color: const Color(
+                                  0xFF717973,
+                                ).withValues(alpha: 0.25),
                               ),
                               filled: true,
                               fillColor: Colors.white,
@@ -280,11 +284,9 @@ class _LoginScreenState extends State<LoginScreen>
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
-                            side: const BorderSide(
-                              color: Color(0xFFC1C8C2),
-                            ),
+                            side: const BorderSide(color: Color(0xFFC1C8C2)),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(9999),
                             ),
                           ),
                           child: Row(

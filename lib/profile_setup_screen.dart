@@ -14,17 +14,19 @@ class ProfileSetupScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 48),
-              
+
               // ==========================================
               // HEADER
               // ==========================================
               const Text(
-                'Set photo profile\n(optional)',
+                'Set photo profile',
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF012D1D), // Menggunakan primary_green untuk konsistensi heading
+                  color: Color(
+                    0xFF012D1D,
+                  ), // Menggunakan primary_green untuk konsistensi heading
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -52,7 +54,7 @@ class ProfileSetupScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    
+
                     // Edit Control (Icon Edit)
                     Positioned(
                       bottom: 4,
@@ -63,7 +65,9 @@ class ProfileSetupScreen extends StatelessWidget {
                           color: const Color(0xFFFFFFFF), // background putih
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: const Color(0xFF7B5804), // border_color primary_action
+                            color: const Color(
+                              0xFF7B5804,
+                            ), // border_color primary_action
                             width: 2.5,
                           ),
                         ),
@@ -81,60 +85,32 @@ class ProfileSetupScreen extends StatelessWidget {
               const Spacer(),
 
               // ==========================================
-              // ACTIONS (SKIP & CONFIRM)
+              // ACTIONS (CONFIRM ONLY)
               // ==========================================
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Aksi Skip
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7B5804), // primary_action
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9999), // pill_shape
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Skip',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFFFFF), // white text
-                        ),
-                      ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // TODO: Aksi Confirm
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7B5804), // primary_action
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9999), // pill_shape
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Confirm',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFFFFF), // white text
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // TODO: Aksi Confirm
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7B5804), // primary_action
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9999), // pill_shape
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Confirm',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFFFFF), // white text
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
               const SizedBox(height: 24),
             ],
