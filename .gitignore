@@ -55,3 +55,9 @@ lib/firebase_options.dart
 .env
 .env.local
 .env.example
+
+.agents
+.claude
+.continue/*
+.trae
+.windsurf
