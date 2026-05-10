@@ -707,3 +707,443 @@ flutter:
 #   time_display: "9:41"
 #   indicators: ["Cellular", "Wifi", "Battery"]
 # ############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Categories Screen)
+############################################################
+# app_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories"
+#   canvas_size: "393x954"
+#
+############################################################
+# PALET WARNA & IDENTITAS VISUAL
+############################################################
+# palette:
+#   primary_green: "#012D1D"   # Heading & Icon Aktif
+#   nav_active_bg: "#FFF8EF"   # Background item Navigasi aktif
+#   nav_inactive_bg: "#1B4332" # Background item Navigasi tidak aktif
+#   main_bg: "#FDF9F4"         # Latar belakang layar
+#   card_placeholder: "#D9D9D9" # Placeholder gambar kategori
+#   white: "#FFFFFF"           # Label teks kategori
+#
+############################################################
+# STRUKTUR KOMPONEN: LAYAR KATEGORI
+############################################################
+# categories_screen:
+#   id: "231:1421"
+#   header:
+#     title: "Categories"      # Font: Poppins, 30px, Semibold
+#     back_button:             # id: "301:1195"
+#       icon: "arrow-back"
+#       style: "round"
+#
+#   category_grid:
+#     # Daftar kategori yang terdeteksi dalam desain:
+#     items:
+#       - name: "Tech"
+#         font: "Bebas Neue, 40px"
+#       - name: "Power Tools"
+#         font: "Bebas Neue, 40px"
+#       - name: "Camp Tools"
+#         font: "Bebas Neue, 40px"
+#       - name: "Sports"
+#         font: "Bebas Neue, 32px"
+#       - name: "Cook"
+#         font: "Bebas Neue, 40px"
+#       - name: "Outfit"
+#         font: "Bebas Neue, 40px"
+#
+#     card_style:
+#       border_radius: "10px"
+#       layout: "Grid/Rectangle 59-95"
+#
+############################################################
+# NAVIGASI BAWAH (NAVBAR)
+############################################################
+# bottom_navbar:
+#   id: "240:741"
+#   background: "#012D1D"
+#   border_radius: "40px"
+#   
+#   active_item:
+#     label: "Category"
+#     icon_id: "217:2162"
+#     bg_color: "#FFF8EF"      # Ellipse 5
+#     icon_color: "#012D1D"    # Tabler:category
+#
+#   inactive_items:
+#     - label: "Home"
+#       icon: "solar:home-2-linear"
+#     - label: "Add"
+#       icon: "basil:add-outline"
+#     - label: "Chat"
+#       icon: "lets-icons:chat-alt-3"
+#     - label: "Profile"
+#       icon: "Ellipse 8"
+#
+############################################################
+# STATUS BAR (IPHONE STANDARD)
+############################################################
+# system_ui:
+#   status_bar:
+#     time: "9:41"
+#     indicators: ["Signal", "Wifi", "Battery"]
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Categories Tech Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Tech (Content Only)"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "301:1285"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "301:1261"
+#     text: "Tech"              # Kategori Aktif
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "301:1270"
+#     color: "#7B5804"          # Garis pemisah coklat bawah header
+#
+############################################################
+# GRID KONTEN PRODUK (Tech Items)
+############################################################
+# product_listing:
+#   layout_style: "Vertical Scroll / Grid"
+#   
+#   # Template elemen untuk setiap item produk:
+#   item_card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Outline hijau tipis (0.5px)
+#     
+#     # Konten di dalam kartu:
+#     elements:
+#       - type: "image_placeholder"
+#         id: "Rectangle 42/51"
+#         border_radius: "10px"
+#       - type: "badge_rating"
+#         background: "#000000"  # Kotak hitam kecil (Rectangle 49)
+#         icon: "Star (F8BD00)"
+#         text_color: "#FFF8EF"  # Angka rating (4.8)
+#       - type: "product_name"
+#         text_style: "Poppins, 12px, Medium"
+#         color: "#414844"       # Abu-abu gelap
+#       - type: "price_tag"
+#         text_style: "Poppins, 14px, Bold"
+#         color: "#414844"       # Format: Rp. XXX/Day
+#       - type: "action_icon"
+#         icon: "solar:menu-dots-bold" # Hanya ada di beberapa item
+#
+############################################################
+# DATA ITEM YANG TERDETEKSI (MAPPING)
+############################################################
+# detected_items:
+#   - item_1: "Sony W830 with 8x Optical Zoom"
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#   - item_2: "Sony Dual-Sense PS5"
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#   - item_3: "Sony W830 (Duplicate/Next Row)"
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#   - item_4: "Sony Dual-Sense PS5 (Duplicate/Next Row)"
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_overlay:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard (Dark Icons)"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Categories Outfit Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Outfit"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang
+#
+############################################################
+# HEADER & KONTROL NAVIGASI
+############################################################
+# top_section:
+#   back_button:
+#     id: "301:1525"
+#     type: "FRAME"
+#     shape: "Circle (20px)"
+#     bg_color: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   category_title:
+#     id: "301:1522"
+#     text: "Outfit"            # Nama Kategori Aktif
+#     font: "Poppins, 30px, Semibold"
+#     color: "#012D1D"
+#
+#   divider:
+#     id: "301:1521"
+#     type: "LINE"
+#     color: "#7B5804"          # Coklat Identitas
+#
+############################################################
+# GRID ITEM PRODUK (OUTFIT)
+############################################################
+# product_grid:
+#   layout: "Vertical Scrolling"
+#   
+#   # Spesifikasi Visual Kartu Produk:
+#   card_container:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     border_stroke: "0.5px"
+#     border_color: "#2F6743"   # Hijau Sekunder
+#
+#   # Elemen di Dalam Setiap Kartu:
+#   card_elements:
+#     image_area:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam (Rectangle 49/52)
+#       icon_star: "#F8BD00"    # Kuning
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_text:
+#       style: "Poppins, 12px, Medium"
+#       color: "#414844"
+#     price_text:
+#       style: "Poppins, 14px, Bold"
+#       color: "#414844"
+#
+############################################################
+# MAPPING DATA FIGMA (OBJEK TERDETEKSI)
+############################################################
+# content_data:
+#   - item_group: "301:1430"
+#     label: "Sony W830"        # Placeholder dari Figma
+#     price: "Rp.120,000/Day"
+#   - item_group: "301:1440"
+#     label: "Sony Dual-Sense"  # Placeholder dari Figma
+#     price: "Rp.45,000/Day"
+#     menu_icon: "menu-dots-bold"
+#   - item_group: "301:1450"
+#     label: "Sony W830 (Duplicate Row)"
+#   - item_group: "301:1460"
+#     label: "Sony Dual-Sense (Duplicate Row)"
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_ui:
+#   status_bar_id: "301:1524"
+#   clock: "9:41"
+#   style: "iPhone Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Power Tools Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Power Tools"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "301:1659"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "301:1656"
+#     text: "Power Tools"       # Nama Kategori Aktif
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "301:1655"
+#     stroke_weight: "1px"
+#     color: "#7B5804"          # Garis Coklat Identitas
+#
+############################################################
+# GRID KONTEN PRODUK (Power Tools Items)
+############################################################
+# product_listing:
+#   layout_style: "Vertical Scroll / Grid View"
+#   
+#   # Spesifikasi Visual Kartu Produk:
+#   card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Outline Hijau (0.5px)
+#
+#   # Elemen Detail di Dalam Kartu:
+#   card_elements:
+#     image_placeholder:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam Overlay
+#       star_icon: "#F8BD00"    # Kuning
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_label:
+#       font: "Poppins, 12px, Medium"
+#       color: "#414844"
+#     price_label:
+#       font: "Poppins, 14px, Bold"
+#       color: "#414844"
+#
+############################################################
+# DATA OBJEK FIGMA TERDETEKSI
+############################################################
+# content_mapping:
+#   - item_group: "301:1564"
+#     name: "Sony W830"         # Placeholder Figma
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#
+#   - item_group: "301:1574"
+#     name: "Sony Dual-Sense"   # Placeholder Figma
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_icon: "solar:menu-dots-bold"
+#
+#   # (Daftar berlanjut secara vertikal untuk item lainnya)
+#
+############################################################
+# ELEMEN SISTEM (STATUS BAR)
+############################################################
+# system_ui:
+#   status_bar_id: "301:1658"
+#   time: "9:41"
+#   style: "Standard iPhone Dark Icons"
+#
+# background_layer:
+#   id: "301:1654"
+#   type: "RECTANGLE"
+#   name: "Content Background"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Camp Tools Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Camp"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & KONTROL NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "301:1792"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "301:1789"
+#     text: "Camp Tools"        # Judul Kategori Aktif
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "301:1788"
+#     stroke_weight: "1px"
+#     color: "#7B5804"          # Coklat Identitas Aplikasi
+#
+############################################################
+# GRID DAFTAR PRODUK (CAMPING)
+############################################################
+# product_listing:
+#   layout_style: "Vertical Scroll / Grid View"
+#   
+#   # Spesifikasi Visual Kartu Produk:
+#   card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Hijau List (0.5px)
+#
+#   # Komponen Detail di Dalam Kartu:
+#   card_elements:
+#     image_area:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam (Overlay pada gambar)
+#       icon_star: "#F8BD00"    # Kuning Bintang
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_label:
+#       font: "Poppins, 12px, Medium"
+#       color: "#414844"
+#     price_label:
+#       font: "Poppins, 14px, Bold"
+#       color: "#414844"
+#
+############################################################
+# MAPPING DATA ITEM (TERDETEKSI DARI FIGMA)
+############################################################
+# detected_items:
+#   - item_group: "301:1697"
+#     name: "Sony W830"         # Placeholder (Silakan ganti ke data Camp)
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#
+#   - item_group: "301:1707"
+#     name: "Sony Dual-Sense"   # Placeholder (Silakan ganti ke data Camp)
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_icon: "solar:menu-dots-bold"
+#
+#   # (Item berulang secara vertikal untuk pengisian konten)
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_overlay:
+#   status_bar_id: "301:1791"
+#   time: "9:41"
+#   style: "iPhone Standard Dark"
+#
+# background_layer:
+#   id: "301:1787"
+#   type: "RECTANGLE"
+#   name: "Content Background"
+############################################################
