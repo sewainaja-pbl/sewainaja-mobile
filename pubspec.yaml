@@ -18,6 +18,8 @@ dependencies:
   firebase_messaging: ^16.2.0
   # Package untuk membuat Native Splash Screen
   flutter_native_splash: ^2.4.0
+  animate_do: ^5.1.0
+  font_awesome_flutter: ^11.0.0
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +63,86 @@ flutter:
           weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+
+# =============================================================
+# ##  SEWAINAJA - CUSTOM BOTTOM NAVBAR (UPDATED)
+# =============================================================
+# Name: SewaIn Aja - Custom Floating Navbar
+# Description: Navbar melayang berbentuk pill dengan 5 menu utama dan indikator aktif berbentuk lingkaran terang.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Komponen ini membutuhkan varian icon outline (inactive) dan solid/bold (active).
+# 1. Home: solar:home-2-bold / solar:home-2-linear
+# 2. Category: tabler:category
+# 3. Add Listing: basil:add-outline
+# 4. Chat: lets-icons:chat-alt-3-fill / lets-icons:chat-alt-3
+# 5. Profile: material-symbols:person-rounded
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [MAIN NAVBAR CONTAINER]
+# ID: '201:2650' -> Container Utama
+# Layout: Fixed Width (~348px) / Responsif merenggang dengan margin horizontal, Height: 75px
+# Background: #012D1D (Deep Forest Green)
+# Shape: Pill (BorderRadius: 40px)
+# Position: Mengambang di bawah layar menggunakan Align(bottomCenter) + SafeArea Padding.
+
+# ### [MENU ITEMS (ROW LAYOUT)]
+# Deskripsi: Berisi 5 item dengan jarak seimbang (MainAxisAlignment.spaceEvenly).
+# Ukuran Lingkaran per Item (Ellipse): Width 65px, Height 65px (Menyesuaikan padding container)
+
+# --- 1. ITEM: HOME SCREEN ---
+# Active State (ID '217:2152'): 
+# - Circle Background: #FFF8EF | Icon: solar:home-2-bold (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: solar:home-2-linear (Color: #FFF8EF)
+
+# --- 2. ITEM: CATEGORIES ---
+# Active State (ID '217:2154'):
+# - Circle Background: #FFF8EF | Icon: tabler:category (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: tabler:category (Color: #FFF8EF)
+
+# --- 3. ITEM: TAMBAH BARANG (ADD LISTING) ---
+# Active State (ID '217:2180'):
+# - Circle Background: #FFF8EF | Icon: basil:add-outline (Color: #012D1D, StrokeWeight: 2px)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: basil:add-outline (Color: #FFF8EF)
+
+# --- 4. ITEM: CHAT ---
+# Active State (ID '217:2258'):
+# - Circle Background: #FFF8EF | Icon: lets-icons:chat-alt-3-fill (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: lets-icons:chat-alt-3 (Color: #FFF8EF)
+
+# --- 5. ITEM: PROFILE ---
+# Active State (ID '217:2284'):
+# - Circle Background: #FFF8EF | Icon: material-symbols:person-rounded (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: material-symbols:person-rounded (Color: #FFF8EF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Navbar_Bg: "#012D1D" (Deep Forest Green)
+# Color_Active_Bg: "#FFF8EF" (Cream White)
+# Color_Inactive_Bg: "#1B4332" (Medium Forest Green)
+# Color_Active_Icon: "#012D1D" (Deep Forest Green)
+# Color_Inactive_Icon: "#FFF8EF" (Cream White)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES & STATE MANAGEMENT (CRITICAL)
+# -------------------------------------------------------------
+# 1. State Management: Gunakan variabel `selectedIndex` untuk melacak tab aktif (0 hingga 4).
+# 2. Main Wrapper: Gunakan `IndexedStack` di dalam `Scaffold` utama untuk menampung kelima layar (Home, Category, Add, Chat, Profile) agar state tiap layar tidak ter-reset.
+# 3. Floating Behavior: Set `extendBody: true` pada Scaffold utama agar konten bisa memanjang ke belakang navbar.
+# 4. CONTENT WHITESPACE (PENTING): Karena navbar melayang, WAJIB tambahkan `padding: EdgeInsets.only(bottom: 110)` atau `SizedBox(height: 110)` di bagian paling bawah pada list/konten di SETIAP screen yang ada di dalam IndexedStack. Ini agar konten terakhir dapat di-scroll hingga melewati batas navbar dan tidak tertutup.
+# 5. Animation: Gunakan `AnimatedContainer` untuk setiap latar lingkaran item menu agar transisi warna saat berpindah tab terlihat halus (Duration: ~200ms).
 
 # ==========================================
 # AI PROMPT SPEC: SEWAINAJA ANIMATED SPLASH (V4 - Final Final)
@@ -695,3 +777,193 @@ flutter:
 #   time_display: "9:41"
 #   indicators: ["Cellular", "Wifi", "Battery"]
 # ############################################################
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - ITEM DETAIL SCREEN (FULL)
+# =============================================================
+# Name: SewaIn Aja - Detail Barang
+# Description: Halaman detail produk lengkap dengan deskripsi, peta, rekomendasi, dan action bar melayang.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Secondary Font: Inter (Untuk teks deskripsi panjang)
+# Icons: HugeIcons, FontAwesome, & Solar Icons
+# Animation: Animate_do (FadeInUp untuk transisi masuk konten)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: PRODUCT IMAGE & TOP FLOATING ACTIONS (FIXED BACKGROUND)]
+# Deskripsi: Gambar menempel di belakang layar bagian atas.
+# ID: '259:1970' -> Main Image Asset: "assets/images/iklan.jpg" (BoxFit.cover, Height: ~45% layar)
+# ID: '259:2015' -> Top Left Action: Back Button (Circle Background: #012D1D, Icon: arrow-back, Color: #FDF9F4)
+# ID: '259:2017' -> Top Right Actions (Group): 
+#    - Share Button (Circle Background: #012D1D, Icon: share)
+#    - More Options Button (Circle Background: #012D1D, Icon: dots-three-vertical)
+
+# ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
+# Deskripsi: Container putih utama yang bisa di-scroll ke atas (DraggableScrollableSheet atau SingleChildScrollView overlap).
+# ID: '259:1971' -> Sheet Background (Color: #FDF9F4, BorderRadius: 30px top-left & top-right)
+
+# --- 2A. MAIN INFO ---
+# ID: '259:1979' -> Title: "Sony Camera a6000" (Font: Poppins Bold, Size: 24, Color: #012D1D)
+# ID: '259:1980' -> Price: "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 24, Color: #7B5804)
+# ID: '259:1983' -> Action: Heart/Like Icon (Outline Color: #E33629)
+# ID: '259:2049' -> Badge: "Like New" (Background: #22C23A, Text Color: #000000, Radius: 13px)
+# ID: '259:1985' -> Info: Clock Icon + "2 hari lalu" (Size: 14)
+
+# --- 2B. SELLER PROFILE CARD ---
+# ID: '259:1991' -> Card Container (Border: 1px Solid #000000, Background: #FFFFFF, Radius: 14px)
+# - Avatar Image: "Han Soo Hee"
+# - Name: "Han Soo Hee" (Font: Poppins Regular, Size: 12)
+# - Rating: Star Icon (#F8BD00) + "4.9" (Size: 10)
+# - Location: "| Tembalang, Banyumanik" (Size: 10)
+# - Action: Chat Icon Button (Color: #012D1D)
+
+# --- 2C. LOCATION RADIUS MAP ---
+# ID: '259:1972' -> Title: "Radius Lokasi Barang" (Font: Poppins SemiBold, Size: 20)
+# ID: '259:1977' -> Map Image Component (BorderRadius: 25px)
+
+# --- 2D. DESCRIPTION SECTION ---
+# ID: '270:1322' -> Title: "Description" (Font: Poppins SemiBold, Size: 20, Color: #000000)
+# ID: '270:1324' -> Toggle: "See more" + Arrow Drop Down Icon (Size: 14, Color: #012D1D)
+# ID: '270:1327' -> Text Content: "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau..."
+# (Teks menggunakan font Inter, Size 12, Light/300)
+
+# --- 2E. RECOMMENDATION SLIDER ---
+# ID: '277:2085' -> Title: "Recommendation" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# ID: '277:2086' -> Product Slider Instance (Horizontal Scroll)
+# - Item 1: Sony W830 (Rp.120,000/Day, Rating 4.8)
+# - Item 2: Apple Airpods Max 2 (Rp.45,000/Day, Rating 4.8)
+# - Item 3: Keyboard Mahal (Rp.45,000/Day, Rating 4.8)
+# - Item 4: Occulus VR (Rp.120,000/Day, Rating 4.8)
+
+# ### [SECTION 3: BOTTOM ACTION BAR (FIXED)]
+# Deskripsi: Bar navigasi statis melayang di bagian paling bawah layar (menimpa scrollable sheet).
+# Backgorund: Transparan atau gradient tipis agar membaur.
+# ID: '259:2031' -> Secondary Action: Chat Button Icon (Frame Putih, Icon: #012D1D, Lingkaran)
+# ID: '259:2029' -> Primary Action: "Sewa Sekarang" Button 
+#    - Background: #012D1D
+#    - Text Color: #FDF9F4
+#    - Shape: Pill (BorderRadius: 277px / Circular)
+#    - Text: "Sewa Sekarang" (Font: Poppins Bold, Size: 16)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary_Dark: "#012D1D" (Deep Forest Green - for headers, primary buttons)
+# Color_Accent_Brown: "#7B5804" (Gold/Brown - for price)
+# Color_Background_Sheet: "#FDF9F4" (Off-White/Cream)
+# Color_Badge_Green: "#22C23A" (Bright Green - for conditions)
+# Color_Danger_Red: "#E33629" (Red - for heart/like)
+# Color_Star: "#F8BD00" (Yellow/Gold)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES
+# -------------------------------------------------------------
+# 1. Page Structure: Gunakan widget "Stack". 
+#    - Layer 1 (Dasar): Image 'iklan.jpg' (Top) & Action Buttons.
+#    - Layer 2 (Tengah): DraggableScrollableSheet atau SingleChildScrollView overlap (Padding bottom ditambahkan agar tidak tertutup tombol "Sewa Sekarang").
+#    - Layer 3 (Atas): Bottom Action Bar diletakkan dengan Positioned(bottom: 0, left: 0, right: 0).
+# 2. Description Expansion: Bagian "Description" harus bisa di-expand/collapse menggunakan widget seperti ReadMoreText atau state boolean sederhana.
+# 3. Padding: Pastikan konten di dalam sheet memiliki padding horizontal minimal 20px.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - AJUKAN SEWA SCREEN (REVISED)
+# =============================================================
+# Name: SewaIn Aja - Ajukan Sewa
+# Description: Halaman formulir pengajuan sewa dengan peta lokasi, durasi, rincian harga, dan checkout.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Secondary Font: Plus Jakarta Sans & Manrope 
+# Icons: BoxIcons (boxicons:location), HugeIcons, FontAwesome
+# Component: Map Preview, Form Dropdowns, Textarea
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: APPBAR / HEADER]
+# ID: '300:1159' -> Background Utama Layar (Color: #FDF9F4)
+# ID: '300:1237' -> Back Button (Circle Background: #012D1D, Icon Color: #FDF9F4)
+# ID: '300:1236' -> Title: "Ajukan" (Font: Poppins SemiBold, Size: 30, Color: #012D1D)
+
+# ### [SECTION 2: ITEM SUMMARY CARD]
+# Deskripsi: Kartu ringkasan barang yang akan disewa.
+# ID: '311:1481' -> Card Container (Background: #FFFFFF, BorderRadius: 40px, Padding: 24px)
+# ID: '311:1501' -> Item Image: "assets/images/iklan.jpg" (BorderRadius: 15px)
+# ID: '311:1486' -> Category: "Camera" (Font: Manrope Bold, Size: 11, Color: #7B5804)
+# ID: '311:1488' -> Title: "Sony a6000 Body Only" (Font: Poppins Bold, Size: 24, Color: #012D1D)
+# ID: '311:1503' -> Price: "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 16, Color: #7B5804)
+
+# ### [SECTION 3: TENTUKAN DURASI SEWA (FORM GRID)]
+# Deskripsi: Area input grid untuk tanggal dan waktu.
+# ID: '311:1542' -> Section Title: "Tentukan Durasi Sewa" + Calendar Icon
+# Format Input Container: Background #FFFFFF, BorderRadius 20px
+# - ID '300:1230' -> Input Mulai ("15 April 2026")
+# - ID '311:1637' -> Input Selesai ("17 April 2026")
+# - ID '511:1603' -> Input Jam ambil ("19:00")
+# - ID '511:1609' -> Input Jam kembali ("19:00")
+# Teks Label (Color: #585D59, Size: 14), Teks Value (Color: #012D1D, Size: 14)
+
+# ### [SECTION 4: TOTAL DURASI INDICATOR]
+# Deskripsi: Banner penunjuk total waktu penyewaan.
+# ID: '311:1643' -> Container (Background: #C1ECD4, BorderRadius: 24px)
+# ID: '311:1645' -> Number Circle: "3" (Background: #012D1D, Text: #FFFFFF)
+# ID: '311:1648' -> Label: "Total Durasi Sewa" (Font: Plus Jakarta Sans Medium, Size: 14)
+# ID: '311:1650' -> Value: "3 Hari" (Font: Plus Jakarta Sans Bold, Size: 16)
+
+# ### [SECTION 5: PETA LOKASI BARANG]
+# Deskripsi: Komponen peta lokasi yang diambil langsung dari raw YAML (Group 57).
+# ID: '300:1161' -> Title: "Lokasi Barang" (Font: Poppins SemiBold, Size: 16, Color: #012D1D)
+# ID: '311:1722' -> Icon: Location Pin (boxicons:location, Color: #012D1D)
+# ID: '300:1163' -> Map Container (BorderRadius: 30px, Fills: #FFFFFF, Outline: #1B4332 0.5px)
+# ID: '300:1166' -> Map Image Component (Instance ID: '172:1842', BorderRadius: 25px)
+
+
+# ### [SECTION 6: RINCIAN HARGA (PRICE BREAKDOWN)]
+# Deskripsi: Kartu struk kalkulasi biaya.
+# ID: '311:1686' -> Card Container (Background: #FFFFFF, BorderRadius: 40px)
+# ID: '311:1688' -> Title: "Rincian Harga" (Font: Manrope Bold, Size: 18)
+# - Detail (ID '311:1692'): "Biaya Sewa (3 days)" (Color: #414844) | "Rp. 1.080.000"
+# - Divider (ID '311:1705'): Garis pemisah tipis (#F1EDE8)
+# - Total (ID '311:1707'): "Total Harga" (Font: Manrope ExtraBold) | "Rp. 1.080.000" (Plus Jakarta Sans SemiBold)
+
+# ### [SECTION 7: CATATAN TAMBAHAN (TEXTAREA)]
+# Deskripsi: Input text area opsional sebelum checkout.
+# ID: '311:1726' -> Title: "Catatan Tambahan (Opsional)" (Font: Poppins Bold, Size: 14)
+# ID: '311:1727' -> Textarea Box (Background: #F7F3EE, BorderRadius: 24px, Height: 96px)
+# ID: '311:1729' -> Hint Text: "Contoh: 'Tolong tambahkan charger baterai'" (Color: #717973)
+
+# ### [SECTION 8: BOTTOM ACTION BAR (FIXED CHECKOUT)]
+# Deskripsi: Bar transaksi yang menempel di bawah (BottomNavigationBar replacement).
+# ID: '317:1731' -> Bar Container (Background: #FDF9F4, Padding: 16px 24px 32px 24px)
+# - ID '317:1735' -> Text "TOTAL" (Size 10, Color: #414844, Bold)
+# - ID '317:1737' -> Text "Rp. 1.080.000" (Size 20, Color: #012D1D, Bold)
+# - ID '317:1738' -> Button Background (#012D1D, BorderRadius: 9999px)
+# - ID '317:1739' -> Button Text "Kirim Request" + Icon (Color: #FFFFFF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Accent: "#7B5804" (Gold/Brown)
+# Color_Background: "#FDF9F4" (Cream Canvas)
+# Color_Surface: "#FFFFFF" (Pure White Cards)
+# Color_Surface_Variant: "#F7F3EE" (Input Box Background)
+# Color_Highlight: "#C1ECD4" (Pale Mint Indicator)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES
+# -------------------------------------------------------------
+# 1. Scroll Behavior: Gunakan SingleChildScrollView untuk Section 1 sampai 7.
+# 2. Map Priority: Section 2 (Lokasi Barang) diletakkan di atas Item Summary Card atau sesuai hirarki jika dikelompokkan berdampingan.
+# 3. Floating Bottom Bar: Section 8 WAJIB diposisikan sebagai fixed bottom (bisa menggunakan parameter bottomNavigationBar pada Scaffold atau Positioned di dalam Stack).
