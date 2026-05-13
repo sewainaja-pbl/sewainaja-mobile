@@ -503,24 +503,64 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTrustedNearby() {
-    final product = _ProductData(
-      name: "Sony Dual-Sense PS5",
-      price: "Rp.45,000",
-      rating: 4.8,
-      image: 'assets/images/ps5_controller.png',
-    );
+    final baseProducts = [
+      _ProductData(
+        name: "Sony W830",
+        price: "Rp.120,000",
+        rating: 4.8,
+        image: 'assets/images/sony_camera.png',
+      ),
+      _ProductData(
+        name: "Sony Dual-Sense PS5",
+        price: "Rp.45,000",
+        rating: 4.8,
+        image: 'assets/images/ps5_controller.png',
+      ),
+      _ProductData(
+        name: "Apple Airpods Max 2",
+        price: "Rp.45,000",
+        rating: 4.8,
+        image: 'assets/images/airpods_max.png',
+      ),
+    ];
+
+    final products = List.generate(50, (index) {
+      final base = baseProducts[index % baseProducts.length];
+      return _ProductData(
+        name: "${base.name} #${index + 1}",
+        price: base.price,
+        rating: base.rating,
+        image: base.image,
+      );
+    });
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: FadeInUp(
-        delay: const Duration(milliseconds: 100),
-        child: GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ItemDetailScreen()),
-          ),
-          child: _ProductCard(product: product, isHorizontal: true),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: products.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.75,
         ),
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return FadeInUp(
+            delay: Duration(milliseconds: 50 * (index % 4)),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ItemDetailScreen(),
+                ),
+              ),
+              child: _ProductCard(product: product, isHorizontal: false),
+            ),
+          );
+        },
       ),
     );
   }

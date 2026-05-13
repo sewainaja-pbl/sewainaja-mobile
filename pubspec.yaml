@@ -20,6 +20,9 @@ dependencies:
   flutter_native_splash: ^2.4.0
   animate_do: ^5.1.0
   font_awesome_flutter: ^11.0.0
+  url_launcher: ^6.3.2
+  flutter_map: ^8.3.0
+  latlong2: ^0.9.1
 
 dev_dependencies:
   flutter_test:
@@ -87,11 +90,11 @@ flutter:
 # ## DEPENDENCIES SYNC
 # -------------------------------------------------------------
 # Komponen ini membutuhkan varian icon outline (inactive) dan solid/bold (active).
-# 1. Home: solar:home-2-bold / solar:home-2-linear
-# 2. Category: tabler:category
-# 3. Add Listing: basil:add-outline
-# 4. Chat: lets-icons:chat-alt-3-fill / lets-icons:chat-alt-3
-# 5. Profile: material-symbols:person-rounded
+# 1. Home: Icons.home_rounded / Icons.home_outlined
+# 2. Category: Icons.grid_view_rounded / Icons.grid_view_outlined
+# 3. Add Listing: Icons.add_box_rounded / Icons.add_box_outlined
+# 4. Chat: Icons.chat_bubble_rounded / Icons.chat_bubble_outline_rounded
+# 5. Profile: Icons.person_rounded / Icons.person_outline_rounded
 
 # =============================================================
 # ## UI STRUCTURE NODES
@@ -110,33 +113,33 @@ flutter:
 
 # --- 1. ITEM: HOME SCREEN ---
 # Active State (ID '217:2152'): 
-# - Circle Background: #FFF8EF | Icon: solar:home-2-bold (Color: #012D1D)
+# - Circle Background: #FFF8EF | Icon: Icons.home_rounded (Color: #012D1D)
 # Inactive State:
-# - Circle Background: #1B4332 | Icon: solar:home-2-linear (Color: #FFF8EF)
+# - Circle Background: #1B4332 | Icon: Icons.home_outlined (Color: #FFF8EF)
 
 # --- 2. ITEM: CATEGORIES ---
 # Active State (ID '217:2154'):
-# - Circle Background: #FFF8EF | Icon: tabler:category (Color: #012D1D)
+# - Circle Background: #FFF8EF | Icon: Icons.grid_view_rounded (Color: #012D1D)
 # Inactive State:
-# - Circle Background: #1B4332 | Icon: tabler:category (Color: #FFF8EF)
+# - Circle Background: #1B4332 | Icon: Icons.grid_view_outlined (Color: #FFF8EF)
 
 # --- 3. ITEM: TAMBAH BARANG (ADD LISTING) ---
 # Active State (ID '217:2180'):
-# - Circle Background: #FFF8EF | Icon: basil:add-outline (Color: #012D1D, StrokeWeight: 2px)
+# - Circle Background: #FFF8EF | Icon: Icons.add_box_rounded (Color: #012D1D)
 # Inactive State:
-# - Circle Background: #1B4332 | Icon: basil:add-outline (Color: #FFF8EF)
+# - Circle Background: #1B4332 | Icon: Icons.add_box_outlined (Color: #FFF8EF)
 
 # --- 4. ITEM: CHAT ---
 # Active State (ID '217:2258'):
-# - Circle Background: #FFF8EF | Icon: lets-icons:chat-alt-3-fill (Color: #012D1D)
+# - Circle Background: #FFF8EF | Icon: Icons.chat_bubble_rounded (Color: #012D1D)
 # Inactive State:
-# - Circle Background: #1B4332 | Icon: lets-icons:chat-alt-3 (Color: #FFF8EF)
+# - Circle Background: #1B4332 | Icon: Icons.chat_bubble_outline_rounded (Color: #FFF8EF)
 
 # --- 5. ITEM: PROFILE ---
 # Active State (ID '217:2284'):
-# - Circle Background: #FFF8EF | Icon: material-symbols:person-rounded (Color: #012D1D)
+# - Circle Background: #FFF8EF | Icon: Icons.person_rounded (Color: #012D1D)
 # Inactive State:
-# - Circle Background: #1B4332 | Icon: material-symbols:person-rounded (Color: #FFF8EF)
+# - Circle Background: #1B4332 | Icon: Icons.person_outline_rounded (Color: #FFF8EF)
 
 # =============================================================
 # ## GLOBAL STYLE DEFINITIONS
@@ -979,6 +982,86 @@ flutter:
 # 1. Scroll Behavior: Gunakan SingleChildScrollView untuk Section 1 sampai 7.
 # 2. Map Priority: Section 2 (Lokasi Barang) diletakkan di atas Item Summary Card atau sesuai hirarki jika dikelompokkan berdampingan.
 # 3. Floating Bottom Bar: Section 8 WAJIB diposisikan sebagai fixed bottom (bisa menggunakan parameter bottomNavigationBar pada Scaffold atau Positioned di dalam Stack).
+#<<<<<<< feature/benerin-onboarding-Benerin-homescreen-tambah-addproduct
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - ADD PRODUCT SCREEN
+# =============================================================
+# Name: SewaIn Aja - Tambah Barang
+# Description: Halaman formulir untuk menambahkan produk sewaan baru ke marketplace.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Secondary Font: Plus Jakarta Sans (Untuk teks ukuran file)
+# Icons: Iconify / custom vectors (Camera, Add/Plus, Dropdown arrow)
+# Component: GridView/Wrap untuk foto, Form Fields, Map Preview
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: APPBAR / HEADER]
+# ID: '256:3153' -> Background Utama Layar (Color: #FDF9F4)
+# ID: '256:3155' -> Back Button (Circle Background: #012D1D, Icon Color: #FDF9F4)
+# ID: '289:1194' -> Title: "Add Product" (Font: Poppins SemiBold, Size: 30, Color: #012D1D)
+
+# ### [SECTION 2: FOTO BARANG (IMAGE UPLOAD GRID)]
+# Deskripsi: Area untuk mengunggah maksimal 5 foto. Terdiri dari 2 foto besar di atas, dan 3 slot kecil di bawah.
+# ID: '268:3247' -> Section Title: "Foto Barang" (Font: Poppins Medium, Size: 16)
+# ID: '268:3465' -> Subtitle/Limit: "Maks 5 Foto" (Font: Poppins Regular, Size: 12, Color: #7B5804) - Aligned Right
+# --- Baris 1: 2 Slot Besar ---
+# - Slot 1 (ID: '286:1160') & Slot 2 (ID: '286:1161'):
+#   Background: #FFFFFF, BorderRadius: 40px
+#   Isi: Icon Camera (#1B4332) + Teks "Unggah Foto" (Plus Jakarta Sans Bold, 14) + Teks "JPG, PNG (Max 5MB)" (Size 10, #414844)
+# --- Baris 2: 3 Slot Kecil ---
+# - Slot 3, 4, 5 (ID: '289:1174', '289:1175', '289:1177'):
+#   Background: #FFFFFF, BorderRadius: 40px (Shape Pill/Circle)
+#   Isi: Icon Plus/Add (+) (Color: #1B4332)
+
+# ### [SECTION 3: FORM INFORMASI BARANG]
+# Deskripsi: Form input detail barang. Input field menggunakan Background #FFF8EF, BorderRadius 12px.
+# --- Input Penuh (Full Width) ---
+# - Nama Barang (ID: '268:3655'): Label "Nama Barang", Hint "Contoh: Kamera Canon Eos M100" (ID: '268:3659')
+# - Deskripsi Barang (ID: '268:3678'): Label "Deskripsi Barang", Hint "Contoh: Kamera Profesional dengan..." (Bisa dibuat maxLines: 3 agar lebih tinggi).
+# --- Input Grid 2 Kolom (Row/Expanded) ---
+# - Kategori (ID: '268:3688'): Dropdown, Value: "Elektronik" + Dropdown Icon
+# - Kondisi (ID: '268:3695'): Dropdown, Value: "Sangat Baik" + Dropdown Icon
+# - Harga Sewa (ID: '268:3704'): Text Input dengan Prefix "Rp. " (ID: '268:3707'), Value "0" (ID: '268:3720')
+# - Jam/Hari (ID: '268:3729'): Dropdown, Value "Hari" (ID: '268:3735') + Dropdown Icon
+
+# ### [SECTION 4: LOKASI BARANG (MAP PREVIEW)]
+# Deskripsi: Peta lokasi statis di bawah form.
+# ID: '268:3642' -> Title: "Lokasi Barang" (Font: Poppins SemiBold, Size: 16)
+# ID: '268:3645' -> Map Container (BorderRadius: 30px, Background: #FFFFFF, Outline: #1B4332 0.5px)
+# ID: '268:3648' -> Map Image Component (Instance ID: '172:1842', BorderRadius: 25px)
+
+# ### [SECTION 5: BOTTOM ACTION BAR (FIXED BUTTON)]
+# Deskripsi: Tombol konfirmasi yang melayang di bagian paling bawah layar.
+# ID: '268:3653' -> Container Group
+# ID: '268:3651' -> Button Box (Background: #012D1D, BorderRadius: 180px / Pill Shape)
+# ID: '268:3652' -> Button Text: "Tambah ke Marketplace" (Font: Poppins Bold, Size: 16, Color: #FFFFFF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Accent: "#7B5804" (Gold/Brown)
+# Color_Background: "#FDF9F4" (Cream Canvas)
+# Color_Surface: "#FFFFFF" (Pure White Cards/Upload Boxes)
+# Color_Surface_Variant: "#FFF8EF" (Input Box Background)
+# Color_Text_Hint: "#414844" (Dark Gray)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Scroll Behavior: Bungkus Section 1 hingga 4 menggunakan `SingleChildScrollView`.
+# 2. Form Layout: Gunakan `Row` dengan widget `Expanded` untuk menyejajarkan input Kategori & Kondisi, serta Harga & Durasi agar membagi layar 50:50.
+# 3. Fixed Bottom Button: Section 5 WAJIB diletakkan menggunakan properti `bottomNavigationBar` pada Scaffold, atau di-wrap dengan `Positioned` di dalam `Stack` utama (bottom: 20, left/right: 20).
+# 4. Whitespace: Berikan `padding: EdgeInsets.only(bottom: 100)` pada ujung bawah `SingleChildScrollView` (setelah Peta) agar peta tidak tertutup oleh tombol "Tambah ke Marketplace".
+#=======
 #
 ############################################################
 # METADATA DESAIN FIGMA - SewaIn Aja (Sports Screen)
@@ -1163,3 +1246,4 @@ flutter:
 #   type: "RECTANGLE"
 #   name: "Content Background Surface"
 ############################################################
+#>>>>>>> dev

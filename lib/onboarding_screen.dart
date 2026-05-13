@@ -108,6 +108,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 return Image.asset(
                   _onboardingItems[index].imagePath,
                   fit: BoxFit.cover,
+                  color: Colors.black.withValues(alpha: 0.4),
+                  colorBlendMode: BlendMode.darken,
                 );
               },
             ),
@@ -118,12 +120,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           // ==========================================
           Positioned.fill(
             child: Container(
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [Colors.black, Colors.transparent],
-                  stops: [0.0, 0.6],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.8),
+                    Colors.black.withValues(alpha: 0.4),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.4, 0.85],
                 ),
               ),
             ),
