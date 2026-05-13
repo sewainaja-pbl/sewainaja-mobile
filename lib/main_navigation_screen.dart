@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
+import 'categories_screen.dart';
+import 'add_product_screen.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -12,14 +14,25 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  // List of screens to be displayed in the IndexedStack
-  final List<Widget> _screens = [
-    const HomeScreen(),
-    const Scaffold(body: Center(child: Text("Category Screen"))), // Placeholder
-    const Scaffold(body: Center(child: Text("Add Listing Screen"))), // Placeholder
-    const Scaffold(body: Center(child: Text("Chat Screen"))), // Placeholder
-    const Scaffold(body: Center(child: Text("Profile Screen"))), // Placeholder
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const HomeScreen(),
+      const CategoriesScreen(),
+      AddProductScreen(
+        onBack: () {
+          setState(() {
+            _selectedIndex = 0; // Return to Home
+          });
+        },
+      ),
+      const Scaffold(body: Center(child: Text("Chat Screen"))), // Placeholder
+      const Scaffold(body: Center(child: Text("Profile Screen"))), // Placeholder
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,58 +46,59 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: _screens,
           ),
 
-          // 2. CUSTOM FLOATING BOTTOM NAVBAR
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: SafeArea(
-              child: Container(
-                height: 75,
-                margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF012D1D), // ID: '201:2650' Background
-                  borderRadius: BorderRadius.circular(40), // Pill Shape
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF012D1D).withValues(alpha: 0.3),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildNavItem(
-                      index: 0,
-                      activeIcon: Icons.home_rounded,
-                      inactiveIcon: Icons.home_outlined,
-                    ),
-                    _buildNavItem(
-                      index: 1,
-                      activeIcon: Icons.category_rounded,
-                      inactiveIcon: Icons.category_outlined,
-                    ),
-                    _buildNavItem(
-                      index: 2,
-                      activeIcon: Icons.add_circle_rounded,
-                      inactiveIcon: Icons.add_circle_outline_rounded,
-                    ),
-                    _buildNavItem(
-                      index: 3,
-                      activeIcon: Icons.chat_bubble_rounded,
-                      inactiveIcon: Icons.chat_bubble_outline_rounded,
-                    ),
-                    _buildNavItem(
-                      index: 4,
-                      activeIcon: Icons.person_rounded,
-                      inactiveIcon: Icons.person_outline_rounded,
-                    ),
-                  ],
+          // 2. CUSTOM FLOATING BOTTOM NAVBAR (Hidden on index 2: AddProductScreen)
+          if (_selectedIndex != 2)
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: SafeArea(
+                child: Container(
+                  height: 75,
+                  margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF012D1D), // ID: '201:2650' Background
+                    borderRadius: BorderRadius.circular(40), // Pill Shape
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildNavItem(
+                        index: 0,
+                        activeIcon: Icons.home_rounded,
+                        inactiveIcon: Icons.home_outlined,
+                      ),
+                      _buildNavItem(
+                        index: 1,
+                        activeIcon: Icons.grid_view_rounded,
+                        inactiveIcon: Icons.grid_view_outlined,
+                      ),
+                      _buildNavItem(
+                        index: 2,
+                        activeIcon: Icons.add_box_rounded,
+                        inactiveIcon: Icons.add_box_outlined,
+                      ),
+                      _buildNavItem(
+                        index: 3,
+                        activeIcon: Icons.chat_bubble_rounded,
+                        inactiveIcon: Icons.chat_bubble_outline_rounded,
+                      ),
+                      _buildNavItem(
+                        index: 4,
+                        activeIcon: Icons.person_rounded,
+                        inactiveIcon: Icons.person_outline_rounded,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
