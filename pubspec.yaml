@@ -982,6 +982,7 @@ flutter:
 # 1. Scroll Behavior: Gunakan SingleChildScrollView untuk Section 1 sampai 7.
 # 2. Map Priority: Section 2 (Lokasi Barang) diletakkan di atas Item Summary Card atau sesuai hirarki jika dikelompokkan berdampingan.
 # 3. Floating Bottom Bar: Section 8 WAJIB diposisikan sebagai fixed bottom (bisa menggunakan parameter bottomNavigationBar pada Scaffold atau Positioned di dalam Stack).
+#<<<<<<< feature/benerin-onboarding-Benerin-homescreen-tambah-addproduct
 
 # =============================================================
 # ## AI PROMPT SPEC: SEWAINAJA - ADD PRODUCT SCREEN
@@ -1060,3 +1061,189 @@ flutter:
 # 2. Form Layout: Gunakan `Row` dengan widget `Expanded` untuk menyejajarkan input Kategori & Kondisi, serta Harga & Durasi agar membagi layar 50:50.
 # 3. Fixed Bottom Button: Section 5 WAJIB diletakkan menggunakan properti `bottomNavigationBar` pada Scaffold, atau di-wrap dengan `Positioned` di dalam `Stack` utama (bottom: 20, left/right: 20).
 # 4. Whitespace: Berikan `padding: EdgeInsets.only(bottom: 100)` pada ujung bawah `SingleChildScrollView` (setelah Peta) agar peta tidak tertutup oleh tombol "Tambah ke Marketplace".
+#=======
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Sports Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Sports"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "312:1435"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "312:1432"
+#     text: "Sports"            # Judul Kategori Aktif
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "312:1431"
+#     stroke_weight: "1px"
+#     color: "#7B5804"          # Garis Coklat Identitas Aplikasi
+#
+############################################################
+# GRID DAFTAR PRODUK (SPORTS)
+############################################################
+# product_listing:
+#   layout_style: "Vertical Scroll / Grid View"
+#   
+#   # Spesifikasi Visual Kartu Produk:
+#   card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Hijau List (0.5px)
+#
+#   # Komponen Detail di Dalam Kartu:
+#   card_elements:
+#     image_area:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam Overlay
+#       icon_star: "#F8BD00"    # Kuning Bintang
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_label:
+#       font: "Poppins, 12px, Medium"
+#       color: "#414844"
+#     price_label:
+#       font: "Poppins, 14px, Bold"
+#       color: "#414844"
+#
+############################################################
+# MAPPING DATA ITEM (TERDETEKSI DARI FIGMA)
+############################################################
+# detected_items:
+#   - item_group: "312:1340"
+#     name: "Sony W830"         # Placeholder (Ganti ke alat Olahraga)
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#
+#   - item_group: "312:1350"
+#     name: "Sony Dual-Sense"   # Placeholder (Ganti ke alat Olahraga)
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_icon: "solar:menu-dots-bold"
+#
+#   # (Item berulang mengikuti grid layout Figma)
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_overlay:
+#   status_bar_id: "312:1434"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+#
+# background_layer:
+#   id: "312:1430"
+#   type: "RECTANGLE"
+#   name: "Content Background"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Cook Category Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Categories Cook"
+#   canvas_dimensions: "393x1568"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & KONTROL NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "312:1558"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "312:1555"
+#     text: "Cook"              # Judul Kategori Aktif
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "312:1554"
+#     stroke_weight: "1px"
+#     color: "#7B5804"          # Garis Coklat Identitas Aplikasi
+#
+############################################################
+# GRID DAFTAR PRODUK (COOKING TOOLS)
+############################################################
+# product_listing:
+#   layout_style: "Vertical Scroll / Grid View"
+#   
+#   # Spesifikasi Visual Kartu Produk:
+#   card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Hijau List (0.5px)
+#
+#   # Komponen Detail di Dalam Kartu:
+#   card_elements:
+#     image_area:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam (Overlay pada gambar)
+#       icon_star: "#F8BD00"    # Kuning Bintang
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_label:
+#       font: "Poppins, 12px, Medium"
+#       color: "#414844"
+#     price_label:
+#       font: "Poppins, 14px, Bold"
+#       color: "#414844"
+#
+############################################################
+# MAPPING DATA ITEM (TERDETEKSI DARI FIGMA)
+############################################################
+# detected_items:
+#   - item_group: "312:1473"
+#     name: "Sony W830"         # Placeholder (Ganti ke alat Masak)
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#
+#   - item_group: "312:1483"
+#     name: "Sony Dual-Sense"   # Placeholder (Ganti ke alat Masak)
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_icon: "solar:menu-dots-bold"
+#
+#   # (Item berulang mengikuti grid layout Figma)
+#
+############################################################
+# UI SISTEM & LAYER TAMBAHAN
+############################################################
+# system_overlay:
+#   status_bar_id: "312:1557"
+#   time: "9:41"
+#   style: "iPhone Standard Dark"
+#
+# background_layer:
+#   id: "312:1553"
+#   type: "RECTANGLE"
+#   name: "Content Background Surface"
+############################################################
+#>>>>>>> dev
