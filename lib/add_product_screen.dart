@@ -398,7 +398,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8EF), // ID: '268:3659' Background
+        color: const Color(0xFFD9D9D9), // Updated to #D9D9D9
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
@@ -408,7 +408,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           fontFamily: 'Poppins',
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: Color(0xFF012D1D),
+          color: Color(0xFF012D1D), // High contrast deep green
         ),
         decoration: InputDecoration(
           hintText: hint,
@@ -416,7 +416,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             fontFamily: 'Poppins',
             fontSize: 13,
             fontWeight: FontWeight.w400,
-            color: Color(0xFF717973), // Muted gray hint
+            color: Color(0xFF717973), // Standard muted gray hint
           ),
           prefixIcon: prefix,
           prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
@@ -439,23 +439,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF8EF),
+        color: const Color(0xFFD9D9D9), // Updated to #D9D9D9
         borderRadius: BorderRadius.circular(12),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
+          dropdownColor: const Color(0xFFD9D9D9), // Matches dropdown bg
           icon: const Icon(
             Icons.arrow_drop_down_rounded,
-            color: Color(0xFF012D1D),
+            color: Color(0xFF012D1D), // Standard icon color
             size: 24,
           ),
           style: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF012D1D),
+            color: Color(0xFF012D1D), // Standard text color
           ),
           onChanged: onChanged,
           items: items.map<DropdownMenuItem<String>>((String val) {

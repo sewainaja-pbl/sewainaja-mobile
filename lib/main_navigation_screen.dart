@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'categories_screen.dart';
 import 'add_product_screen.dart';
+import 'chat_screen.dart';
+import 'edit_profile_screen.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -29,8 +31,20 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           });
         },
       ),
-      const Scaffold(body: Center(child: Text("Chat Screen"))), // Placeholder
-      const Scaffold(body: Center(child: Text("Profile Screen"))), // Placeholder
+      ChatScreen(
+        onBack: () {
+          setState(() {
+            _selectedIndex = 0; // Return to Home
+          });
+        },
+      ),
+      EditProfileScreen(
+        onBack: () {
+          setState(() {
+            _selectedIndex = 0; // Return to Home
+          });
+        },
+      ),
     ];
   }
 
@@ -46,8 +60,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: _screens,
           ),
 
-          // 2. CUSTOM FLOATING BOTTOM NAVBAR (Hidden on index 2: AddProductScreen)
-          if (_selectedIndex != 2)
+          // 2. CUSTOM FLOATING BOTTOM NAVBAR (Hidden on index 2: AddProductScreen and 4: EditProfileScreen)
+          if (_selectedIndex != 2 && _selectedIndex != 4)
             Align(
               alignment: Alignment.bottomCenter,
               child: SafeArea(
