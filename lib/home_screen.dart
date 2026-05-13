@@ -123,8 +123,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     SliverToBoxAdapter(child: _buildTrustedNearby()),
 
-                    // Penutup scroll area agar konten bawah tidak tertutup oleh custom floating navbar
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 110)),
+                    // Penutup scroll area agar konten bawah tidak terlalu mepet
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
                   ],
                 ),
               );
@@ -517,9 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: GestureDetector(
           onTap: () => Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ItemDetailScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const ItemDetailScreen()),
           ),
           child: _ProductCard(product: product, isHorizontal: true),
         ),
