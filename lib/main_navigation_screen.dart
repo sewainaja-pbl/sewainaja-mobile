@@ -23,7 +23,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     _screens = [
       const HomeScreen(),
-      const CategoriesScreen(),
+      CategoriesScreen(
+        onBack: () {
+          setState(() {
+            _selectedIndex = 0; // Return to Home
+          });
+        },
+      ),
       AddProductScreen(
         onBack: () {
           setState(() {
