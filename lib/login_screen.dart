@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
-
+import 'api_config.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -13,6 +15,10 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -34,7 +40,92 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  // Custom SnackBar Premium Style
+  void _showSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF2F6743),
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(20),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _handleLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Email dan password harus diisi.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (!mounted) return;
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        _showSnackBar('Login berhasil!', isError: false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainNavigationScreen(),
+          ),
+        );
+      } else {
+        _showSnackBar(data['message'] ?? 'Login gagal.');
+      }
+    } catch (e) {
+      _showSnackBar('Sistem Error: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -131,6 +222,8 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 8),
                           TextField(
+                            controller: _emailController,
+                            enabled: !_isLoading,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -194,6 +287,8 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 8),
                           TextField(
+                            controller: _passwordController,
+                            enabled: !_isLoading,
                             obscureText: true,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
@@ -230,32 +325,35 @@ class _LoginScreenState extends State<LoginScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const MainNavigationScreen(),
-                              ),
-                            );
-                          },
+                          onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF7B5804),
                             foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(0xFF7B5804).withValues(alpha: 0.6),
+                            disabledForegroundColor: Colors.white70,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9999),
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            "Sign In",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  "Sign In",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 24),
