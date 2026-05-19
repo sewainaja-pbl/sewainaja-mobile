@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 import 'otp_verification_screen.dart';
+import 'api_config.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -12,6 +17,13 @@ class _SignUpScreenState extends State<SignUpScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<Offset> _slideAnimation;
+
+  // Controllers & Dynamic State
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -33,15 +45,122 @@ class _SignUpScreenState extends State<SignUpScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
+  }
+
+  // Custom SnackBar Premium Style
+  void _showSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF2F6743),
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(20),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Real FireBase SignUp + Store Profile Execution using API
+  Future<void> _handleSignUp() async {
+    final name = _nameController.text.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || phone.isEmpty || email.isEmpty || password.isEmpty) {
+      _showSnackBar('Harap isi semua kolom pendaftaran.');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    String formattedPhone = phone;
+    if (formattedPhone.startsWith('+')) {
+      // assume already formatted
+    } else if (formattedPhone.startsWith('62')) {
+      formattedPhone = '+$formattedPhone';
+    } else if (formattedPhone.startsWith('0')) {
+      formattedPhone = '+62${formattedPhone.substring(1)}';
+    } else {
+      formattedPhone = '+62$formattedPhone';
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'name': name,
+          'email': email,
+          'password': password,
+          'phone': formattedPhone,
+          'isOwner': true,
+          'isRenter': true,
+        }),
+      );
+
+      if (!mounted) return;
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSnackBar('Akun berhasil terdaftar!', isError: false);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OtpVerificationScreen(),
+          ),
+        );
+      } else {
+        _showSnackBar(data['message'] ?? 'Registrasi gagal.');
+      }
+    } catch (e) {
+      _showSnackBar('Sistem Error: ${e.toString()}');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Widget _buildInputField({
     required String label,
     required String hint,
+    required TextEditingController controller,
     bool isPassword = false,
     Widget? prefixIcon,
     Widget? rightLabel,
+    TextInputType? keyboardType,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,7 +182,10 @@ class _SignUpScreenState extends State<SignUpScreen>
         ),
         const SizedBox(height: 8),
         TextField(
+          controller: controller,
           obscureText: isPassword,
+          keyboardType: keyboardType,
+          enabled: !_isLoading,
           style: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 12,
@@ -168,11 +290,18 @@ class _SignUpScreenState extends State<SignUpScreen>
                       const SizedBox(height: 32),
 
                       // Inputs
-                      _buildInputField(label: "Nama", hint: "Nama Lengkap"),
+                      _buildInputField(
+                        label: "Nama", 
+                        hint: "Nama Lengkap",
+                        controller: _nameController,
+                        keyboardType: TextInputType.name,
+                      ),
                       const SizedBox(height: 24),
                       _buildInputField(
                         label: "Nomor Telepom",
-                        hint: "+62",
+                        hint: "8xx xxxx xxxx",
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.only(
                             left: 16,
@@ -194,11 +323,17 @@ class _SignUpScreenState extends State<SignUpScreen>
                         ),
                       ),
                       const SizedBox(height: 24),
-                      _buildInputField(label: "Email", hint: "nama@email.com"),
+                      _buildInputField(
+                        label: "Email", 
+                        hint: "nama@email.com",
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
                       const SizedBox(height: 24),
                       _buildInputField(
                         label: "Password",
                         hint: "Masukkan password",
+                        controller: _passwordController,
                         isPassword: true,
                         rightLabel: GestureDetector(
                           onTap: () {},
@@ -219,31 +354,35 @@ class _SignUpScreenState extends State<SignUpScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const OtpVerificationScreen(),
-                              ),
-                            );
-                          },
+                          onPressed: _isLoading ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF7B5804),
                             foregroundColor: Colors.white,
+                            disabledBackgroundColor: const Color(0xFF7B5804).withValues(alpha: 0.6),
+                            disabledForegroundColor: Colors.white70,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(9999),
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
-                            "Sign Up",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : const Text(
+                                  "Sign Up",
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 24),
