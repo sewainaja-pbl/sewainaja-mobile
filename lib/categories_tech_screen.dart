@@ -50,28 +50,44 @@ class CategoriesTechScreen extends StatelessWidget {
             mainAxisSpacing: 16.0,
             childAspectRatio: 0.65, // Adjusted to fit image, title, and price
           ),
-          itemCount: 4,
+          itemCount: 6,
           itemBuilder: (context, index) {
             final items = [
               {
-                "name": "Sony W830 with 8x Optical Zoom",
+                "name": "Vivo Y15s 8/128GB",
                 "price": "Rp.120,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/handphone.jpg",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Realme C55 12/512GB",
                 "price": "Rp.45,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/hp_realme.jpg",
               },
               {
-                "name": "Sony W830 with 8x Optical Zoom",
+                "name": "EOS 5D Mark IV",
                 "price": "Rp.120,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/camera_canon.jpg",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Sony FX30",
                 "price": "Rp.45,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/camera_sony.jpg",
+              },
+              {
+                "name": "Asus Zenfone 12 Ultra 16/512GB",
+                "price": "Rp.120,000/Day",
+                "rating": "4.8(292)",
+                "image": "assets/images/hp_asus.jpg",
+              },
+              {
+                "name": "Nikon Coolpix B500",
+                "price": "Rp.45,000/Day",
+                "rating": "4.8(292)",
+                "image": "assets/images/camera_nikon.jpg",
               },
             ];
 
@@ -79,6 +95,7 @@ class CategoriesTechScreen extends StatelessWidget {
               name: items[index]["name"]!,
               price: items[index]["price"]!,
               rating: items[index]["rating"]!,
+              imagePath: items[index]["image"]!,
             );
           },
         ),
@@ -91,11 +108,13 @@ class _ProductCard extends StatelessWidget {
   final String name;
   final String price;
   final String rating;
+  final String imagePath;
 
   const _ProductCard({
     required this.name,
     required this.price,
     required this.rating,
+    required this.imagePath,
   });
 
   @override
@@ -123,6 +142,10 @@ class _ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9), // Placeholder color
                       borderRadius: BorderRadius.circular(10),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(

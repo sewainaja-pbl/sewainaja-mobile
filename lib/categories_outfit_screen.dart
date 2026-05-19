@@ -50,28 +50,44 @@ class CategoriesOutfitScreen extends StatelessWidget {
             mainAxisSpacing: 16.0,
             childAspectRatio: 0.65, // Adjusted to fit image, title, and price
           ),
-          itemCount: 4,
+          itemCount: 6,
           itemBuilder: (context, index) {
             final items = [
               {
-                "name": "Sony W830 with 8x Optical Zoom",
+                "name": "Kemeja Panjang Krem",
                 "price": "Rp.120,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/kemeja_warna_putih.jpg",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Kemeja Warna Coklat",
                 "price": "Rp.45,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/kemeja_lengan_panjang.jpg",
               },
               {
-                "name": "Sony W830 with 8x Optical Zoom",
+                "name": "Jas Hitam",
                 "price": "Rp.120,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/jaz_hitam.jpg",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Jas Abu-Abu",
                 "price": "Rp.45,000/Day",
                 "rating": "4.8(292)",
+                "image": "assets/images/jaz_abu.jpg",
+              },
+              {
+                "name": "Celana Panjang Jeans",
+                "price": "Rp.120,000/Day",
+                "rating": "4.8(292)",
+                "image": "assets/images/celana_jeans.jpg",
+              },
+              {
+                "name": "Celana Panjang Corduroy",
+                "price": "Rp.45,000/Day",
+                "rating": "4.8(292)",
+                "image": "assets/images/celana.jpg",
               },
             ];
 
@@ -79,6 +95,7 @@ class CategoriesOutfitScreen extends StatelessWidget {
               name: items[index]["name"]!,
               price: items[index]["price"]!,
               rating: items[index]["rating"]!,
+              imagePath: items[index]["image"]!,
             );
           },
         ),
@@ -91,11 +108,13 @@ class _ProductCard extends StatelessWidget {
   final String name;
   final String price;
   final String rating;
+  final String imagePath;
 
   const _ProductCard({
     required this.name,
     required this.price,
     required this.rating,
+    required this.imagePath,
   });
 
   @override
@@ -123,6 +142,10 @@ class _ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9), // Placeholder color
                       borderRadius: BorderRadius.circular(10),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
