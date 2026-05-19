@@ -7,7 +7,9 @@ import 'categories_sports_screen.dart';
 import 'categories_cook_screen.dart';
 
 class CategoriesScreen extends StatelessWidget {
-  const CategoriesScreen({super.key});
+  final VoidCallback? onBack;
+
+  const CategoriesScreen({super.key, this.onBack});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,13 @@ class CategoriesScreen extends StatelessWidget {
             ),
             child: IconButton(
               icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                if (onBack != null) {
+                  onBack!();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
               iconSize: 24,
             ),
           ),
