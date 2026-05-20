@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:latlong2/latlong.dart';
+import 'map_common_widgets.dart';
 
 class AjukanSewaScreen extends StatefulWidget {
   const AjukanSewaScreen({super.key});
@@ -9,20 +11,23 @@ class AjukanSewaScreen extends StatefulWidget {
 }
 
 class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
+  final LatLng _itemLocation = const LatLng(-6.9791, 110.4208);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4), // Background Utama ID: '300:1159'
-      
+      backgroundColor: const Color(
+        0xFFFDF9F4,
+      ), // Background Utama ID: '300:1159'
       // --- SECTION 1: APPBAR / HEADER ---
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 90,
+        toolbarHeight: 80,
         titleSpacing: 24,
         title: Padding(
-          padding: const EdgeInsets.only(top: 20),
+          padding: const EdgeInsets.only(top: 10),
           child: Row(
             children: [
               // Back Button
@@ -44,18 +49,38 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const Spacer(),
               // Title: "Ajukan"
               const Text(
                 "Ajukan",
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 30,
+                  fontSize: 28,
                   fontWeight: FontWeight.w600, // SemiBold
                   color: Color(0xFF012D1D),
                 ),
               ),
+              const Spacer(),
+              const SizedBox(width: 42),
             ],
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                  const Color(0xFF012D1D).withValues(alpha: 0.28),
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
+            ),
           ),
         ),
       ),
@@ -91,7 +116,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
             // ### [SECTION 7: CATATAN TAMBAHAN (TEXTAREA)]
             _buildAdditionalNotesField(),
-            
+
             // Padding bottom extra agar konten tidak tertutup bottom navigation bar
             const SizedBox(height: 40),
           ],
@@ -111,7 +136,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         Row(
           children: const [
             Icon(
-              Icons.location_on_rounded, // Alternative fallback for boxicons:location
+              Icons
+                  .location_on_rounded, // Alternative fallback for boxicons:location
               size: 20,
               color: Color(0xFF012D1D),
             ),
@@ -134,7 +160,9 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             color: Colors.white, // ID: '300:1163' Fills: #FFFFFF
             borderRadius: BorderRadius.circular(30), // BorderRadius: 30px
             border: Border.all(
-              color: const Color(0xFF1B4332).withValues(alpha: 0.5), // Outline: #1B4332 0.5px
+              color: const Color(
+                0xFF1B4332,
+              ).withValues(alpha: 0.5), // Outline: #1B4332 0.5px
               width: 0.5,
             ),
             boxShadow: [
@@ -146,12 +174,16 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(25), // ID: '300:1166' -> BorderRadius: 25px
-            child: Image.asset(
-              'assets/images/map_preview.png',
-              height: 160,
-              width: double.infinity,
-              fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(
+              25,
+            ), // ID: '300:1166' -> BorderRadius: 25px
+            child: ReusableMapCard(
+              center: _itemLocation,
+              zoom: 14,
+              interactive: false,
+              showCenterPin: false,
+              markers: [MapMarkerData(point: _itemLocation, highlighted: true)],
+              overlayLabel: 'Lokasi pemilik barang',
             ),
           ),
         ),
@@ -166,13 +198,15 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white, // Background: #FFFFFF
-        borderRadius: BorderRadius.circular(30), // Specs recommended up to 40px, making it smooth
+        borderRadius: BorderRadius.circular(
+          30,
+        ), // Specs recommended up to 40px, making it smooth
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
-          )
+          ),
         ],
       ),
       child: Row(
@@ -269,17 +303,25 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         // GRID 2x2 for Duration Inputs using a simple Wrap/Row solution
         Row(
           children: [
-            Expanded(child: _buildInputBox(label: "Mulai", value: "15 April 2026")),
+            Expanded(
+              child: _buildInputBox(label: "Mulai", value: "15 April 2026"),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildInputBox(label: "Selesai", value: "17 April 2026")),
+            Expanded(
+              child: _buildInputBox(label: "Selesai", value: "17 April 2026"),
+            ),
           ],
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _buildInputBox(label: "Jam ambil", value: "19:00")),
+            Expanded(
+              child: _buildInputBox(label: "Jam ambil", value: "19:00"),
+            ),
             const SizedBox(width: 12),
-            Expanded(child: _buildInputBox(label: "Jam kembali", value: "19:00")),
+            Expanded(
+              child: _buildInputBox(label: "Jam kembali", value: "19:00"),
+            ),
           ],
         ),
       ],
@@ -424,7 +466,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          
+
           // Price Row 1
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -449,17 +491,17 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Custom Dotted Divider style line
           const Divider(
             color: Color(0xFFF1EDE8), // Color_Divider
             thickness: 1.5,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Total Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

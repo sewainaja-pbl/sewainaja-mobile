@@ -10,34 +10,52 @@ class CategoriesCampToolsScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFFFDF9F4),
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-              onPressed: () => Navigator.pop(context),
-            ),
+        automaticallyImplyLeading: false,
+        toolbarHeight: 80,
+        titleSpacing: 24,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.maybePop(context),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Color(0xFF012D1D),
+                  size: 28,
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Camp Tools',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(width: 28),
+            ],
           ),
         ),
-        title: const Text(
-          'Camp Tools',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        centerTitle: true,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
+          preferredSize: const Size.fromHeight(1),
           child: Container(
-            color: const Color(0xFF7B5804),
-            height: 1.0,
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                  const Color(0xFF012D1D).withValues(alpha: 0.28),
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
+            ),
           ),
         ),
       ),
@@ -123,10 +141,7 @@ class _ProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFF2F6743),
-          width: 0.5,
-        ),
+        border: Border.all(color: const Color(0xFF2F6743), width: 0.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -152,7 +167,10 @@ class _ProductCard extends StatelessWidget {
                     bottom: 8,
                     left: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF000000),
                         borderRadius: BorderRadius.circular(6),

@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+import 'map_common_widgets.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
+import 'app_feedback.dart';
 
 class AddProductScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -9,39 +16,157 @@ class AddProductScreen extends StatefulWidget {
 }
 
 class _AddProductScreenState extends State<AddProductScreen> {
-  String selectedKategori = "Elektronik";
+  String? selectedCategoryId;
   String selectedKondisi = "Sangat Baik";
   String selectedDurasi = "Hari";
+  LatLng _itemLocation = const LatLng(-6.966667, 110.416664);
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  bool _useSavedAddress = true;
+  bool _isBootstrapping = true;
+  bool _isSubmitting = false;
+  List<Map<String, dynamic>> _categories = const [];
+  List<Map<String, dynamic>> _addresses = const [];
+  String? _selectedAddressId;
 
-  final List<String> kategoriList = ["Elektronik", "Peralatan", "Pakaian", "Olahraga", "Lainnya"];
+  void _handleBack() {
+    final didPop = Navigator.of(context).maybePop();
+    didPop.then((popped) {
+      if (!popped && widget.onBack != null) {
+        widget.onBack!();
+      }
+    });
+  }
+
   final List<String> kondisiList = ["Baru", "Sangat Baik", "Baik", "Cukup"];
   final List<String> durasiList = ["Jam", "Hari", "Minggu"];
 
   @override
+  void initState() {
+    super.initState();
+    _bootstrapFormData();
+  }
+
+  Future<void> _bootstrapFormData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          setState(() => _isBootstrapping = false);
+        }
+        _showSnack('Token login tidak ditemukan. Silakan login ulang.', true);
+        return;
+      }
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final responses = await Future.wait([
+        http.get(Uri.parse('${ApiConfig.baseUrl}/categories'), headers: headers),
+        http.get(Uri.parse('${ApiConfig.baseUrl}/addresses'), headers: headers),
+      ]);
+
+      final categoryResp = responses[0];
+      final addressResp = responses[1];
+      final categoryBody = jsonDecode(categoryResp.body) as Map<String, dynamic>;
+      final addressBody = jsonDecode(addressResp.body) as Map<String, dynamic>;
+
+      if (categoryResp.statusCode != 200 || categoryBody['success'] != true) {
+        _showSnack('Gagal ambil data kategori.', true);
+      }
+
+      if (addressResp.statusCode != 200 || addressBody['success'] != true) {
+        _showSnack('Gagal ambil data alamat.', true);
+      }
+
+      final categories =
+          (categoryBody['data'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .toList();
+      final addresses =
+          (addressBody['data'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .toList();
+
+      if (!mounted) return;
+      setState(() {
+        _categories = categories;
+        _addresses = addresses;
+        if (_categories.isNotEmpty) {
+          selectedCategoryId = (_categories.first['id'] ?? '').toString();
+        }
+        if (_addresses.isNotEmpty) {
+          _selectedAddressId = (_addresses.first['id'] ?? '').toString();
+          _useSavedAddress = true;
+          final coords = _extractLatLng(_addresses.first['coordinat']);
+          if (coords != null) {
+            _itemLocation = coords;
+          }
+        } else {
+          _useSavedAddress = false;
+        }
+        _isBootstrapping = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isBootstrapping = false);
+      _showSnack('Gagal mengambil data awal form.', true);
+    }
+  }
+
+  LatLng? _extractLatLng(dynamic coordinateRaw) {
+    if (coordinateRaw is Map<String, dynamic>) {
+      final lat =
+          (coordinateRaw['latitude'] ?? coordinateRaw['_latitude']) as num?;
+      final lng =
+          (coordinateRaw['longitude'] ?? coordinateRaw['_longitude']) as num?;
+      if (lat != null && lng != null) {
+        return LatLng(lat.toDouble(), lng.toDouble());
+      }
+    }
+    return null;
+  }
+
+  String _addressLabel(Map<String, dynamic> address) {
+    final label = (address['label'] ?? '').toString().trim();
+    final full = (address['fullAddress'] ?? '').toString().trim();
+    if (label.isEmpty) return full;
+    if (full.isEmpty) return label;
+    return '$label • $full';
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4), // Background Utama ID: '256:3153'
-      
+      backgroundColor: const Color(
+        0xFFFDF9F4,
+      ), // Background Utama ID: '256:3153'
       // --- SECTION 1: APPBAR / HEADER ---
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 90,
+        toolbarHeight: 80,
         titleSpacing: 24,
         title: Padding(
-          padding: const EdgeInsets.only(top: 20),
+          padding: const EdgeInsets.only(top: 10),
           child: Row(
             children: [
               // Back Button
               GestureDetector(
-                onTap: () {
-                  if (widget.onBack != null) {
-                    widget.onBack!();
-                  } else {
-                    Navigator.maybePop(context);
-                  }
-                },
+                onTap: _handleBack,
                 child: Container(
                   width: 42,
                   height: 42,
@@ -64,7 +189,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 "Add Product",
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 26,
+                  fontSize: 28,
                   fontWeight: FontWeight.w700, // SemiBold / Bold in screen spec
                   color: Color(0xFF012D1D),
                 ),
@@ -75,10 +200,32 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ],
           ),
         ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                  const Color(0xFF012D1D).withValues(alpha: 0.28),
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
+            ),
+          ),
+        ),
       ),
 
       // --- MAIN SCROLLABLE CONTENT (Section 2 - 4) ---
-      body: SingleChildScrollView(
+      body: _isBootstrapping
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+            )
+          : SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
@@ -100,7 +247,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
             // ### [SECTION 5: TAMBAH KE MARKETPLACE BUTTON]
             _buildBottomActionButton(),
-            
+
             // Padding bottom extra agar seimbang di bawah layar
             const SizedBox(height: 40),
           ],
@@ -190,10 +337,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFFF7F3EE), // Soft Grey/Cream Variant
               shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFFE2DCD3),
-                width: 0.5,
-              ),
+              border: Border.all(color: const Color(0xFFE2DCD3), width: 0.5),
             ),
             child: const Center(
               child: Icon(
@@ -245,11 +389,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ],
       ),
       child: const Center(
-        child: Icon(
-          Icons.add,
-          color: Color(0xFF1B4332),
-          size: 20,
-        ),
+        child: Icon(Icons.add, color: Color(0xFF1B4332), size: 20),
       ),
     );
   }
@@ -276,7 +416,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           // Nama Barang
           _buildLabel("Nama Barang"),
           const SizedBox(height: 8),
-          _buildTextInput(hint: "Contoh: Kamera Canon Eos M100"),
+          _buildTextInput(
+            hint: "Contoh: Kamera Canon Eos M100",
+            controller: _nameController,
+          ),
           const SizedBox(height: 20),
 
           // Deskripsi Barang
@@ -285,6 +428,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           _buildTextInput(
             hint: "Contoh: Kamera Profesional dengan",
             maxLines: 3,
+            controller: _descriptionController,
           ),
           const SizedBox(height: 20),
 
@@ -299,9 +443,18 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     _buildLabel("Kategori"),
                     const SizedBox(height: 8),
                     _buildDropdown(
-                      value: selectedKategori,
-                      items: kategoriList,
-                      onChanged: (val) => setState(() => selectedKategori = val!),
+                      value: selectedCategoryId,
+                      items: _categories
+                          .map(
+                            (cat) => DropdownMenuItem<String>(
+                              value: (cat['id'] ?? '').toString(),
+                              child: Text((cat['category'] ?? 'Kategori').toString()),
+                            ),
+                          )
+                          .toList(),
+                      hint: 'Pilih kategori',
+                      onChanged: (val) =>
+                          setState(() => selectedCategoryId = val),
                     ),
                   ],
                 ),
@@ -315,8 +468,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     const SizedBox(height: 8),
                     _buildDropdown(
                       value: selectedKondisi,
-                      items: kondisiList,
-                      onChanged: (val) => setState(() => selectedKondisi = val!),
+                      items: kondisiList
+                          .map(
+                            (val) => DropdownMenuItem<String>(
+                              value: val,
+                              child: Text(val),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) =>
+                          setState(() => selectedKondisi = val!),
                     ),
                   ],
                 ),
@@ -337,6 +498,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     const SizedBox(height: 8),
                     _buildTextInput(
                       hint: "0",
+                      controller: _priceController,
                       prefix: const Padding(
                         padding: EdgeInsets.only(left: 16, right: 8),
                         child: Text(
@@ -363,7 +525,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     const SizedBox(height: 8),
                     _buildDropdown(
                       value: selectedDurasi,
-                      items: durasiList,
+                      items: durasiList
+                          .map(
+                            (val) => DropdownMenuItem<String>(
+                              value: val,
+                              child: Text(val),
+                            ),
+                          )
+                          .toList(),
                       onChanged: (val) => setState(() => selectedDurasi = val!),
                     ),
                   ],
@@ -392,6 +561,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // Helper for Standard Text Inputs
   Widget _buildTextInput({
     required String hint,
+    required TextEditingController controller,
     int maxLines = 1,
     Widget? prefix,
     TextInputType? keyboardType,
@@ -402,6 +572,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: TextField(
+        controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
         style: const TextStyle(
@@ -419,8 +590,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
             color: Color(0xFF717973), // Standard muted gray hint
           ),
           prefixIcon: prefix,
-          prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 0,
+            minHeight: 0,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -432,9 +609,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   // Helper for Dropdowns
   Widget _buildDropdown({
-    required String value,
-    required List<String> items,
+    required String? value,
+    required List<DropdownMenuItem<String>> items,
     required void Function(String?) onChanged,
+    String? hint,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -446,6 +624,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
         child: DropdownButton<String>(
           value: value,
           isExpanded: true,
+          hint: hint == null
+              ? null
+              : Text(
+                  hint,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF717973),
+                  ),
+                ),
           dropdownColor: const Color(0xFFD9D9D9), // Matches dropdown bg
           icon: const Icon(
             Icons.arrow_drop_down_rounded,
@@ -459,12 +648,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
             color: Color(0xFF012D1D), // Standard text color
           ),
           onChanged: onChanged,
-          items: items.map<DropdownMenuItem<String>>((String val) {
-            return DropdownMenuItem<String>(
-              value: val,
-              child: Text(val),
-            );
-          }).toList(),
+          items: items,
         ),
       ),
     );
@@ -472,6 +656,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   // --- SECTION 4: LOKASI BARANG ---
   Widget _buildLocationMap() {
+    final selectedAddress = _addresses.cast<Map<String, dynamic>>().firstWhere(
+      (address) => (address['id'] ?? '').toString() == _selectedAddressId,
+      orElse: () => <String, dynamic>{},
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -485,13 +674,117 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         ),
         const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _useSavedAddress = true),
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _useSavedAddress ? const Color(0xFF012D1D) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF012D1D), width: 1),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Alamat Tersimpan',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: _useSavedAddress ? Colors.white : const Color(0xFF012D1D),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => setState(() => _useSavedAddress = false),
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: !_useSavedAddress ? const Color(0xFF012D1D) : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF012D1D), width: 1),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Titik Baru',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: !_useSavedAddress ? Colors.white : const Color(0xFF012D1D),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_useSavedAddress) ...[
+          const SizedBox(height: 12),
+          _buildDropdown(
+            value: _selectedAddressId,
+            items: _addresses
+                .map(
+                  (addr) => DropdownMenuItem<String>(
+                    value: (addr['id'] ?? '').toString(),
+                    child: Text(
+                      _addressLabel(addr),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                )
+                .toList(),
+            hint: _addresses.isEmpty
+                ? 'Belum ada alamat, pilih Titik Baru'
+                : 'Pilih alamat',
+            onChanged: _addresses.isEmpty
+                ? (_) {}
+                : (val) {
+                    setState(() {
+                      _selectedAddressId = val;
+                      final found = _addresses.firstWhere(
+                        (a) => (a['id'] ?? '').toString() == val,
+                        orElse: () => <String, dynamic>{},
+                      );
+                      final coords = _extractLatLng(found['coordinat']);
+                      if (coords != null) {
+                        _itemLocation = coords;
+                      }
+                    });
+                  },
+          ),
+          if (selectedAddress.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              (selectedAddress['fullAddress'] ?? '').toString(),
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF5C635E),
+              ),
+            ),
+          ],
+        ],
+        const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(10), // Inner map container
           decoration: BoxDecoration(
             color: Colors.white, // ID: '268:3645'
             borderRadius: BorderRadius.circular(30), // Outer radius
             border: Border.all(
-              color: const Color(0xFF1B4332).withValues(alpha: 0.5), // Outline 0.5px
+              color: const Color(
+                0xFF1B4332,
+              ).withValues(alpha: 0.5), // Outline 0.5px
               width: 0.5,
             ),
             boxShadow: [
@@ -503,12 +796,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(25), // ID: '268:3648' -> BorderRadius: 25px
-            child: Image.asset(
-              'assets/images/map_preview.png',
-              height: 160,
-              width: double.infinity,
-              fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(
+              25,
+            ), // ID: '268:3648' -> BorderRadius: 25px
+            child: ReusableMapCard(
+              center: _itemLocation,
+              zoom: 14,
+              interactive: !_useSavedAddress,
+              showCenterPin: true,
+              overlayLabel: _useSavedAddress
+                  ? 'Lokasi mengikuti alamat tersimpan'
+                  : 'Geser map untuk set titik barang',
+              onCenterChanged: (center) {
+                if (_useSavedAddress) return;
+                setState(() {
+                  _itemLocation = center;
+                });
+              },
             ),
           ),
         ),
@@ -519,12 +823,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // --- SECTION 5: BOTTOM ACTION BUTTON ---
   Widget _buildBottomActionButton() {
     return GestureDetector(
-      onTap: () {
-        // Add action logic here (e.g., validating form, submitting to backend)
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Barang ditambahkan ke Marketplace")),
-        );
-      },
+      onTap: _isSubmitting ? null : _submitProduct,
       child: Container(
         height: 56,
         width: double.infinity,
@@ -539,18 +838,157 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
           ],
         ),
-        child: const Center(
-          child: Text(
-            "Tambah ke Marketplace", // ID: '268:3652'
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w700, // Bold
-              color: Colors.white,
-            ),
-          ),
+        child: Center(
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  "Tambah ke Marketplace", // ID: '268:3652'
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700, // Bold
+                    color: Colors.white,
+                  ),
+                ),
         ),
       ),
     );
+  }
+
+  Future<void> _submitProduct() async {
+    final name = _nameController.text.trim();
+    final description = _descriptionController.text.trim();
+    final price = double.tryParse(_priceController.text.trim()) ?? 0;
+    final categoryId = (selectedCategoryId ?? '').trim();
+
+    if (name.isEmpty || description.isEmpty || price <= 0) {
+      _showSnack('Lengkapi nama, deskripsi, dan harga dulu.', true);
+      return;
+    }
+    if (categoryId.isEmpty) {
+      _showSnack('Pilih kategori terlebih dahulu.', true);
+      return;
+    }
+    if (_useSavedAddress && (_selectedAddressId == null || _selectedAddressId!.isEmpty)) {
+      _showSnack('Pilih alamat tersimpan atau gunakan titik baru.', true);
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token');
+      if (token == null || token.isEmpty) {
+        _showSnack('Token login tidak ditemukan. Silakan login ulang.', true);
+        return;
+      }
+
+      final payload = {
+        'name': name,
+        'description': description,
+        'pricePerHour': price,
+        'categoryId': categoryId,
+        'conditionLabel': selectedKondisi,
+        'durationUnit': selectedDurasi,
+        'latitude': _itemLocation.latitude,
+        'longitude': _itemLocation.longitude,
+        'addressSource': _useSavedAddress ? 'saved' : 'new',
+      };
+
+      // Tetap simpan dummy payload sebagai backup demo.
+      await prefs.setString('pending_add_product_payload', jsonEncode(payload));
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      // Resolve addressId: reuse saved or create a new one.
+      String addressId = (_selectedAddressId ?? '').trim();
+      if (!_useSavedAddress) {
+        final fullAddress =
+            'Pinned: ${_itemLocation.latitude.toStringAsFixed(6)}, ${_itemLocation.longitude.toStringAsFixed(6)}';
+        final addressResp = await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/addresses'),
+          headers: headers,
+          body: jsonEncode({
+            'label': 'Lokasi Barang',
+            'fullAddress': fullAddress,
+            'latitude': _itemLocation.latitude,
+            'longitude': _itemLocation.longitude,
+            'isDefault': false,
+          }),
+        );
+        final addressBody = jsonDecode(addressResp.body) as Map<String, dynamic>;
+        if (addressResp.statusCode != 200 || addressBody['success'] != true) {
+          _showSnack(
+            addressBody['error']?['message']?.toString() ??
+                'Gagal menyimpan alamat barang.',
+            true,
+          );
+          return;
+        }
+        addressId = (addressBody['data']?['id'] ?? '').toString();
+      }
+      if (addressId.isEmpty) {
+        _showSnack('Address ID tidak ditemukan.', true);
+        return;
+      }
+
+      // 3) Create item real ke backend functions
+      final itemResp = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/items'),
+        headers: headers,
+        body: jsonEncode({
+          'categoryId': categoryId,
+          'name': name,
+          'description': description,
+          'pricePerHour': price,
+          'estimatedValue': price * 24,
+          'condition': _mapConditionToApi(selectedKondisi),
+          'addressId': addressId,
+        }),
+      );
+      final itemBody = jsonDecode(itemResp.body) as Map<String, dynamic>;
+      if (itemResp.statusCode != 200 || itemBody['success'] != true) {
+        _showSnack(
+          itemBody['error']?['message']?.toString() ?? 'Gagal menambahkan barang.',
+          true,
+        );
+        return;
+      }
+
+      _showSnack('Barang berhasil ditambahkan ke marketplace.', false);
+      if (!_useSavedAddress) {
+        _bootstrapFormData();
+      }
+    } catch (_) {
+      _showSnack('Gagal menyiapkan payload produk.', true);
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  String _mapConditionToApi(String local) {
+    final normalized = local.toLowerCase();
+    if (normalized.contains('baru')) return 'new';
+    if (normalized.contains('sangat')) return 'like-new';
+    if (normalized == 'baik') return 'fair';
+    return 'poor';
+  }
+
+  void _showSnack(String message, bool isError) {
+    if (isError) {
+      showAppErrorSnack(context, message);
+      return;
+    }
+    showAppSuccessSnack(context, message);
   }
 }

@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:latlong2/latlong.dart';
 import 'ajukan_sewa_screen.dart';
+import 'map_common_widgets.dart';
 
 class ItemDetailScreen extends StatefulWidget {
-  const ItemDetailScreen({super.key});
+  final String? itemName;
+  final double? pricePerHour;
+  final String? sellerLocation;
+
+  const ItemDetailScreen({
+    super.key,
+    this.itemName,
+    this.pricePerHour,
+    this.sellerLocation,
+  });
 
   @override
   State<ItemDetailScreen> createState() => _ItemDetailScreenState();
@@ -13,10 +24,12 @@ class ItemDetailScreen extends StatefulWidget {
 class _ItemDetailScreenState extends State<ItemDetailScreen> {
   // State variable untuk expand/collapse deskripsi
   bool isDescriptionExpanded = false;
+  final LatLng _itemCenter = const LatLng(-6.9791, 110.4208);
 
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
+    const double heroImageHeightFactor = 0.40;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Base canvas color
@@ -29,7 +42,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             top: 0,
             left: 0,
             right: 0,
-            height: screenHeight * 0.45, // Tinggi gambar 45% layar
+            height: screenHeight * heroImageHeightFactor, // Hero image height
             child: Image.asset(
               'assets/images/Iklan.jpg', // Menggunakan Iklan.jpg sesuai user prompt
               fit: BoxFit.cover,
@@ -46,7 +59,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Column(
                 children: [
                   // Spacer Transparan agar sheet tidak menutupi gambar secara default di atas
-                  SizedBox(height: (screenHeight * 0.45) - 30),
+                  SizedBox(height: (screenHeight * heroImageHeightFactor) - 30),
 
                   // ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
                   FadeInUp(
@@ -192,6 +205,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2A. MAIN INFO
   Widget _buildTitleAndBadges() {
+    final itemName = widget.itemName ?? "Sony Camera a6000";
+    final itemPrice = widget.pricePerHour != null
+        ? "Rp. ${widget.pricePerHour!.toStringAsFixed(0)},00/jam"
+        : "Rp. 15.000,00/jam";
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -202,9 +219,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
-                    "Sony Camera a6000", // ID: '259:1979'
+                    itemName, // ID: '259:1979'
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
@@ -214,7 +231,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    "Rp. 15.000,00/jam", // ID: '259:1980'
+                    itemPrice, // ID: '259:1980'
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w600,
@@ -308,7 +325,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Row(
                 children: [
                   Text(
-                    isDescriptionExpanded ? "See less" : "See more", // ID: '270:1324'
+                    isDescriptionExpanded
+                        ? "See less"
+                        : "See more", // ID: '270:1324'
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w500,
@@ -394,7 +413,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 const SizedBox(height: 4),
                 Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.star_rounded,
                       color: Color(0xFFF8BD00),
@@ -412,7 +431,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                     SizedBox(width: 4),
                     Text(
-                      "| Tembalang, Banyumanik",
+                      "| ${widget.sellerLocation ?? "Tembalang, Banyumanik"}",
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 10,
@@ -462,10 +481,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           width: double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(25), // ID: '259:1977'
-            image: const DecorationImage(
-              image: AssetImage('assets/images/map_preview.png'),
-              fit: BoxFit.cover,
-            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -473,6 +488,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 offset: const Offset(0, 4),
               ),
             ],
+          ),
+          child: ReusableMapCard(
+            center: _itemCenter,
+            zoom: 13.5,
+            radiusKm: 3,
+            interactive: false,
+            markers: [MapMarkerData(point: _itemCenter, highlighted: true)],
+            overlayLabel: 'Estimasi jangkauan 3 km dari titik barang',
+            borderRadius: BorderRadius.circular(25),
+            height: 180,
           ),
         ),
       ],
@@ -485,22 +510,23 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       {
         "name": "Sony W830",
         "price": "Rp.120,000",
-        "image": "assets/images/sony_camera.png"
+        "image": "assets/images/sony_camera.png",
       },
       {
         "name": "Apple Airpods Max 2",
         "price": "Rp.45,000",
-        "image": "assets/images/airpods_max.png"
+        "image": "assets/images/airpods_max.png",
       },
       {
-        "name": "Keyboard Mahal", // Placeholder visual using PS5 controller for correctness
+        "name":
+            "Keyboard Mahal", // Placeholder visual using PS5 controller for correctness
         "price": "Rp.45,000",
-        "image": "assets/images/ps5_controller.png"
+        "image": "assets/images/ps5_controller.png",
       },
       {
         "name": "Occulus VR", // Placeholder visual reuse PS5 controller
         "price": "Rp.120,000",
-        "image": "assets/images/ps5_controller.png"
+        "image": "assets/images/ps5_controller.png",
       },
     ];
 
@@ -524,7 +550,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.zero,
             itemCount: recommendedProducts.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            separatorBuilder: (_, index) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
               final item = recommendedProducts[index];
               return _RecommendationCardItem(
@@ -566,10 +592,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               width: 56,
               decoration: BoxDecoration(
                 color: Colors.white, // Frame putih melingkar
-                border: Border.all(
-                  color: const Color(0xFF012D1D),
-                  width: 1.5,
-                ),
+                border: Border.all(color: const Color(0xFF012D1D), width: 1.5),
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(

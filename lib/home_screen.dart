@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'address_service.dart';
 import 'item_detail_screen.dart';
+import 'map_common_widgets.dart';
+import 'map_explore_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,7 +15,11 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
+  final AddressService _addressService = const AddressService();
   String selectedCategory = 'All';
+  String _defaultLocationLabel = 'Tembalang, Semarang';
+  LatLng _mapCenter = _fallbackCenter;
   final List<String> categories = [
     'All',
     'Tech',
@@ -19,6 +28,63 @@ class _HomeScreenState extends State<HomeScreen> {
     'Sport',
     'Camp',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDefaultLocationLabel();
+  }
+
+  Future<void> _loadDefaultLocationLabel() async {
+    final prefs = await SharedPreferences.getInstance();
+    final label = prefs.getString('user_default_location')?.trim();
+    final lat = prefs.getDouble('user_default_lat');
+    final lng = prefs.getDouble('user_default_lng');
+    if (!mounted) return;
+    setState(() {
+      if (label != null && label.isNotEmpty) {
+        _defaultLocationLabel = label;
+      }
+      if (lat != null && lng != null) {
+        _mapCenter = LatLng(lat, lng);
+      }
+    });
+    _syncDefaultLocationFromApi();
+  }
+
+  Future<void> _syncDefaultLocationFromApi() async {
+    try {
+      final address = await _addressService.fetchDefaultAddress();
+      if (address == null || !mounted) return;
+
+      final resolvedLabel = address.fullAddress.trim().isNotEmpty
+          ? address.fullAddress.trim()
+          : address.label.trim();
+      final lat = address.latitude;
+      final lng = address.longitude;
+
+      final prefs = await SharedPreferences.getInstance();
+      if (resolvedLabel.isNotEmpty) {
+        await prefs.setString('user_default_location', resolvedLabel);
+      }
+      if (lat != null && lng != null) {
+        await prefs.setDouble('user_default_lat', lat);
+        await prefs.setDouble('user_default_lng', lng);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        if (resolvedLabel.isNotEmpty) {
+          _defaultLocationLabel = resolvedLabel;
+        }
+        if (lat != null && lng != null) {
+          _mapCenter = LatLng(lat, lng);
+        }
+      });
+    } catch (_) {
+      // Keep local fallback if token is unavailable or request fails.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,20 +238,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Row(
-                  children: const [
+                  children: [
                     Icon(
                       Icons.location_on_rounded,
                       size: 12,
                       color: Color(0xFFFDF9F4),
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Tembalang, Semarang',
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _defaultLocationLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 11,
                         color: Color(0xFFFDF9F4),
                       ),
+                    ),
                     ),
                   ],
                 ),
@@ -312,22 +382,38 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Container(
-            height: 160,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(25),
-              border: Border.all(color: const Color(0xFF012D1D), width: 0.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MapExploreScreen()),
+              );
+            },
+            child: Container(
+              height: 160,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: const Color(0xFF012D1D), width: 0.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(25),
+                child: ReusableMapCard(
+                  center: _mapCenter,
+                  zoom: 13,
+                  interactive: false,
+                  showCenterPin: true,
+                  overlayLabel: _defaultLocationLabel,
+                  height: 160,
+                  borderRadius: BorderRadius.circular(25),
                 ),
-              ],
-              image: const DecorationImage(
-                image: AssetImage('assets/images/map_preview.png'),
-                fit: BoxFit.cover,
               ),
             ),
           ),
