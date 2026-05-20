@@ -11,43 +11,70 @@ class CategoriesScreen extends StatelessWidget {
 
   const CategoriesScreen({super.key, this.onBack});
 
+  void _handleBack(BuildContext context) {
+    final didPop = Navigator.of(context).maybePop();
+    didPop.then((popped) {
+      if (!popped && onBack != null) {
+        onBack!();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // main_bg
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
+        automaticallyImplyLeading: false,
+        toolbarHeight: 80,
+        titleSpacing: 24,
+        title: Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => _handleBack(context),
+                child: const Icon(
+                  Icons.arrow_back_rounded,
+                  color: Color(0xFF012D1D),
+                  size: 28,
+                ),
+              ),
+              const Spacer(),
+              const Text(
+                'Categories',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const Spacer(),
+              const SizedBox(width: 28),
+            ],
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
           child: Container(
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.transparent,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-              onPressed: () {
-                if (onBack != null) {
-                  onBack!();
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              iconSize: 24,
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                  const Color(0xFF012D1D).withValues(alpha: 0.28),
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
             ),
           ),
         ),
-        title: const Text(
-          'Categories',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        centerTitle: true,
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -71,7 +98,10 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesTechScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CategoriesTechScreen()),
+              ),
             ),
             _CategoryCard(
               title: 'Outfit',
@@ -87,7 +117,12 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesOutfitScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CategoriesOutfitScreen(),
+                ),
+              ),
             ),
             _CategoryCard(
               title: 'Power Tools',
@@ -103,7 +138,12 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesPowerToolsScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CategoriesPowerToolsScreen(),
+                ),
+              ),
             ),
             _CategoryCard(
               title: 'Camp Tools',
@@ -119,7 +159,12 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesCampToolsScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CategoriesCampToolsScreen(),
+                ),
+              ),
             ),
             _CategoryCard(
               title: 'Sports',
@@ -135,7 +180,12 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesSportsScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const CategoriesSportsScreen(),
+                ),
+              ),
             ),
             _CategoryCard(
               title: 'Cook',
@@ -151,7 +201,10 @@ class CategoriesScreen extends StatelessWidget {
                 ],
                 stops: [0.0, 0.2, 1.0],
               ),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesCookScreen())),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CategoriesCookScreen()),
+              ),
             ),
           ],
         ),

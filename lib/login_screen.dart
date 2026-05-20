@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
+import 'app_feedback.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isResetLoading = false;
 
   @override
   void initState() {
@@ -47,36 +51,11 @@ class _LoginScreenState extends State<LoginScreen>
 
   // Custom SnackBar Premium Style
   void _showSnackBar(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF2F6743),
-        behavior: SnackBarBehavior.floating,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(20),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (isError) {
+      showAppErrorSnack(context, message);
+      return;
+    }
+    showAppSuccessSnack(context, message);
   }
 
   Future<void> _handleLogin() async {
@@ -107,6 +86,16 @@ class _LoginScreenState extends State<LoginScreen>
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        final prefs = await SharedPreferences.getInstance();
+        final token = (data['data']?['tokens']?['idToken'] ?? '').toString();
+        final user = data['data']?['user'] as Map<String, dynamic>? ?? const {};
+        if (token.isNotEmpty) {
+          await prefs.setString('token', token);
+        }
+        await prefs.setString('user_name', (user['name'] ?? '').toString());
+        await prefs.setString('user_email', (user['email'] ?? '').toString());
+        await prefs.setString('user_phone', (user['phone'] ?? '').toString());
+        if (!mounted) return;
         _showSnackBar('Login berhasil!', isError: false);
         Navigator.pushReplacement(
           context,
@@ -115,7 +104,11 @@ class _LoginScreenState extends State<LoginScreen>
           ),
         );
       } else {
-        _showSnackBar(data['message'] ?? 'Login gagal.');
+        final apiMessage =
+            data['error']?['message']?.toString() ??
+            data['message']?.toString() ??
+            'Login gagal.';
+        _showSnackBar(apiMessage);
       }
     } catch (e) {
       _showSnackBar('Sistem Error: ${e.toString()}');
@@ -123,6 +116,160 @@ class _LoginScreenState extends State<LoginScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final seedEmail = _emailController.text.trim();
+    final emailController = TextEditingController(text: seedEmail);
+
+    final submittedEmail = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          backgroundColor: const Color(0xFFFFF8EF),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lupa Password?',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 24,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Email',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2F6743),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  autofocus: true,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    color: Color(0xFF012D1D),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'nama@email.com',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      color: const Color(0xFF717973).withValues(alpha: 0.7),
+                    ),
+                    enabledBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF2F6743), width: 2),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF012D1D), width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF2F6743),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      child: const Text('Batal'),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context, emailController.text.trim());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2F7E5E),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 10,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      child: const Text('Kirim'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    emailController.dispose();
+
+    if (!mounted || submittedEmail == null) return;
+
+    final email = submittedEmail.trim();
+    if (email.isEmpty) {
+      _showSnackBar('Email wajib diisi.');
+      return;
+    }
+
+    setState(() {
+      _isResetLoading = true;
+    });
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      _showSnackBar(
+        'Link reset password sudah dikirim. Cek email kamu ya.',
+        isError: false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'invalid-email') {
+        _showSnackBar('Format email tidak valid.');
+      } else if (e.code == 'user-not-found') {
+        _showSnackBar('Email belum terdaftar.');
+      } else if (e.code == 'too-many-requests') {
+        _showSnackBar('Terlalu banyak percobaan. Coba beberapa saat lagi.');
+      } else {
+        _showSnackBar('Gagal kirim reset password: ${e.message ?? e.code}');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Terjadi kesalahan saat reset password.');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResetLoading = false;
         });
       }
     }
@@ -272,14 +419,20 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               GestureDetector(
-                                onTap: () {},
-                                child: const Text(
+                                onTap: (_isLoading || _isResetLoading)
+                                    ? null
+                                    : _handleForgotPassword,
+                                child: Text(
                                   "Forgot password?",
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF7B5804),
+                                    color: (_isLoading || _isResetLoading)
+                                        ? const Color(0xFF7B5804).withValues(
+                                            alpha: 0.55,
+                                          )
+                                        : const Color(0xFF7B5804),
                                   ),
                                 ),
                               ),

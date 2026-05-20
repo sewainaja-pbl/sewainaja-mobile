@@ -32,6 +32,15 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   String selectedTab = "All"; // Tab Options: "All", "Unread", "Request"
 
+  void _handleBack() {
+    final didPop = Navigator.of(context).maybePop();
+    didPop.then((popped) {
+      if (!popped && widget.onBack != null) {
+        widget.onBack!();
+      }
+    });
+  }
+
   // Mock Data matching the provided images
   final List<ChatMessage> _allChats = [
     ChatMessage(
@@ -103,8 +112,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4), // Background Color ID: '217:2058'
-      
+      backgroundColor: const Color(
+        0xFFFDF9F4,
+      ), // Background Color ID: '217:2058'
       // --- SECTION 1: APPBAR ---
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4),
@@ -118,13 +128,7 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               // Back Button
               GestureDetector(
-                onTap: () {
-                  if (widget.onBack != null) {
-                    widget.onBack!();
-                  } else {
-                    Navigator.maybePop(context);
-                  }
-                },
+                onTap: _handleBack,
                 child: const Icon(
                   Icons.arrow_back_rounded,
                   color: Color(0xFF012D1D), // ID: '635:1593' Color
@@ -146,6 +150,24 @@ class _ChatScreenState extends State<ChatScreen> {
               // Dummy spacing to balance the centered title
               const SizedBox(width: 28),
             ],
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: [
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                  const Color(0xFF012D1D).withValues(alpha: 0.28),
+                  const Color(0xFF012D1D).withValues(alpha: 0),
+                ],
+                stops: const [0, 0.5, 1],
+              ),
+            ),
           ),
         ),
       ),
@@ -178,7 +200,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 ? _buildEmptyState()
                 : ListView.builder(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(left: 24, right: 24, bottom: 110), // Navbar Whitespace Fix
+                    padding: const EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      bottom: 110,
+                    ), // Navbar Whitespace Fix
                     itemCount: _filteredChats.length,
                     itemBuilder: (context, index) {
                       return _buildChatCard(_filteredChats[index]);
@@ -280,7 +306,9 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Container(
         height: 40,
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF012D1D) : Colors.white, // Background active/inactive
+          color: isActive
+              ? const Color(0xFF012D1D)
+              : Colors.white, // Background active/inactive
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: const Color(0xFF919191), // Border #919191 1px
@@ -294,7 +322,9 @@ class _ChatScreenState extends State<ChatScreen> {
             fontFamily: 'Poppins',
             fontSize: 12,
             fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            color: isActive ? Colors.white : const Color(0xFF414844), // Text active/inactive
+            color: isActive
+                ? Colors.white
+                : const Color(0xFF414844), // Text active/inactive
           ),
         ),
       ),
@@ -312,7 +342,8 @@ class _ChatScreenState extends State<ChatScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => RoomChatScreen(chatPartnerName: chat.userName),
+            builder: (context) =>
+                RoomChatScreen(chatPartnerName: chat.userName),
           ),
         );
       },
@@ -322,7 +353,9 @@ class _ChatScreenState extends State<ChatScreen> {
           color: Colors.white, // ID: '217:2070' Background: #FFFFFF
           borderRadius: BorderRadius.circular(12), // BorderRadius: 12
           border: Border.all(
-            color: const Color(0xFF919191).withValues(alpha: 0.8), // Border: #919191
+            color: const Color(
+              0xFF919191,
+            ).withValues(alpha: 0.8), // Border: #919191
             width: 1,
           ),
           boxShadow: [
@@ -352,7 +385,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  
+
                   // Text Info
                   Expanded(
                     child: Column(
@@ -382,21 +415,23 @@ class _ChatScreenState extends State<ChatScreen> {
                       ],
                     ),
                   ),
-  
+
                   // Trailing red warning envelope (Conditional UI)
                   if (showRedIcon) _buildRedExclamationEnvelope(),
                 ],
               ),
-  
+
               // --- DIVIDER ---
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Container(
                   height: 1,
-                  color: const Color(0xFF919191).withValues(alpha: 0.6), // ID: '217:2073' Divider
+                  color: const Color(
+                    0xFF919191,
+                  ).withValues(alpha: 0.6), // ID: '217:2073' Divider
                 ),
               ),
-  
+
               // --- LOWER CARD (PRODUCT INFO) ---
               Row(
                 children: [
@@ -411,7 +446,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  
+
                   // Product Name
                   Expanded(
                     child: Text(

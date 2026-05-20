@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'main_navigation_screen.dart';
+import 'default_address_setup_screen.dart';
 
 class ProfileSetupScreen extends StatelessWidget {
   const ProfileSetupScreen({super.key});
@@ -95,7 +95,7 @@ class ProfileSetupScreen extends StatelessWidget {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const MainNavigationScreen(),
+                        builder: (context) => const DefaultAddressSetupScreen(),
                       ),
                     );
                   },
