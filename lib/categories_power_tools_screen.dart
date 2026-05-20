@@ -50,28 +50,44 @@ class CategoriesPowerToolsScreen extends StatelessWidget {
             mainAxisSpacing: 16.0,
             childAspectRatio: 0.65, // Adjusted to fit image, title, and price
           ),
-          itemCount: 4,
+          itemCount: 6,
           itemBuilder: (context, index) {
             final items = [
               {
-                "name": "Sony W830 with 8x Optical Zoom",
-                "price": "Rp.120,000/Day",
-                "rating": "4.8(292)",
+                "name": "Bor Listrik Cordless 12V",
+                "price": "Rp.50,000/Day",
+                "rating": "4.8(124)",
+                "image": "assets/images/bor_listrik.png",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Mesin Gerinda Tangan 4-Inch",
                 "price": "Rp.45,000/Day",
-                "rating": "4.8(292)",
+                "rating": "4.7(88)",
+                "image": "assets/images/mesin_gerinda.png",
               },
               {
-                "name": "Sony W830 with 8x Optical Zoom",
-                "price": "Rp.120,000/Day",
-                "rating": "4.8(292)",
+                "name": "Gergaji Circular Listrik 7-Inch",
+                "price": "Rp.75,000/Day",
+                "rating": "4.9(42)",
+                "image": "assets/images/gergaji_circular.png",
               },
               {
-                "name": "Sony Dual-Sense PS5",
-                "price": "Rp.45,000/Day",
-                "rating": "4.8(292)",
+                "name": "Obeng Listrik Cordless Mini",
+                "price": "Rp.30,000/Day",
+                "rating": "4.6(15)",
+                "image": "assets/images/obeng_listrik.png",
+              },
+              {
+                "name": "Mesin Serut Kayu Listrik",
+                "price": "Rp.60,000/Day",
+                "rating": "4.8(54)",
+                "image": "assets/images/mesin_serut.png",
+              },
+              {
+                "name": "Mesin Amplas Listrik",
+                "price": "Rp.35,000/Day",
+                "rating": "4.7(29)",
+                "image": "assets/images/mesin_amplas.png",
               },
             ];
 
@@ -79,6 +95,7 @@ class CategoriesPowerToolsScreen extends StatelessWidget {
               name: items[index]["name"]!,
               price: items[index]["price"]!,
               rating: items[index]["rating"]!,
+              imagePath: items[index]["image"]!,
             );
           },
         ),
@@ -91,11 +108,13 @@ class _ProductCard extends StatelessWidget {
   final String name;
   final String price;
   final String rating;
+  final String imagePath;
 
   const _ProductCard({
     required this.name,
     required this.price,
     required this.rating,
+    required this.imagePath,
   });
 
   @override
@@ -123,6 +142,10 @@ class _ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9), // Placeholder color
                       borderRadius: BorderRadius.circular(10),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
