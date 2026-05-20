@@ -50,28 +50,44 @@ class CategoriesCampToolsScreen extends StatelessWidget {
             mainAxisSpacing: 16.0,
             childAspectRatio: 0.65, // Adjusted to fit image, title, and price
           ),
-          itemCount: 4,
+          itemCount: 6,
           itemBuilder: (context, index) {
             final items = [
               {
-                "name": "Sony W830 with 8x Optical Zoom",
-                "price": "Rp.120,000/Day",
-                "rating": "4.8(292)",
+                "name": "Tenda Camping Dome 4 Orang",
+                "price": "Rp.80,000/Day",
+                "rating": "4.8(192)",
+                "image": "assets/images/tenda_camping.png",
               },
               {
-                "name": "Sony Dual-Sense PS5",
+                "name": "Tas Carrier Outdoor 60L",
                 "price": "Rp.45,000/Day",
-                "rating": "4.8(292)",
+                "rating": "4.7(120)",
+                "image": "assets/images/tas_carrier.png",
               },
               {
-                "name": "Sony W830 with 8x Optical Zoom",
-                "price": "Rp.120,000/Day",
-                "rating": "4.8(292)",
+                "name": "Sleeping Bag Mummy Premium",
+                "price": "Rp.25,000/Day",
+                "rating": "4.9(78)",
+                "image": "assets/images/sleeping_bag.png",
               },
               {
-                "name": "Sony Dual-Sense PS5",
-                "price": "Rp.45,000/Day",
-                "rating": "4.8(292)",
+                "name": "Kompor Camping Portable Gas",
+                "price": "Rp.20,000/Day",
+                "rating": "4.8(115)",
+                "image": "assets/images/kompor_camping.png",
+              },
+              {
+                "name": "Lentera LED Camping Rechargeable",
+                "price": "Rp.15,000/Day",
+                "rating": "4.6(43)",
+                "image": "assets/images/lentera_camping.png",
+              },
+              {
+                "name": "Matras Angin Camping Double",
+                "price": "Rp.35,000/Day",
+                "rating": "4.8(62)",
+                "image": "assets/images/matras_camping.png",
               },
             ];
 
@@ -79,6 +95,7 @@ class CategoriesCampToolsScreen extends StatelessWidget {
               name: items[index]["name"]!,
               price: items[index]["price"]!,
               rating: items[index]["rating"]!,
+              imagePath: items[index]["image"]!,
             );
           },
         ),
@@ -91,11 +108,13 @@ class _ProductCard extends StatelessWidget {
   final String name;
   final String price;
   final String rating;
+  final String imagePath;
 
   const _ProductCard({
     required this.name,
     required this.price,
     required this.rating,
+    required this.imagePath,
   });
 
   @override
@@ -123,6 +142,10 @@ class _ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9), // Placeholder color
                       borderRadius: BorderRadius.circular(10),
+                      image: DecorationImage(
+                        image: AssetImage(imagePath),
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
