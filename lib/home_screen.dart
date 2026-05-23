@@ -125,8 +125,8 @@ class _HomeScreenState extends State<HomeScreen> {
           // ### [LAYER 2: FOREGROUND / DRAGGABLE WHITE SHEET]
           // =============================================================
           DraggableScrollableSheet(
-            initialChildSize: 0.65, // Mulai dari pertengahan layar (65%)
-            minChildSize: 0.65, // Tidak bisa diturunkan lebih dari ini
+            initialChildSize: 0.76, // Di-adjust naik agar lebih dekat dengan search bar
+            minChildSize: 0.76, // Tidak bisa diturunkan lebih dari ini
             maxChildSize: 1.0, // Bisa ditarik sampai atas
             snap: true, // Menambahkan efek magnet agar lebih premium
             builder: (context, scrollController) {
