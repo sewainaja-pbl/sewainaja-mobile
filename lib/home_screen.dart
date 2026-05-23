@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
@@ -587,27 +588,55 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () => setState(() => selectedCategory = cat),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? const Color(0xFF012D1D)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20), // Pill shaped
-                border: isSelected
-                    ? null
-                    : Border.all(
-                        color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  if (isSelected)
+                    BoxShadow(
+                      color: const Color(0xFF012D1D).withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  else
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? const Color(0xFF012D1D).withValues(alpha: 0.95)
+                          : Colors.white.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected
+                            ? Colors.white.withValues(alpha: 0.18)
+                            : const Color(0xFF012D1D).withValues(alpha: 0.12),
                         width: 1,
                       ),
-              ),
-              child: Center(
-                child: Text(
-                  cat,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 13,
-                    color: isSelected ? Colors.white : const Color(0xFF012D1D),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                    child: Center(
+                      child: Text(
+                        cat,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF012D1D).withValues(alpha: 0.8),
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
