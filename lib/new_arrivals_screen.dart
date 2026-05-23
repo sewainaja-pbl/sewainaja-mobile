@@ -2,51 +2,59 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'item_detail_screen.dart';
 
-class CategoriesCookScreen extends StatelessWidget {
-  const CategoriesCookScreen({super.key});
+class NewArrivalsScreen extends StatelessWidget {
+  const NewArrivalsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      {
-        "name": "Panci Camping Set",
-        "price": "Rp.25,000/Day",
-        "rating": "4.9(110)",
-        "image": "assets/images/cook_category.jpg",
-      },
-      {
-        "name": "Kompor Portable",
-        "price": "Rp.30,000/Day",
-        "rating": "4.8(250)",
-        "image": "assets/images/cook_category.jpg",
-      },
-      {
-        "name": "Set Pisau Dapur",
-        "price": "Rp.15,000/Day",
-        "rating": "4.7(60)",
-        "image": "assets/images/cook_category.jpg",
-      },
-      {
-        "name": "Grill Pan BBQ",
-        "price": "Rp.35,000/Day",
-        "rating": "4.9(85)",
-        "image": "assets/images/cook_category.jpg",
-      },
+    // Generate a rich set of 10 mock products for New Arrivals
+    final baseProducts = [
+      ProductData(
+        name: "Sony W830 Camera",
+        price: "Rp.120,000",
+        rating: "4.8(292)",
+        image: 'assets/images/sony_camera.png',
+      ),
+      ProductData(
+        name: "Sony Dual-Sense PS5",
+        price: "Rp.45,000",
+        rating: "4.8(180)",
+        image: 'assets/images/ps5_controller.png',
+      ),
+      ProductData(
+        name: "Apple Airpods Max 2",
+        price: "Rp.45,000",
+        rating: "4.9(340)",
+        image: 'assets/images/airpods_max.png',
+      ),
     ];
+
+    final List<ProductData> products = List.generate(12, (index) {
+      final base = baseProducts[index % baseProducts.length];
+      return ProductData(
+        name: index >= baseProducts.length 
+            ? "${base.name} Pro #${index - 1}"
+            : base.name,
+        price: base.price,
+        rating: base.rating,
+        image: base.image,
+      );
+    });
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: true, // Let the body scroll behind the transparent AppBar
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
+        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6), // Semi-transparent cream background
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // Premium glassmorphism blur effect
             child: Container(
               color: Colors.transparent,
             ),
@@ -66,10 +74,10 @@ class CategoriesCookScreen extends StatelessWidget {
               ),
               const Spacer(),
               const Text(
-                'Cook',
+                'New Arrivals',
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 28,
+                  fontSize: 26,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF012D1D),
                 ),
@@ -99,6 +107,7 @@ class CategoriesCookScreen extends StatelessWidget {
         ),
       ),
       body: GridView.builder(
+        // Dynamic top padding to account for transparent AppBar + Safe Area
         padding: EdgeInsets.only(
           top: MediaQuery.of(context).padding.top + 80 + 16,
           left: 16.0,
@@ -111,15 +120,18 @@ class CategoriesCookScreen extends StatelessWidget {
           mainAxisSpacing: 16.0,
           childAspectRatio: 0.65,
         ),
-        itemCount: items.length,
+        itemCount: products.length,
         itemBuilder: (context, index) {
-          final product = ProductData(
-            name: items[index]["name"]!,
-            price: items[index]["price"]!,
-            rating: items[index]["rating"]!,
-            image: items[index]["image"]!,
+          final product = products[index];
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ItemDetailScreen(),
+              ),
+            ),
+            child: ProductCard(product: product),
           );
-          return ProductCard(product: product);
         },
       ),
     );

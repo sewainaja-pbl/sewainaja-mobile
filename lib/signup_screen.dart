@@ -175,7 +175,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 color: Color(0xFF012D1D),
               ),
             ),
-            if (rightLabel != null) rightLabel,
+            ?rightLabel,
           ],
         ),
         const SizedBox(height: 8),
@@ -418,7 +418,8 @@ class _SignUpScreenState extends State<SignUpScreen>
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const OtpVerificationScreen(),
+                                builder: (context) =>
+                                    const OtpVerificationScreen(),
                               ),
                             );
                           },

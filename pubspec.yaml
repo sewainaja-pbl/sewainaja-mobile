@@ -13,9 +13,6 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   firebase_core: ^4.7.0
-  firebase_auth: ^6.4.0
-  cloud_firestore: ^6.3.0
-  firebase_messaging: ^16.2.0
   # Package untuk membuat Native Splash Screen
   flutter_native_splash: ^2.4.0
   animate_do: ^5.1.0
@@ -25,6 +22,7 @@ dependencies:
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
   geolocator: ^14.0.2
+  firebase_auth: ^6.5.1
 
 dev_dependencies:
   flutter_test:
@@ -1223,3 +1221,76 @@ flutter:
 # 3. Avatar Badge: Gunakan widget `Stack` untuk menumpuk gambar profil bundar dengan container putih kecil (badge edit) di `Positioned(bottom: 0, right: 0)`.
 # 4. Form Rows Layout: Setiap baris input di dalam Card putih adalah `Container` dengan padding. Gunakan `Row` dengan `MainAxisAlignment.spaceBetween` untuk menyejajarkan Label (kiri) dan Value (kanan).
 # 5. Fixed Button: Letakkan Section 4 di parameter `bottomNavigationBar` Scaffold, beri SafeArea agar tidak tertutup navigasi OS.
+
+# ==========================================
+# FINAL AI PROMPT SPEC: SEWAINAJA NOTIFICATIONS
+# (Combined: Recent Activity & Unread Tabs)
+# ==========================================
+# screen_info:
+#   name: "NotificationScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     title: "Notifications"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#012D1D" }
+#
+# components:
+#   tabs:
+#     type: "TabBar"
+#     indicator_color: "#012D1D"
+#     indicator_weight: 2.0
+#     items:
+#       - label: "Recent activity"
+#       - label: "Unread"
+#
+#   tab_views:
+#     # ----------------------------------------
+#     # TAB 1: RECENT ACTIVITY
+#     # ----------------------------------------
+#     recent_activity:
+#       type: "SectionedListView"
+#       section_header_style: { family: "Poppins", size: 14, weight: 400, color: "#000000" } # "Today", "Yesterdaty"
+#       item_background: "#FFFFFF"
+#       item_padding: { horizontal: 16, vertical: 16 }
+#       text_primary: "RichText (Bold name, regular action)"
+#       text_time: { family: "Poppins", size: 12, color: "#717973" }
+#       
+#     # ----------------------------------------
+#     # TAB 2: UNREAD
+#     # ----------------------------------------
+#     unread:
+#       type: "SectionedListView"
+#       section_header_style: { family: "Poppins", size: 14, weight: 400, color: "#000000" }
+#       item_style:
+#         background_color: "#F6F7F9"
+#         border_color: "#ECEDF2"
+#         border_width: 1.0
+#         padding: { horizontal: 24, vertical: 12 }
+#         margin_bottom: 12 # Jarak antar card
+#       content_layout: "Row"
+#       elements:
+#         - avatar:
+#             size: 40
+#             shape: "circle"
+#             background_color: "#282A37"
+#             text_style: { family: "Poppins", size: 14, weight: 700, color: "#FFFFFF" }
+#         - text_column:
+#             spacing: 4
+#             title: { family: "Poppins", size: 14, weight: 700, color: "#282A37" } # cth: "Aminah"
+#             subtitle: { family: "Poppins", size: 12, weight: 300, color: "#282A37" } # cth: "Permintaan sewa"
+#             time: { family: "Poppins", size: 13, weight: 400, color: "#515978" } # cth: "3 hours ago"
+#         - trailing_indicator:
+#             type: "circle"
+#             size: 10
+#             color: "#012D1D" # Titik hijau notifikasi belum dibaca
+#
+# design_tokens:
+#   colors:
+#     primary_dark: "#012D1D"
+#     bg_surface: "#FDF9F4"
+#     card_bg: "#F6F7F9"
+#     card_border: "#ECEDF2"
+#     text_dark: "#282A37"
+#     text_time: "#515978"
+#     black: "#000000"

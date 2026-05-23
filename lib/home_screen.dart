@@ -6,6 +6,10 @@ import 'address_service.dart';
 import 'item_detail_screen.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
+import 'models/product.dart';
+import 'widgets/product_card.dart';
+import 'new_arrivals_screen.dart';
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,9 +29,254 @@ class _HomeScreenState extends State<HomeScreen> {
     'Tech',
     'Power Tools',
     'Outfit',
-    'Sport',
-    'Camp',
+    'Camp Tools',
+    'Sports',
+    'Cook',
   ];
+
+  // List Produk Riil Kategori Tech
+  final List<ProductData> _techProducts = [
+    ProductData(
+      name: "Vivo Y15s 8/128GB",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/handphone.jpg",
+    ),
+    ProductData(
+      name: "Realme C55 12/512GB",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/hp_realme.jpg",
+    ),
+    ProductData(
+      name: "EOS 5D Mark IV",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_canon.jpg",
+    ),
+    ProductData(
+      name: "Sony FX30",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_sony.jpg",
+    ),
+    ProductData(
+      name: "Asus Zenfone 12 Ultra 16/512GB",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/hp_asus.jpg",
+    ),
+    ProductData(
+      name: "Nikon Coolpix B500",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_nikon.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Power Tools
+  final List<ProductData> _powerToolsProducts = [
+    ProductData(
+      name: "Bor Listrik Cordless 12V",
+      price: "Rp.50,000",
+      rating: "4.8(124)",
+      image: "assets/images/bor_listrik.png",
+    ),
+    ProductData(
+      name: "Mesin Gerinda Tangan 4-Inch",
+      price: "Rp.45,000",
+      rating: "4.7(88)",
+      image: "assets/images/mesin_gerinda.png",
+    ),
+    ProductData(
+      name: "Gergaji Circular Listrik 7-Inch",
+      price: "Rp.75,000",
+      rating: "4.9(42)",
+      image: "assets/images/gergaji_circular.png",
+    ),
+    ProductData(
+      name: "Obeng Listrik Cordless Mini",
+      price: "Rp.30,000",
+      rating: "4.6(15)",
+      image: "assets/images/obeng_listrik.png",
+    ),
+    ProductData(
+      name: "Mesin Serut Kayu Listrik",
+      price: "Rp.60,000",
+      rating: "4.8(54)",
+      image: "assets/images/mesin_serut.png",
+    ),
+    ProductData(
+      name: "Mesin Amplas Listrik",
+      price: "Rp.35,000",
+      rating: "4.7(29)",
+      image: "assets/images/mesin_amplas.png",
+    ),
+  ];
+
+  // List Produk Riil Kategori Outfit
+  final List<ProductData> _outfitProducts = [
+    ProductData(
+      name: "Kemeja Panjang Krem",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/kemeja_warna_putih.jpg",
+    ),
+    ProductData(
+      name: "Kemeja Warna Coklat",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/kemeja_lengan_panjang.jpg",
+    ),
+    ProductData(
+      name: "Jas Hitam",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/jaz_hitam.jpg",
+    ),
+    ProductData(
+      name: "Jas Abu-Abu",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/jaz_abu.jpg",
+    ),
+    ProductData(
+      name: "Celana Panjang Jeans",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/celana_jeans.jpg",
+    ),
+    ProductData(
+      name: "Celana Panjang Corduroy",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/celana.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Camp Tools
+  final List<ProductData> _campToolsProducts = [
+    ProductData(
+      name: "Tenda Camping Dome 4 Orang",
+      price: "Rp.80,000",
+      rating: "4.8(192)",
+      image: "assets/images/tenda_camping.png",
+    ),
+    ProductData(
+      name: "Tas Carrier Outdoor 60L",
+      price: "Rp.45,000",
+      rating: "4.7(120)",
+      image: "assets/images/tas_carrier.png",
+    ),
+    ProductData(
+      name: "Sleeping Bag Mummy Premium",
+      price: "Rp.25,000",
+      rating: "4.9(78)",
+      image: "assets/images/sleeping_bag.png",
+    ),
+    ProductData(
+      name: "Kompor Camping Portable Gas",
+      price: "Rp.20,000",
+      rating: "4.8(115)",
+      image: "assets/images/kompor_camping.png",
+    ),
+    ProductData(
+      name: "Lentera LED Camping Rechargeable",
+      price: "Rp.15,000",
+      rating: "4.6(43)",
+      image: "assets/images/lentera_camping.png",
+    ),
+    ProductData(
+      name: "Matras Angin Camping Double",
+      price: "Rp.35,000",
+      rating: "4.8(62)",
+      image: "assets/images/matras_camping.png",
+    ),
+  ];
+
+  // List Produk Riil Kategori Cook
+  final List<ProductData> _cookProducts = [
+    ProductData(
+      name: "Panci Camping Set",
+      price: "Rp.25,000",
+      rating: "4.9(110)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Kompor Portable",
+      price: "Rp.30,000",
+      rating: "4.8(250)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Set Pisau Dapur",
+      price: "Rp.15,000",
+      rating: "4.7(60)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Grill Pan BBQ",
+      price: "Rp.35,000",
+      rating: "4.9(85)",
+      image: "assets/images/cook_category.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Sports
+  final List<ProductData> _sportsProducts = [
+    ProductData(
+      name: "Sepeda Gunung MTB",
+      price: "Rp.100,000",
+      rating: "4.8(292)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Treadmill Elektrik",
+      price: "Rp.150,000",
+      rating: "4.9(120)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Raket Tenis Wilson",
+      price: "Rp.50,000",
+      rating: "4.7(85)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Set Stik Golf Professional",
+      price: "Rp.200,000",
+      rating: "4.9(30)",
+      image: "assets/images/sports_category.jpg",
+    ),
+  ];
+
+  // Fungsi menyaring produk secara dinamis
+  List<ProductData> _getFilteredProducts() {
+    switch (selectedCategory) {
+      case 'Tech':
+        return _techProducts;
+      case 'Power Tools':
+        return _powerToolsProducts;
+      case 'Outfit':
+        return _outfitProducts;
+      case 'Camp Tools':
+        return _campToolsProducts;
+      case 'Sports':
+        return _sportsProducts;
+      case 'Cook':
+        return _cookProducts;
+      case 'All':
+      default:
+        return [
+          ..._techProducts,
+          ..._powerToolsProducts,
+          ..._outfitProducts,
+          ..._campToolsProducts,
+          ..._cookProducts,
+          ..._sportsProducts,
+        ];
+    }
+  }
 
   @override
   void initState() {
@@ -113,10 +362,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // White Search Bar
                     _buildSearchBar(),
-                    const SizedBox(height: 24),
-
-                    // Category Slider (Optimized for Green Background)
-                    _buildCategoryFilter(),
                   ],
                 ),
               ),
@@ -127,8 +372,8 @@ class _HomeScreenState extends State<HomeScreen> {
           // ### [LAYER 2: FOREGROUND / DRAGGABLE WHITE SHEET]
           // =============================================================
           DraggableScrollableSheet(
-            initialChildSize: 0.65, // Mulai dari pertengahan layar (65%)
-            minChildSize: 0.65, // Tidak bisa diturunkan lebih dari ini
+            initialChildSize: 0.76, // Di-adjust naik agar lebih dekat dengan search bar
+            minChildSize: 0.76, // Tidak bisa diturunkan lebih dari ini
             maxChildSize: 1.0, // Bisa ditarik sampai atas
             snap: true, // Menambahkan efek magnet agar lebih premium
             builder: (context, scrollController) {
@@ -158,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 40,
                           height: 5,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD6C7A1).withOpacity(0.5),
+                            color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -176,7 +421,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 4. SHEET CONTENT 3: NEW ARRIVALS HEADER & SLIDER
                     SliverToBoxAdapter(
-                      child: _buildSectionHeader("New Arrivals"),
+                      child: _buildSectionHeader(
+                        "New Arrivals",
+                        onSeeMoreTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NewArrivalsScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     SliverToBoxAdapter(child: _buildNewArrivals()),
@@ -184,10 +439,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 5. SHEET CONTENT 4: TRUSTED NEARBY
                     SliverToBoxAdapter(
-                      child: _buildSectionHeader("Most Trusted Nearby"),
+                      child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildTrustedNearby()),
+                    SliverToBoxAdapter(child: _buildCategoryFilter()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    _buildTrustedNearbySliver(),
 
                     // Penutup scroll area agar konten bawah tidak terlalu mepet
                     const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
@@ -262,16 +519,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
-              size: 22,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreen(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
           ),
         ],
@@ -288,7 +555,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -323,7 +590,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = cat == selectedCategory;
@@ -334,14 +601,24 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white
-                    : const Color(0xFFFFFFFF).withOpacity(0.15),
+                    ? null
+                    : Colors.transparent,
+                gradient: isSelected
+                    ? const LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [
+                          Color(0xFF012D1D), // Premium deep green (kiri)
+                          Color(0xFF0D5C3A), // Vibrant emerald green (kanan)
+                        ],
+                      )
+                    : null,
                 borderRadius: BorderRadius.circular(20), // Pill shaped
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.45),
+                        width: 1.8,
                       ),
               ),
               child: Center(
@@ -350,7 +627,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
-                    color: isSelected ? const Color(0xFF012D1D) : Colors.white,
+                    color: isSelected ? Colors.white : const Color(0xFF012D1D),
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -397,7 +674,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 border: Border.all(color: const Color(0xFF012D1D), width: 0.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -441,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -507,7 +784,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(
+    String title, {
+    bool showSeeMore = true,
+    VoidCallback? onSeeMoreTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -522,18 +803,19 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Color(0xFF414844),
             ),
           ),
-          GestureDetector(
-            onTap: () {},
-            child: const Text(
-              "See More...",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: Color(0xFF012D1D),
+          if (showSeeMore)
+            GestureDetector(
+              onTap: onSeeMoreTap,
+              child: const Text(
+                "See More...",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF012D1D),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -541,19 +823,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNewArrivals() {
     final products = [
-      _ProductData(
+      ProductData(
         name: "Sony W830",
         price: "Rp.120,000",
         rating: 4.8,
         image: 'assets/images/sony_camera.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Sony Dual-Sense PS5",
         price: "Rp.45,000",
         rating: 4.8,
         image: 'assets/images/ps5_controller.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Apple Airpods Max 2",
         price: "Rp.45,000",
         rating: 4.8,
@@ -568,7 +850,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: products.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final p = products[index];
           return FadeInUp(
@@ -580,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context) => const ItemDetailScreen(),
                 ),
               ),
-              child: _ProductCard(product: p),
+              child: ProductCard(product: p),
             ),
           );
         },
@@ -588,278 +870,45 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTrustedNearby() {
-    final baseProducts = [
-      _ProductData(
-        name: "Sony W830",
-        price: "Rp.120,000",
-        rating: 4.8,
-        image: 'assets/images/sony_camera.png',
-      ),
-      _ProductData(
-        name: "Sony Dual-Sense PS5",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/ps5_controller.png',
-      ),
-      _ProductData(
-        name: "Apple Airpods Max 2",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/airpods_max.png',
-      ),
-    ];
+  Widget _buildTrustedNearbySliver() {
+    final products = _getFilteredProducts();
 
-    final products = List.generate(50, (index) {
-      final base = baseProducts[index % baseProducts.length];
-      return _ProductData(
-        name: "${base.name} #${index + 1}",
-        price: base.price,
-        rating: base.rating,
-        image: base.image,
-      );
-    });
-
-    return Padding(
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: products.length,
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
+          childAspectRatio: 0.65, // matching categories screen aspect ratio
         ),
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return FadeInUp(
-            delay: Duration(milliseconds: 50 * (index % 4)),
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ItemDetailScreen(),
-                ),
-              ),
-              child: _ProductCard(product: product, isHorizontal: false),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Model Data & Card UI Re-definitions
-
-class _ProductData {
-  final String name;
-  final String price;
-  final double rating;
-  final String image;
-
-  _ProductData({
-    required this.name,
-    required this.price,
-    required this.rating,
-    required this.image,
-  });
-}
-
-class _ProductCard extends StatelessWidget {
-  final _ProductData product;
-  final bool isHorizontal;
-
-  const _ProductCard({required this.product, this.isHorizontal = false});
-
-  @override
-  Widget build(BuildContext context) {
-    if (isHorizontal) {
-      return Container(
-        height: 100,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFF012D1D).withOpacity(0.2),
-            width: 0.5,
-          ), // Border 0.5px
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(15),
-                ),
-                image: DecorationImage(
-                  image: AssetImage(product.image),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF414844),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final product = products[index];
+            return FadeInUp(
+              key: ValueKey("${selectedCategory}_${product.name}_$index"),
+              delay: Duration(milliseconds: 50 * (index % 4)),
+              child: GestureDetector(
+                onTap: () {
+                  final cleanedPrice = product.price.replaceAll(RegExp(r'[^0-9]'), '');
+                  final pricePerHour = double.tryParse(cleanedPrice);
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemName: product.name,
+                        pricePerHour: pricePerHour,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Color(0xFFF8BD00),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          product.rating.toString(),
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF414844),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      "${product.price}/Day",
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF012D1D),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
+                child: ProductCard(product: product),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Color(0xFF012D1D),
-              ),
-            ),
-          ],
+            );
+          },
+          childCount: products.length,
         ),
-      );
-    }
-
-    // Vertical card for slider
-    return Container(
-      width: 160,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFF012D1D).withOpacity(0.2),
-          width: 0.5,
-        ), // Card Style: Border 0.5px (#012D1D)
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(10),
-                image: DecorationImage(
-                  image: AssetImage(product.image),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Color(0xFF414844),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFF8BD00),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      product.rating.toString(),
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF414844),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "${product.price}/Day",
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: Color(0xFF012D1D),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
