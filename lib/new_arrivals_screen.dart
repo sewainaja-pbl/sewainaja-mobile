@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
@@ -44,12 +45,21 @@ class NewArrivalsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
+      extendBodyBehindAppBar: true, // Let the body scroll behind the transparent AppBar
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
+        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6), // Semi-transparent cream background
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
         titleSpacing: 24,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // Premium glassmorphism blur effect
+            child: Container(
+              color: Colors.transparent,
+            ),
+          ),
+        ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Row(
@@ -96,29 +106,33 @@ class NewArrivalsScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16.0,
-            mainAxisSpacing: 16.0,
-            childAspectRatio: 0.65,
-          ),
-          itemCount: products.length,
-          itemBuilder: (context, index) {
-            final product = products[index];
-            return GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ItemDetailScreen(),
-                ),
-              ),
-              child: ProductCard(product: product),
-            );
-          },
+      body: GridView.builder(
+        // Dynamic top padding to account for transparent AppBar + Safe Area
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 80 + 16,
+          left: 16.0,
+          right: 16.0,
+          bottom: 16.0,
         ),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.0,
+          mainAxisSpacing: 16.0,
+          childAspectRatio: 0.65,
+        ),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          final product = products[index];
+          return GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ItemDetailScreen(),
+              ),
+            ),
+            child: ProductCard(product: product),
+          );
+        },
       ),
     );
   }
