@@ -28,9 +28,254 @@ class _HomeScreenState extends State<HomeScreen> {
     'Tech',
     'Power Tools',
     'Outfit',
-    'Sport',
-    'Camp',
+    'Camp Tools',
+    'Sports',
+    'Cook',
   ];
+
+  // List Produk Riil Kategori Tech
+  final List<ProductData> _techProducts = [
+    ProductData(
+      name: "Vivo Y15s 8/128GB",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/handphone.jpg",
+    ),
+    ProductData(
+      name: "Realme C55 12/512GB",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/hp_realme.jpg",
+    ),
+    ProductData(
+      name: "EOS 5D Mark IV",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_canon.jpg",
+    ),
+    ProductData(
+      name: "Sony FX30",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_sony.jpg",
+    ),
+    ProductData(
+      name: "Asus Zenfone 12 Ultra 16/512GB",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/hp_asus.jpg",
+    ),
+    ProductData(
+      name: "Nikon Coolpix B500",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/camera_nikon.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Power Tools
+  final List<ProductData> _powerToolsProducts = [
+    ProductData(
+      name: "Bor Listrik Cordless 12V",
+      price: "Rp.50,000",
+      rating: "4.8(124)",
+      image: "assets/images/bor_listrik.png",
+    ),
+    ProductData(
+      name: "Mesin Gerinda Tangan 4-Inch",
+      price: "Rp.45,000",
+      rating: "4.7(88)",
+      image: "assets/images/mesin_gerinda.png",
+    ),
+    ProductData(
+      name: "Gergaji Circular Listrik 7-Inch",
+      price: "Rp.75,000",
+      rating: "4.9(42)",
+      image: "assets/images/gergaji_circular.png",
+    ),
+    ProductData(
+      name: "Obeng Listrik Cordless Mini",
+      price: "Rp.30,000",
+      rating: "4.6(15)",
+      image: "assets/images/obeng_listrik.png",
+    ),
+    ProductData(
+      name: "Mesin Serut Kayu Listrik",
+      price: "Rp.60,000",
+      rating: "4.8(54)",
+      image: "assets/images/mesin_serut.png",
+    ),
+    ProductData(
+      name: "Mesin Amplas Listrik",
+      price: "Rp.35,000",
+      rating: "4.7(29)",
+      image: "assets/images/mesin_amplas.png",
+    ),
+  ];
+
+  // List Produk Riil Kategori Outfit
+  final List<ProductData> _outfitProducts = [
+    ProductData(
+      name: "Kemeja Panjang Krem",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/kemeja_warna_putih.jpg",
+    ),
+    ProductData(
+      name: "Kemeja Warna Coklat",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/kemeja_lengan_panjang.jpg",
+    ),
+    ProductData(
+      name: "Jas Hitam",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/jaz_hitam.jpg",
+    ),
+    ProductData(
+      name: "Jas Abu-Abu",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/jaz_abu.jpg",
+    ),
+    ProductData(
+      name: "Celana Panjang Jeans",
+      price: "Rp.120,000",
+      rating: "4.8(292)",
+      image: "assets/images/celana_jeans.jpg",
+    ),
+    ProductData(
+      name: "Celana Panjang Corduroy",
+      price: "Rp.45,000",
+      rating: "4.8(292)",
+      image: "assets/images/celana.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Camp Tools
+  final List<ProductData> _campToolsProducts = [
+    ProductData(
+      name: "Tenda Camping Dome 4 Orang",
+      price: "Rp.80,000",
+      rating: "4.8(192)",
+      image: "assets/images/tenda_camping.png",
+    ),
+    ProductData(
+      name: "Tas Carrier Outdoor 60L",
+      price: "Rp.45,000",
+      rating: "4.7(120)",
+      image: "assets/images/tas_carrier.png",
+    ),
+    ProductData(
+      name: "Sleeping Bag Mummy Premium",
+      price: "Rp.25,000",
+      rating: "4.9(78)",
+      image: "assets/images/sleeping_bag.png",
+    ),
+    ProductData(
+      name: "Kompor Camping Portable Gas",
+      price: "Rp.20,000",
+      rating: "4.8(115)",
+      image: "assets/images/kompor_camping.png",
+    ),
+    ProductData(
+      name: "Lentera LED Camping Rechargeable",
+      price: "Rp.15,000",
+      rating: "4.6(43)",
+      image: "assets/images/lentera_camping.png",
+    ),
+    ProductData(
+      name: "Matras Angin Camping Double",
+      price: "Rp.35,000",
+      rating: "4.8(62)",
+      image: "assets/images/matras_camping.png",
+    ),
+  ];
+
+  // List Produk Riil Kategori Cook
+  final List<ProductData> _cookProducts = [
+    ProductData(
+      name: "Panci Camping Set",
+      price: "Rp.25,000",
+      rating: "4.9(110)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Kompor Portable",
+      price: "Rp.30,000",
+      rating: "4.8(250)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Set Pisau Dapur",
+      price: "Rp.15,000",
+      rating: "4.7(60)",
+      image: "assets/images/cook_category.jpg",
+    ),
+    ProductData(
+      name: "Grill Pan BBQ",
+      price: "Rp.35,000",
+      rating: "4.9(85)",
+      image: "assets/images/cook_category.jpg",
+    ),
+  ];
+
+  // List Produk Riil Kategori Sports
+  final List<ProductData> _sportsProducts = [
+    ProductData(
+      name: "Sepeda Gunung MTB",
+      price: "Rp.100,000",
+      rating: "4.8(292)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Treadmill Elektrik",
+      price: "Rp.150,000",
+      rating: "4.9(120)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Raket Tenis Wilson",
+      price: "Rp.50,000",
+      rating: "4.7(85)",
+      image: "assets/images/sports_category.jpg",
+    ),
+    ProductData(
+      name: "Set Stik Golf Professional",
+      price: "Rp.200,000",
+      rating: "4.9(30)",
+      image: "assets/images/sports_category.jpg",
+    ),
+  ];
+
+  // Fungsi menyaring produk secara dinamis
+  List<ProductData> _getFilteredProducts() {
+    switch (selectedCategory) {
+      case 'Tech':
+        return _techProducts;
+      case 'Power Tools':
+        return _powerToolsProducts;
+      case 'Outfit':
+        return _outfitProducts;
+      case 'Camp Tools':
+        return _campToolsProducts;
+      case 'Sports':
+        return _sportsProducts;
+      case 'Cook':
+        return _cookProducts;
+      case 'All':
+      default:
+        return [
+          ..._techProducts,
+          ..._powerToolsProducts,
+          ..._outfitProducts,
+          ..._campToolsProducts,
+          ..._cookProducts,
+          ..._sportsProducts,
+        ];
+    }
+  }
 
   @override
   void initState() {
@@ -157,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 40,
                           height: 5,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFD6C7A1).withOpacity(0.5),
+                            color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
@@ -276,7 +521,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -299,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -351,7 +596,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: const Color(0xFF012D1D).withOpacity(0.3),
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.3),
                         width: 1,
                       ),
               ),
@@ -408,7 +653,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 border: Border.all(color: const Color(0xFF012D1D), width: 0.5),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -452,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 15,
               offset: const Offset(0, 8),
             ),
@@ -605,36 +850,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTrustedNearbySliver() {
-    final baseProducts = [
-      ProductData(
-        name: "Sony W830",
-        price: "Rp.120,000",
-        rating: 4.8,
-        image: 'assets/images/sony_camera.png',
-      ),
-      ProductData(
-        name: "Sony Dual-Sense PS5",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/ps5_controller.png',
-      ),
-      ProductData(
-        name: "Apple Airpods Max 2",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/airpods_max.png',
-      ),
-    ];
-
-    final products = List.generate(50, (index) {
-      final base = baseProducts[index % baseProducts.length];
-      return ProductData(
-        name: "${base.name} #${index + 1}",
-        price: base.price,
-        rating: base.rating,
-        image: base.image,
-      );
-    });
+    final products = _getFilteredProducts();
 
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -643,21 +859,30 @@ class _HomeScreenState extends State<HomeScreen> {
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          childAspectRatio: 0.75,
+          childAspectRatio: 0.65, // matching categories screen aspect ratio
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
             final product = products[index];
             return FadeInUp(
+              key: ValueKey("${selectedCategory}_${product.name}_$index"),
               delay: Duration(milliseconds: 50 * (index % 4)),
               child: GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ItemDetailScreen(),
-                  ),
-                ),
-                child: ProductCard(product: product, isHorizontal: false),
+                onTap: () {
+                  final cleanedPrice = product.price.replaceAll(RegExp(r'[^0-9]'), '');
+                  final pricePerHour = double.tryParse(cleanedPrice);
+                  
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemName: product.name,
+                        pricePerHour: pricePerHour,
+                      ),
+                    ),
+                  );
+                },
+                child: ProductCard(product: product),
               ),
             );
           },
