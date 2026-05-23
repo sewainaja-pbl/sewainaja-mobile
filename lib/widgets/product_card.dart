@@ -117,6 +117,7 @@ class ProductCard extends StatelessWidget {
 
     // Vertical card for grid/slider (styled exactly like categories_tech_screen.dart)
     return Container(
+      width: 160,
       decoration: BoxDecoration(
         color: const Color(0xFFFFFFFF),
         borderRadius: BorderRadius.circular(15),
