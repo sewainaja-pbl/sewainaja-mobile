@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'models/product.dart';
+import 'widgets/product_card.dart';
 
 class CategoriesTechScreen extends StatelessWidget {
   const CategoriesTechScreen({super.key});
@@ -109,12 +111,13 @@ class CategoriesTechScreen extends StatelessWidget {
               },
             ];
 
-            return _ProductCard(
+            final product = ProductData(
               name: items[index]["name"]!,
               price: items[index]["price"]!,
               rating: items[index]["rating"]!,
-              imagePath: items[index]["image"]!,
+              image: items[index]["image"]!,
             );
+            return ProductCard(product: product);
           },
         ),
       ),
@@ -122,124 +125,4 @@ class CategoriesTechScreen extends StatelessWidget {
   }
 }
 
-class _ProductCard extends StatelessWidget {
-  final String name;
-  final String price;
-  final String rating;
-  final String imagePath;
 
-  const _ProductCard({
-    required this.name,
-    required this.price,
-    required this.rating,
-    required this.imagePath,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFF2F6743), width: 0.5),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Placeholder with Rating Badge
-            Expanded(
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD9D9D9), // Placeholder color
-                      borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: AssetImage(imagePath),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 8,
-                    left: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF000000),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.star,
-                            color: Color(0xFFF8BD00),
-                            size: 12,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            rating,
-                            style: const TextStyle(
-                              color: Color(0xFFFFF8EF),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Product Name and Action Icon
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Color(0xFF414844),
-                      height: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  Icons.more_horiz,
-                  size: 18,
-                  color: Color(0xFF414844),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            // Price Tag
-            Text(
-              price,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF414844),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

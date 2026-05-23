@@ -1,7 +1,7 @@
 class ProductData {
   final String name;
   final String price;
-  final double rating;
+  final dynamic rating;
   final String image;
 
   ProductData({
