@@ -9,6 +9,7 @@ import 'map_explore_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
+import 'notification_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -337,23 +338,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Memastikan background root berwarna hijau sesuai spesifikasi Layer 1
+      backgroundColor: const Color(0xFF012D1D),
       body: Stack(
         children: [
-          // Background Gradient (Layer 0: Hijau gelap di atas, agak terang di bawah)
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFF012D1D), // Hijau gelap di atas
-                    Color(0xFF0D5C3A), // Hijau agak terang di bawah
-                  ],
-                ),
-              ),
-            ),
-          ),
           // =============================================================
           // ### [LAYER 1: BACKGROUND / FIXED GREEN HEADER]
           // =============================================================
@@ -531,16 +519,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
-              size: 22,
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const NotificationScreen(),
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: Colors.white,
+                size: 22,
+              ),
             ),
           ),
         ],
