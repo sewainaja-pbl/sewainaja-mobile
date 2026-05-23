@@ -337,122 +337,133 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Memastikan background root berwarna hijau sesuai spesifikasi Layer 1
-      backgroundColor: const Color(0xFF012D1D),
-      body: Stack(
-        children: [
-          // =============================================================
-          // ### [LAYER 1: BACKGROUND / FIXED GREEN HEADER]
-          // =============================================================
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Profile Row
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-
-                    // White Search Bar
-                    _buildSearchBar(),
-                  ],
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF012D1D), // Premium deep green (kiri)
+              Color(0xFF0D5C3A), // Vibrant emerald green (kanan)
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            // =============================================================
+            // ### [LAYER 1: BACKGROUND / FIXED GREEN HEADER]
+            // =============================================================
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Profile Row
+                      _buildHeader(),
+                      const SizedBox(height: 24),
+  
+                      // White Search Bar
+                      _buildSearchBar(),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-
-          // =============================================================
-          // ### [LAYER 2: FOREGROUND / DRAGGABLE WHITE SHEET]
-          // =============================================================
-          DraggableScrollableSheet(
-            initialChildSize: 0.76, // Di-adjust naik agar lebih dekat dengan search bar
-            minChildSize: 0.76, // Tidak bisa diturunkan lebih dari ini
-            maxChildSize: 1.0, // Bisa ditarik sampai atas
-            snap: true, // Menambahkan efek magnet agar lebih premium
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Color(
-                    0xFFFFF8EF,
-                  ), // Background Color: #FFF8EF (Cream Canvas)
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 20,
-                      offset: Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: CustomScrollView(
-                  controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    // 1. DRAG HANDLE TOP INDICATOR
-                    SliverToBoxAdapter(
-                      child: Center(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
+  
+            // =============================================================
+            // ### [LAYER 2: FOREGROUND / DRAGGABLE WHITE SHEET]
+            // =============================================================
+            DraggableScrollableSheet(
+              initialChildSize: 0.76, // Di-adjust naik agar lebih dekat dengan search bar
+              minChildSize: 0.76, // Tidak bisa diturunkan lebih dari ini
+              maxChildSize: 1.0, // Bisa ditarik sampai atas
+              snap: true, // Menambahkan efek magnet agar lebih premium
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(
+                      0xFFFFF8EF,
+                    ), // Background Color: #FFF8EF (Cream Canvas)
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 20,
+                        offset: Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      // 1. DRAG HANDLE TOP INDICATOR
+                      SliverToBoxAdapter(
+                        child: Center(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-
-                    // 2. SHEET CONTENT 1: PROMO BANNER AREA
-                    const SliverPadding(padding: EdgeInsets.only(top: 8)),
-                    SliverToBoxAdapter(child: _buildPromoBanner()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 3. SHEET CONTENT 2: LOCATION & MAPPING
-                    SliverToBoxAdapter(child: _buildLocationPreview()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 4. SHEET CONTENT 3: NEW ARRIVALS HEADER & SLIDER
-                    SliverToBoxAdapter(
-                      child: _buildSectionHeader(
-                        "New Arrivals",
-                        onSeeMoreTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NewArrivalsScreen(),
-                            ),
-                          );
-                        },
+  
+                      // 2. SHEET CONTENT 1: PROMO BANNER AREA
+                      const SliverPadding(padding: EdgeInsets.only(top: 8)),
+                      SliverToBoxAdapter(child: _buildPromoBanner()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+  
+                      // 3. SHEET CONTENT 2: LOCATION & MAPPING
+                      SliverToBoxAdapter(child: _buildLocationPreview()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+  
+                      // 4. SHEET CONTENT 3: NEW ARRIVALS HEADER & SLIDER
+                      SliverToBoxAdapter(
+                        child: _buildSectionHeader(
+                          "New Arrivals",
+                          onSeeMoreTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NewArrivalsScreen(),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildNewArrivals()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 5. SHEET CONTENT 4: TRUSTED NEARBY
-                    SliverToBoxAdapter(
-                      child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildCategoryFilter()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    _buildTrustedNearbySliver(),
-
-                    // Penutup scroll area agar konten bawah tidak terlalu mepet
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(child: _buildNewArrivals()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+  
+                      // 5. SHEET CONTENT 4: TRUSTED NEARBY
+                      SliverToBoxAdapter(
+                        child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(child: _buildCategoryFilter()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      _buildTrustedNearbySliver(),
+  
+                      // Penutup scroll area agar konten bawah tidak terlalu mepet
+                      const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
