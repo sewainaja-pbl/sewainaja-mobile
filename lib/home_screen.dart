@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
@@ -586,55 +585,29 @@ class _HomeScreenState extends State<HomeScreen> {
           final isSelected = cat == selectedCategory;
           return GestureDetector(
             onTap: () => setState(() => selectedCategory = cat),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 250),
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: isSelected
-                          ? [
-                              const Color(0xFF012D1D).withValues(alpha: 0.90),
-                              const Color(0xFF0B4D31).withValues(alpha: 0.70),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.65),
-                              Colors.white.withValues(alpha: 0.35),
-                            ],
-                    ),
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.white.withValues(alpha: 0.45)
-                          : Colors.white.withValues(alpha: 0.35),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isSelected
-                            ? const Color(0xFF012D1D).withValues(alpha: 0.25)
-                            : Colors.black.withValues(alpha: 0.05),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                        offset: const Offset(0, 4),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? const Color(0xFF012D1D)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20), // Pill shaped
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.45),
+                        width: 1.8,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      cat,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: isSelected ? Colors.white : const Color(0xFF012D1D),
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
+              ),
+              child: Center(
+                child: Text(
+                  cat,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: isSelected ? Colors.white : const Color(0xFF012D1D),
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
