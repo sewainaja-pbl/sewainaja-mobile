@@ -586,55 +586,53 @@ class _HomeScreenState extends State<HomeScreen> {
           final isSelected = cat == selectedCategory;
           return GestureDetector(
             onTap: () => setState(() => selectedCategory = cat),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 250),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  if (isSelected)
-                    BoxShadow(
-                      color: const Color(0xFF012D1D).withValues(alpha: 0.15),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    )
-                  else
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isSelected
+                          ? [
+                              const Color(0xFF012D1D).withValues(alpha: 0.90),
+                              const Color(0xFF0B4D31).withValues(alpha: 0.70),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.65),
+                              Colors.white.withValues(alpha: 0.35),
+                            ],
                     ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
+                    border: Border.all(
                       color: isSelected
-                          ? const Color(0xFF012D1D).withValues(alpha: 0.95)
-                          : Colors.white.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isSelected
-                            ? Colors.white.withValues(alpha: 0.18)
-                            : const Color(0xFF012D1D).withValues(alpha: 0.12),
-                        width: 1,
-                      ),
+                          ? Colors.white.withValues(alpha: 0.45)
+                          : Colors.white.withValues(alpha: 0.35),
+                      width: 1.5,
                     ),
-                    child: Center(
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: isSelected
-                              ? Colors.white
-                              : const Color(0xFF012D1D).withValues(alpha: 0.8),
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                        ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isSelected
+                            ? const Color(0xFF012D1D).withValues(alpha: 0.25)
+                            : Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      cat,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: isSelected ? Colors.white : const Color(0xFF012D1D),
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ),
