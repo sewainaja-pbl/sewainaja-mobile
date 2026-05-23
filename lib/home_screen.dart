@@ -6,6 +6,8 @@ import 'address_service.dart';
 import 'item_detail_screen.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
+import 'models/product.dart';
+import 'widgets/product_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -113,10 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // White Search Bar
                     _buildSearchBar(),
-                    const SizedBox(height: 24),
-
-                    // Category Slider (Optimized for Green Background)
-                    _buildCategoryFilter(),
                   ],
                 ),
               ),
@@ -184,10 +182,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 5. SHEET CONTENT 4: TRUSTED NEARBY
                     SliverToBoxAdapter(
-                      child: _buildSectionHeader("Most Trusted Nearby"),
+                      child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildTrustedNearby()),
+                    SliverToBoxAdapter(child: _buildCategoryFilter()),
+                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                    _buildTrustedNearbySliver(),
 
                     // Penutup scroll area agar konten bawah tidak terlalu mepet
                     const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
@@ -323,7 +323,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = cat == selectedCategory;
@@ -334,13 +334,13 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? Colors.white
-                    : const Color(0xFFFFFFFF).withOpacity(0.15),
+                    ? const Color(0xFF012D1D)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(20), // Pill shaped
                 border: isSelected
                     ? null
                     : Border.all(
-                        color: Colors.white.withOpacity(0.3),
+                        color: const Color(0xFF012D1D).withOpacity(0.3),
                         width: 1,
                       ),
               ),
@@ -350,7 +350,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
-                    color: isSelected ? const Color(0xFF012D1D) : Colors.white,
+                    color: isSelected ? Colors.white : const Color(0xFF012D1D),
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
@@ -507,7 +507,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {bool showSeeMore = true}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -522,18 +522,19 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Color(0xFF414844),
             ),
           ),
-          GestureDetector(
-            onTap: () {},
-            child: const Text(
-              "See More...",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-                color: Color(0xFF012D1D),
+          if (showSeeMore)
+            GestureDetector(
+              onTap: () {},
+              child: const Text(
+                "See More...",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: Color(0xFF012D1D),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
@@ -541,19 +542,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildNewArrivals() {
     final products = [
-      _ProductData(
+      ProductData(
         name: "Sony W830",
         price: "Rp.120,000",
         rating: 4.8,
         image: 'assets/images/sony_camera.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Sony Dual-Sense PS5",
         price: "Rp.45,000",
         rating: 4.8,
         image: 'assets/images/ps5_controller.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Apple Airpods Max 2",
         price: "Rp.45,000",
         rating: 4.8,
@@ -568,7 +569,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: products.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, _) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
           final p = products[index];
           return FadeInUp(
@@ -580,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context) => const ItemDetailScreen(),
                 ),
               ),
-              child: _ProductCard(product: p),
+              child: ProductCard(product: p),
             ),
           );
         },
@@ -588,21 +589,21 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildTrustedNearby() {
+  Widget _buildTrustedNearbySliver() {
     final baseProducts = [
-      _ProductData(
+      ProductData(
         name: "Sony W830",
         price: "Rp.120,000",
         rating: 4.8,
         image: 'assets/images/sony_camera.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Sony Dual-Sense PS5",
         price: "Rp.45,000",
         rating: 4.8,
         image: 'assets/images/ps5_controller.png',
       ),
-      _ProductData(
+      ProductData(
         name: "Apple Airpods Max 2",
         price: "Rp.45,000",
         rating: 4.8,
@@ -612,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final products = List.generate(50, (index) {
       final base = baseProducts[index % baseProducts.length];
-      return _ProductData(
+      return ProductData(
         name: "${base.name} #${index + 1}",
         price: base.price,
         rating: base.rating,
@@ -620,246 +621,33 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     });
 
-    return Padding(
+    return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: products.length,
+      sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           childAspectRatio: 0.75,
         ),
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return FadeInUp(
-            delay: Duration(milliseconds: 50 * (index % 4)),
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ItemDetailScreen(),
-                ),
-              ),
-              child: _ProductCard(product: product, isHorizontal: false),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-// Model Data & Card UI Re-definitions
-
-class _ProductData {
-  final String name;
-  final String price;
-  final double rating;
-  final String image;
-
-  _ProductData({
-    required this.name,
-    required this.price,
-    required this.rating,
-    required this.image,
-  });
-}
-
-class _ProductCard extends StatelessWidget {
-  final _ProductData product;
-  final bool isHorizontal;
-
-  const _ProductCard({required this.product, this.isHorizontal = false});
-
-  @override
-  Widget build(BuildContext context) {
-    if (isHorizontal) {
-      return Container(
-        height: 100,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFF012D1D).withOpacity(0.2),
-            width: 0.5,
-          ), // Border 0.5px
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(15),
-                ),
-                image: DecorationImage(
-                  image: AssetImage(product.image),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      product.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Color(0xFF414844),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.star_rounded,
-                          color: Color(0xFFF8BD00),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          product.rating.toString(),
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF414844),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      "${product.price}/Day",
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: Color(0xFF012D1D),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: Color(0xFF012D1D),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Vertical card for slider
-    return Container(
-      width: 160,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFF012D1D).withOpacity(0.2),
-          width: 0.5,
-        ), // Card Style: Border 0.5px (#012D1D)
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: BorderRadius.circular(10),
-                image: DecorationImage(
-                  image: AssetImage(product.image),
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: Color(0xFF414844),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final product = products[index];
+            return FadeInUp(
+              delay: Duration(milliseconds: 50 * (index % 4)),
+              child: GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ItemDetailScreen(),
                   ),
                 ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFF8BD00),
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      product.rating.toString(),
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF414844),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "${product.price}/Day",
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: Color(0xFF012D1D),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+                child: ProductCard(product: product, isHorizontal: false),
+              ),
+            );
+          },
+          childCount: products.length,
+        ),
       ),
     );
   }

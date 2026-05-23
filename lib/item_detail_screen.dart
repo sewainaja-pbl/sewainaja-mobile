@@ -550,7 +550,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             physics: const BouncingScrollPhysics(),
             padding: EdgeInsets.zero,
             itemCount: recommendedProducts.length,
-            separatorBuilder: (_, index) => const SizedBox(width: 16),
+            separatorBuilder: (_, _) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
               final item = recommendedProducts[index];
               return _RecommendationCardItem(

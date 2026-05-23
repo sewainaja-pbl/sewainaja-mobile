@@ -13,9 +13,6 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   firebase_core: ^4.7.0
-  firebase_auth: ^6.4.0
-  cloud_firestore: ^6.3.0
-  firebase_messaging: ^16.2.0
   # Package untuk membuat Native Splash Screen
   flutter_native_splash: ^2.4.0
   animate_do: ^5.1.0
