@@ -590,8 +590,18 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? const Color(0xFF012D1D)
+                    ? null
                     : Colors.transparent,
+                gradient: isSelected
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF0D5C3A), // Vibrant emerald green
+                          Color(0xFF012D1D), // Premium deep green
+                        ],
+                      )
+                    : null,
                 borderRadius: BorderRadius.circular(20), // Pill shaped
                 border: isSelected
                     ? null
