@@ -8,6 +8,7 @@ import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'new_arrivals_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -174,7 +175,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
                     // 4. SHEET CONTENT 3: NEW ARRIVALS HEADER & SLIDER
                     SliverToBoxAdapter(
-                      child: _buildSectionHeader("New Arrivals"),
+                      child: _buildSectionHeader(
+                        "New Arrivals",
+                        onSeeMoreTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NewArrivalsScreen(),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                     const SliverToBoxAdapter(child: SizedBox(height: 16)),
                     SliverToBoxAdapter(child: _buildNewArrivals()),
@@ -507,7 +518,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, {bool showSeeMore = true}) {
+  Widget _buildSectionHeader(
+    String title, {
+    bool showSeeMore = true,
+    VoidCallback? onSeeMoreTap,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -524,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           if (showSeeMore)
             GestureDetector(
-              onTap: () {},
+              onTap: onSeeMoreTap,
               child: const Text(
                 "See More...",
                 style: TextStyle(
