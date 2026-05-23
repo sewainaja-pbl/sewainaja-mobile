@@ -594,11 +594,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     : Colors.transparent,
                 gradient: isSelected
                     ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
                         colors: [
-                          Color(0xFF0D5C3A), // Vibrant emerald green
-                          Color(0xFF012D1D), // Premium deep green
+                          Color(0xFF012D1D), // Premium deep green (kiri)
+                          Color(0xFF0D5C3A), // Vibrant emerald green (kanan)
                         ],
                       )
                     : null,
