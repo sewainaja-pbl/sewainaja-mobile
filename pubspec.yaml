@@ -1842,3 +1842,94 @@ flutter:
 #     - Rating: star #F8BD00 + text Poppins Medium 12
 #     - Price: Poppins Bold 14, #012D1D
 #     - Trailing: arrow_forward_ios_rounded size 14, #012D1D
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Success Rental Modal)
+############################################################
+# component_info:
+#   name: "Soft Bento Modal Container"
+#   id: "534:2193"
+#   type: "FRAME"
+#   dimensions: "358x551"
+#   border_radius: "32px"
+#   background_color: "#FFFFFF"
+#   border_color: "#C1C8C2"     # Stroke tipis 1px
+#
+############################################################
+# KONTROL & HEADER SUKSES
+############################################################
+# header_section:
+#   close_button:
+#     id: "534:2194"
+#     position: "Top Right"
+#     style: "Pill/Circle Shape (9999px)"
+#     icon_color: "#414844"
+#
+#   success_badge:
+#     id: "534:2200"
+#     background_color: "#C1ECD4" # Hijau Muda Sukses
+#     border_radius: "9999px"   # Lingkaran sempurna
+#     icon_color: "#012D1D"      # Hijau Gelap
+#
+#   text_content:
+#     title:
+#       id: "534:2205"
+#       text: "Permintaan Terkirim!"
+#       font: "Poppins, 24px, Bold"
+#       color: "#012D1D"
+#     subtitle:
+#       id: "534:2207"
+#       text: "Pemilik barang akan meninjau permintaanmu. Kamu bisa memantau statusnya di menu Requests."
+#       font: "Poppins, 14px, Regular"
+#       color: "#414844"
+#
+############################################################
+# KARTU RINGKASAN ITEM (RENTAL SUMMARY CARD)
+############################################################
+# rental_summary_card:
+#   id: "534:2307"
+#   type: "FRAME"
+#   background_color: "#F7F3EE"   # Abu-abu Krem Hangat
+#   border_radius: "40px"
+#
+#   details:
+#     section_tag:
+#       id: "534:2310"
+#       text: "Rincian Sewa"
+#       font: "Manrope, 11px, Bold"
+#       color: "#7B5804"          # Coklat Identitas Aplikasi
+#
+#     product_name:
+#       id: "534:2312"
+#       text: "Sony ɑ6000 Body Only"
+#       font: "Poppins, 24px, Semibold"
+#       color: "#012D1D"
+#
+#     rental_date:
+#       id: "534:2320"
+#       text: "12 Oct - 15 Oct"
+#       font: "Plus Jakarta Sans, 14px, Regular"
+#       color: "#414844"
+#       icon: "Calendar Vector (414844)"
+#
+#     product_image:
+#       id: "534:2314"
+#       type: "RECTANGLE"
+#       name: "image 4"
+#       border_radius: "15px"
+#
+############################################################
+# GRUP AKSI (ACTION BUTTON)
+############################################################
+# action_group:
+#   id: "534:2227"
+#   
+#   primary_button:
+#     id: "534:2233"
+#     label: "Kembali ke Beranda"
+#     font: "Plus Jakarta Sans, 16px, Bold"
+#     text_color: "#012D1D"       # Hijau Gelap
+#     border_radius: "9999px"     # Pill Shape Button
+#     border_color: "#717973"     # Outline Stroke 1px
+#     background: "Transparent"   # Menggunakan border stroke
+############################################################
