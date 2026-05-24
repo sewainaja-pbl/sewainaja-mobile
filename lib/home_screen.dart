@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
@@ -10,20 +11,33 @@ import 'models/product.dart';
 import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueChanged<bool>? onSearchActiveChanged;
+  const HomeScreen({super.key, this.onSearchActiveChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
   final AddressService _addressService = const AddressService();
   String selectedCategory = 'All';
   String _defaultLocationLabel = 'Tembalang, Semarang';
   LatLng _mapCenter = _fallbackCenter;
+
+  // Search state shared with SearchScreen
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  bool _isSearchActive = false;
+  final GlobalKey<SearchSheetState> _searchSheetKey = GlobalKey<SearchSheetState>();
+
+  // Animation for home sheet sliding down when search opens
+  late final AnimationController _homeSheetAnim;
+  late final Animation<Offset> _homeSheetSlide;
   final List<String> categories = [
     'All',
     'Tech',
@@ -282,6 +296,49 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadDefaultLocationLabel();
+
+    // Home sheet slides UP (out) when search opens, slides DOWN back in when closing
+    _homeSheetAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 0,
+    );
+    _homeSheetSlide = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(0, -1), // slides UP off screen
+    ).animate(CurvedAnimation(parent: _homeSheetAnim, curve: Curves.easeInCubic));
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _homeSheetAnim.dispose();
+    super.dispose();
+  }
+
+  void _openSearch() {
+    setState(() => _isSearchActive = true);
+    widget.onSearchActiveChanged?.call(true);
+    _homeSheetAnim.forward();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
+  }
+
+  void _closeSearch() {
+    _searchFocusNode.unfocus();
+    // 1. Search sheet slides DOWN out of view
+    _searchSheetKey.currentState?.closeAsync().then((_) {
+      // 2. Home sheet slides DOWN back into view from above
+      _searchController.clear();
+      _homeSheetAnim.reverse().then((_) {
+        if (mounted) {
+          setState(() => _isSearchActive = false);
+          widget.onSearchActiveChanged?.call(false);
+        }
+      });
+    });
   }
 
   Future<void> _loadDefaultLocationLabel() async {
@@ -338,7 +395,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Memastikan background root berwarna hijau sesuai spesifikasi Layer 1
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
         children: [
@@ -356,11 +412,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Profile Row
                     _buildHeader(),
                     const SizedBox(height: 24),
-
-                    // White Search Bar
                     _buildSearchBar(),
                   ],
                 ),
@@ -369,90 +422,91 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // =============================================================
-          // ### [LAYER 2: FOREGROUND / DRAGGABLE WHITE SHEET]
+          // ### [LAYER 2: HOME SHEET — slides down when search opens]
           // =============================================================
-          DraggableScrollableSheet(
-            initialChildSize: 0.76, // Di-adjust naik agar lebih dekat dengan search bar
-            minChildSize: 0.76, // Tidak bisa diturunkan lebih dari ini
-            maxChildSize: 1.0, // Bisa ditarik sampai atas
-            snap: true, // Menambahkan efek magnet agar lebih premium
-            builder: (context, scrollController) {
-              return Container(
-                decoration: const BoxDecoration(
-                  color: Color(
-                    0xFFFFF8EF,
-                  ), // Background Color: #FFF8EF (Cream Canvas)
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 20,
-                      offset: Offset(0, -5),
-                    ),
-                  ],
-                ),
-                child: CustomScrollView(
-                  controller: scrollController,
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    // 1. DRAG HANDLE TOP INDICATOR
-                    SliverToBoxAdapter(
-                      child: Center(
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 12),
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(10),
+          SlideTransition(
+            position: _homeSheetSlide,
+            child: DraggableScrollableSheet(
+              initialChildSize: 0.76,
+              minChildSize: 0.76,
+              maxChildSize: 1.0,
+              snap: true,
+              builder: (context, scrollController) {
+                return Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF8EF),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 20,
+                        offset: Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: CustomScrollView(
+                    controller: scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Center(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 12),
+                            width: 40,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-
-                    // 2. SHEET CONTENT 1: PROMO BANNER AREA
-                    const SliverPadding(padding: EdgeInsets.only(top: 8)),
-                    SliverToBoxAdapter(child: _buildPromoBanner()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 3. SHEET CONTENT 2: LOCATION & MAPPING
-                    SliverToBoxAdapter(child: _buildLocationPreview()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 4. SHEET CONTENT 3: NEW ARRIVALS HEADER & SLIDER
-                    SliverToBoxAdapter(
-                      child: _buildSectionHeader(
-                        "New Arrivals",
-                        onSeeMoreTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NewArrivalsScreen(),
-                            ),
-                          );
-                        },
+                      const SliverPadding(padding: EdgeInsets.only(top: 8)),
+                      SliverToBoxAdapter(child: _buildPromoBanner()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                      SliverToBoxAdapter(child: _buildLocationPreview()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                      SliverToBoxAdapter(
+                        child: _buildSectionHeader(
+                          "New Arrivals",
+                          onSeeMoreTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NewArrivalsScreen(),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildNewArrivals()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 28)),
-
-                    // 5. SHEET CONTENT 4: TRUSTED NEARBY
-                    SliverToBoxAdapter(
-                      child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
-                    ),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    SliverToBoxAdapter(child: _buildCategoryFilter()),
-                    const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                    _buildTrustedNearbySliver(),
-
-                    // Penutup scroll area agar konten bawah tidak terlalu mepet
-                    const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
-                  ],
-                ),
-              );
-            },
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(child: _buildNewArrivals()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                      SliverToBoxAdapter(
+                        child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
+                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      SliverToBoxAdapter(child: _buildCategoryFilter()),
+                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                      _buildTrustedNearbySliver(),
+                      const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
+
+          // =============================================================
+          // ### [LAYER 3: SEARCH SHEET — slides up when search opens]
+          // =============================================================
+          if (_isSearchActive)
+            SearchSheet(
+              key: _searchSheetKey,
+              controller: _searchController,
+              focusNode: _searchFocusNode,
+              onClose: _closeSearch,
+            ),
         ],
       ),
     );
@@ -561,21 +615,41 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        child: const TextField(
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 14),
+        child: TextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          onTap: () {
+            if (!_isSearchActive) _openSearch();
+          },
+          onChanged: (_) {
+            // Trigger rebuild in SearchSheet via shared controller listener
+            if (!_isSearchActive) _openSearch();
+          },
+          style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
+          textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             border: InputBorder.none,
-            prefixIcon: Icon(
+            prefixIcon: const Icon(
               Icons.search,
-              color: Color(0xFF012D1D), // Placeholder "#012D1D"
+              color: Color(0xFF012D1D),
             ),
+            suffixIcon: _isSearchActive
+                ? GestureDetector(
+                    onTap: _closeSearch,
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Color(0xFF012D1D),
+                      size: 20,
+                    ),
+                  )
+                : null,
             hintText: "Search....",
-            hintStyle: TextStyle(
+            hintStyle: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               color: Color(0xFF012D1D),
             ),
-            contentPadding: EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
       ),
