@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_config.dart';
+import 'auth_session_service.dart';
 
 class MapItem {
   final String id;
@@ -60,17 +61,15 @@ class MapCategory {
 class MapItemsService {
   const MapItemsService();
 
+  static const AuthSessionService _authSessionService = AuthSessionService();
+
   Future<List<MapItem>> fetchNearbyItems({
     required double lat,
     required double lng,
     required int radiusKm,
     String? categoryId,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token == null || token.isEmpty) {
-      throw const MapItemsException('Token login tidak ditemukan.');
-    }
+    final token = await _authSessionService.getValidIdToken();
 
     final uri = Uri.parse('${ApiConfig.baseUrl}/items').replace(
       queryParameters: {
@@ -81,15 +80,23 @@ class MapItemsService {
       },
     );
 
-    final response = await http.get(
-      uri,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    http.Response response;
+    try {
+      response = await http
+          .get(uri, headers: _buildHeaders(token))
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      throw const MapItemsException('Request map timeout. Coba lagi sebentar.');
+    } catch (_) {
+      throw const MapItemsException('Koneksi ke layanan map gagal.');
+    }
 
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const MapItemsException('Respons data map tidak valid.');
+    }
     if (response.statusCode != 200 || body['success'] != true) {
       throw MapItemsException(
         body['error']?['message']?.toString() ??
@@ -105,21 +112,28 @@ class MapItemsService {
   }
 
   Future<List<MapCategory>> fetchCategories() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
-    if (token == null || token.isEmpty) {
-      throw const MapItemsException('Token login tidak ditemukan.');
+    final token = await _authSessionService.getValidIdToken();
+
+    http.Response response;
+    try {
+      response = await http
+          .get(
+            Uri.parse('${ApiConfig.baseUrl}/categories'),
+            headers: _buildHeaders(token),
+          )
+          .timeout(const Duration(seconds: 15));
+    } on TimeoutException {
+      throw const MapItemsException('Request kategori timeout.');
+    } catch (_) {
+      throw const MapItemsException('Koneksi ke layanan kategori gagal.');
     }
 
-    final response = await http.get(
-      Uri.parse('${ApiConfig.baseUrl}/categories'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    Map<String, dynamic> body;
+    try {
+      body = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const MapItemsException('Respons kategori tidak valid.');
+    }
     if (response.statusCode != 200 || body['success'] != true) {
       throw MapItemsException(
         body['error']?['message']?.toString() ?? 'Gagal memuat kategori.',
@@ -137,6 +151,13 @@ class MapItemsService {
         )
         .where((cat) => cat.id.isNotEmpty)
         .toList();
+  }
+
+  Map<String, String> _buildHeaders(String? token) {
+    return {
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
   }
 }
 

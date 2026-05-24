@@ -42,6 +42,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   List<MapItem> _items = const [];
   MapItem? _selected;
   String _selectedCategoryKey = 'all';
+  int _fetchVersion = 0;
 
   Timer? _moveDebounce;
 
@@ -165,6 +166,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   }
 
   Future<void> _fetchItems({bool firstLoad = false}) async {
+    final requestVersion = ++_fetchVersion;
     setState(() {
       if (firstLoad) {
         _isLoadingMap = true;
@@ -182,7 +184,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
         radiusKm: _radiusKm,
         categoryId: selected.isAll ? null : selected.apiCategoryId,
       );
-      if (!mounted) return;
+      if (!mounted || requestVersion != _fetchVersion) return;
       setState(() {
         _items = items;
         if (_selected != null) {
@@ -191,7 +193,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
         }
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestVersion != _fetchVersion) return;
       setState(() {
         _error = e.toString();
       });
@@ -199,7 +201,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
         showAppErrorSnack(context, _error ?? 'Gagal memuat barang terdekat.');
       }
     } finally {
-      if (mounted) {
+      if (mounted && requestVersion == _fetchVersion) {
         setState(() {
           _isLoadingMap = false;
           _isRefreshingInfo = false;
@@ -225,7 +227,17 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
 
   Future<void> _moveToCurrentLocation() async {
     try {
-      final permission = await Geolocator.checkPermission();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (!mounted) return;
+        showAppErrorSnack(context, 'Layanan lokasi di perangkat sedang mati.');
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
         if (!mounted) return;

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'otp_verification_screen.dart';
 import 'api_config.dart';
 
@@ -130,6 +131,11 @@ class _SignUpScreenState extends State<SignUpScreen>
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final prefs = await SharedPreferences.getInstance();
+        final uid = (data['data']?['uid'] ?? '').toString();
+        if (uid.isNotEmpty) {
+          await prefs.setString('user_id', uid);
+        }
         _showSnackBar('Akun berhasil terdaftar!', isError: false);
         Navigator.pushReplacement(
           context,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 
 class OnboardingItem {
@@ -66,13 +67,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _onNextPressed() {
+  Future<void> _onNextPressed() async {
     if (_currentPage < _onboardingItems.length - 1) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_seen', true);
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -217,7 +221,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
                       // Next Button
                       ElevatedButton(
-                        onPressed: _onNextPressed,
+                        onPressed: () => _onNextPressed(),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1B4332),
                           foregroundColor: const Color(0xFFFFF8EF),

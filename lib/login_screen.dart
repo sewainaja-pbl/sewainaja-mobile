@@ -86,15 +86,30 @@ class _LoginScreenState extends State<LoginScreen>
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        try {
+          await FirebaseAuth.instance.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+        } on FirebaseAuthException {
+          // Keep backend login as source of truth if Firebase session fails.
+        }
+
         final prefs = await SharedPreferences.getInstance();
         final token = (data['data']?['tokens']?['idToken'] ?? '').toString();
         final user = data['data']?['user'] as Map<String, dynamic>? ?? const {};
         if (token.isNotEmpty) {
           await prefs.setString('token', token);
         }
+        await prefs.setBool('onboarding_seen', true);
+        await prefs.setString('user_id', (user['id'] ?? '').toString());
         await prefs.setString('user_name', (user['name'] ?? '').toString());
         await prefs.setString('user_email', (user['email'] ?? '').toString());
         await prefs.setString('user_phone', (user['phone'] ?? '').toString());
+        await prefs.setString(
+          'user_profile_photo_url',
+          (user['profilePhotoUrl'] ?? '').toString(),
+        );
         if (!mounted) return;
         _showSnackBar('Login berhasil!', isError: false);
         Navigator.pushReplacement(

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:sewainaja/onboarding_screen.dart'; // Import OnboardingScreen
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sewainaja/login_screen.dart';
+import 'package:sewainaja/main_navigation_screen.dart';
+import 'package:sewainaja/onboarding_screen.dart';
 
 class AnimatedSplashScreen extends StatefulWidget {
   const AnimatedSplashScreen({super.key});
@@ -21,6 +25,33 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
 
   // Fase 2: Mengontrol teks merapatkan spasi antar huruf
   bool _startStep2 = false;
+
+  Future<Widget> _resolveNextScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('onboarding_seen') ?? false;
+    final savedToken = prefs.getString('token') ?? '';
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      try {
+        final freshToken = await currentUser.getIdToken();
+        if (freshToken != null && freshToken.isNotEmpty) {
+          await prefs.setString('token', freshToken);
+        }
+      } catch (_) {}
+      return const MainNavigationScreen();
+    }
+
+    if (savedToken.isNotEmpty) {
+      return const MainNavigationScreen();
+    }
+
+    if (hasSeenOnboarding) {
+      return const LoginScreen();
+    }
+
+    return const OnboardingScreen();
+  }
 
   @override
   void initState() {
@@ -65,15 +96,15 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
     // ---------------------------------------------------------
     // Tunggu animasi step 2 selesai (500ms) + delay navigasi (1000ms) = 1500ms
     await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      // Ganti Scaffold dummy dengan OnboardingScreen yang sebenarnya
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
-      );
-    }
+    if (!mounted) return;
+    final nextScreen = await _resolveNextScreen();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => nextScreen,
+      ),
+    );
   }
 
   @override

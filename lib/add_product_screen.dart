@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_common_widgets.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
+import 'auth_session_service.dart';
+import 'image_upload_service.dart';
+import 'upload_image_policy.dart';
 
 class AddProductScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -16,6 +21,10 @@ class AddProductScreen extends StatefulWidget {
 }
 
 class _AddProductScreenState extends State<AddProductScreen> {
+  static const Color _fieldFillColor = Colors.white;
+  static const Color _fieldBorderColor = Color(0xFFE6ECE8);
+  static const Color _fieldHintColor = Color(0xFF717973);
+
   String? selectedCategoryId;
   String selectedKondisi = "Sangat Baik";
   String selectedDurasi = "Hari";
@@ -29,6 +38,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   List<Map<String, dynamic>> _categories = const [];
   List<Map<String, dynamic>> _addresses = const [];
   String? _selectedAddressId;
+  final AuthSessionService _authSessionService = const AuthSessionService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  final List<ProcessedImageFile> _productPhotos = [];
 
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
@@ -50,8 +62,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Future<void> _bootstrapFormData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await _authSessionService.getValidIdToken();
       if (token == null || token.isEmpty) {
         if (mounted) {
           setState(() => _isBootstrapping = false);
@@ -66,13 +77,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
       };
 
       final responses = await Future.wait([
-        http.get(Uri.parse('${ApiConfig.baseUrl}/categories'), headers: headers),
+        http.get(
+          Uri.parse('${ApiConfig.baseUrl}/categories'),
+          headers: headers,
+        ),
         http.get(Uri.parse('${ApiConfig.baseUrl}/addresses'), headers: headers),
       ]);
 
       final categoryResp = responses[0];
       final addressResp = responses[1];
-      final categoryBody = jsonDecode(categoryResp.body) as Map<String, dynamic>;
+      final categoryBody =
+          jsonDecode(categoryResp.body) as Map<String, dynamic>;
       final addressBody = jsonDecode(addressResp.body) as Map<String, dynamic>;
 
       if (categoryResp.statusCode != 200 || categoryBody['success'] != true) {
@@ -83,14 +98,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _showSnack('Gagal ambil data alamat.', true);
       }
 
-      final categories =
-          (categoryBody['data'] as List<dynamic>? ?? const [])
-              .whereType<Map<String, dynamic>>()
-              .toList();
-      final addresses =
-          (addressBody['data'] as List<dynamic>? ?? const [])
-              .whereType<Map<String, dynamic>>()
-              .toList();
+      final categories = (categoryBody['data'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
+      final addresses = (addressBody['data'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList();
 
       if (!mounted) return;
       setState(() {
@@ -226,33 +239,33 @@ class _AddProductScreenState extends State<AddProductScreen> {
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
             )
           : SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
 
-            // ### [SECTION 2: FOTO BARANG (IMAGE UPLOAD GRID)]
-            _buildPhotoUploadSection(),
-            const SizedBox(height: 28),
+                  // ### [SECTION 2: FOTO BARANG (IMAGE UPLOAD GRID)]
+                  _buildPhotoUploadSection(),
+                  const SizedBox(height: 28),
 
-            // ### [SECTION 3: FORM INFORMASI BARANG]
-            _buildProductFormCard(),
-            const SizedBox(height: 32),
+                  // ### [SECTION 3: FORM INFORMASI BARANG]
+                  _buildProductFormCard(),
+                  const SizedBox(height: 32),
 
-            // ### [SECTION 4: LOKASI BARANG (MAP PREVIEW)]
-            _buildLocationMap(),
-            const SizedBox(height: 32),
+                  // ### [SECTION 4: LOKASI BARANG (MAP PREVIEW)]
+                  _buildLocationMap(),
+                  const SizedBox(height: 32),
 
-            // ### [SECTION 5: TAMBAH KE MARKETPLACE BUTTON]
-            _buildBottomActionButton(),
+                  // ### [SECTION 5: TAMBAH KE MARKETPLACE BUTTON]
+                  _buildBottomActionButton(),
 
-            // Padding bottom extra agar seimbang di bawah layar
-            const SizedBox(height: 40),
-          ],
-        ),
-      ),
+                  // Padding bottom extra agar seimbang di bawah layar
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
     );
   }
 
@@ -287,13 +300,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ],
         ),
         const SizedBox(height: 16),
+        Text(
+          'Otomatis disanitasi ke ${UploadImagePolicy.product.sizeLabelMb} MB agar storage hemat tapi tetap tajam di detail.',
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF5C635E),
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Baris 1: 2 Slot Besar
         Row(
           children: [
-            Expanded(child: _buildBigUploadSlot()),
+            Expanded(child: _buildPhotoSlot(index: 0, isLarge: true)),
             const SizedBox(width: 16),
-            Expanded(child: _buildBigUploadSlot()),
+            Expanded(child: _buildPhotoSlot(index: 1, isLarge: true)),
           ],
         ),
         const SizedBox(height: 16),
@@ -301,97 +324,183 @@ class _AddProductScreenState extends State<AddProductScreen> {
         // Baris 2: 3 Slot Kecil
         Row(
           children: [
-            Expanded(child: _buildSmallUploadSlot()),
+            Expanded(child: _buildPhotoSlot(index: 2, isLarge: false)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSmallUploadSlot()),
+            Expanded(child: _buildPhotoSlot(index: 3, isLarge: false)),
             const SizedBox(width: 16),
-            Expanded(child: _buildSmallUploadSlot()),
+            Expanded(child: _buildPhotoSlot(index: 4, isLarge: false)),
           ],
         ),
       ],
     );
   }
 
-  // Helper widget for Big Photo Slot
-  Widget _buildBigUploadSlot() {
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(40), // Radius 40px
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 15,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Circle Background for Icon
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F3EE), // Soft Grey/Cream Variant
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFE2DCD3), width: 0.5),
+  Widget _buildPhotoSlot({required int index, required bool isLarge}) {
+    final photo = index < _productPhotos.length ? _productPhotos[index] : null;
+    final radius = BorderRadius.circular(40);
+    final height = isLarge ? 180.0 : 55.0;
+
+    return GestureDetector(
+      onTap: _isSubmitting ? null : _pickProductImages,
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: radius,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isLarge ? 0.04 : 0.03),
+              blurRadius: isLarge ? 15 : 8,
+              offset: Offset(0, isLarge ? 6 : 4),
             ),
-            child: const Center(
-              child: Icon(
-                Icons.camera_enhance_outlined,
-                color: Color(0xFF1B4332), // Camera Icon Color
-                size: 24,
+          ],
+        ),
+        child: photo == null
+            ? _buildEmptyPhotoSlot(isLarge)
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: radius,
+                    child: Image.file(
+                      File(photo.localPath),
+                      fit: BoxFit.cover,
+                      filterQuality: FilterQuality.medium,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: _isSubmitting
+                          ? null
+                          : () => _removeProductPhoto(index),
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          // Texts
-          const Text(
-            "Unggah Foto",
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            "JPG, PNG (Max 5MB)",
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 9,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF5C635E), // Subtitle color
-            ),
-          ),
-        ],
       ),
     );
   }
 
-  // Helper widget for Small Photo Slot
-  Widget _buildSmallUploadSlot() {
-    return Container(
-      height: 55,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(40), // Radius 40px (Pill)
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: const Center(
+  Widget _buildEmptyPhotoSlot(bool isLarge) {
+    if (!isLarge) {
+      return const Center(
         child: Icon(Icons.add, color: Color(0xFF1B4332), size: 20),
-      ),
+      );
+    }
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F3EE),
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFFE2DCD3), width: 0.5),
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.camera_enhance_outlined,
+              color: Color(0xFF1B4332),
+              size: 24,
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text(
+          "Unggah Foto",
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF012D1D),
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 18),
+          child: Text(
+            "JPG sampai 2 MB\n1800px",
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 10,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF5C635E),
+            ),
+          ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _pickProductImages() async {
+    final remainingSlots =
+        UploadImagePolicy.product.maxImages - _productPhotos.length;
+    if (remainingSlots <= 0) {
+      _showSnack('Maksimal 5 foto barang.', true);
+      return;
+    }
+
+    try {
+      final sourceChoice = await _imageUploadService.chooseImageSource(context);
+      if (sourceChoice == null) return;
+
+      if (sourceChoice == ImageSourceChoice.camera) {
+        final picked = await _imageUploadService.pickSingleImageFromSource(
+          policy: UploadImagePolicy.product,
+          source: ImageSource.camera,
+        );
+        if (picked == null || !mounted) return;
+        setState(() {
+          _productPhotos.add(picked);
+        });
+        return;
+      }
+
+      final picked = await _imageUploadService.pickMultipleImages(
+        policy: UploadImagePolicy.product,
+        remainingSlots: remainingSlots,
+      );
+      if (picked.isEmpty || !mounted) return;
+      setState(() {
+        _productPhotos.addAll(picked.take(remainingSlots));
+      });
+      if (picked.length < remainingSlots) {
+        _showSnack(
+          'Sebagian foto dilewati karena ukuran awal terlalu besar untuk disanitasi.',
+          false,
+        );
+      }
+    } catch (error) {
+      _showSnack(safeImageError(error), true);
+    }
+  }
+
+  void _removeProductPhoto(int index) {
+    if (index < 0 || index >= _productPhotos.length) return;
+    setState(() {
+      _productPhotos.removeAt(index);
+    });
   }
 
   // --- SECTION 3: PRODUCT FORM CARD ---
@@ -448,7 +557,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           .map(
                             (cat) => DropdownMenuItem<String>(
                               value: (cat['id'] ?? '').toString(),
-                              child: Text((cat['category'] ?? 'Kategori').toString()),
+                              child: Text(
+                                (cat['category'] ?? 'Kategori').toString(),
+                              ),
                             ),
                           )
                           .toList(),
@@ -568,8 +679,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9), // Updated to #D9D9D9
+        color: _fieldFillColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _fieldBorderColor),
       ),
       child: TextField(
         controller: controller,
@@ -585,9 +697,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
           hintText: hint,
           hintStyle: const TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 13,
+            fontSize: 12,
             fontWeight: FontWeight.w400,
-            color: Color(0xFF717973), // Standard muted gray hint
+            color: _fieldHintColor,
           ),
           prefixIcon: prefix,
           prefixIconConstraints: const BoxConstraints(
@@ -617,8 +729,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFD9D9D9), // Updated to #D9D9D9
+        color: _fieldFillColor,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _fieldBorderColor),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
@@ -630,12 +743,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   hint,
                   style: const TextStyle(
                     fontFamily: 'Poppins',
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: Color(0xFF717973),
+                    color: _fieldHintColor,
                   ),
                 ),
-          dropdownColor: const Color(0xFFD9D9D9), // Matches dropdown bg
+          dropdownColor: _fieldFillColor,
           icon: const Icon(
             Icons.arrow_drop_down_rounded,
             color: Color(0xFF012D1D), // Standard icon color
@@ -682,9 +795,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _useSavedAddress ? const Color(0xFF012D1D) : Colors.white,
+                    color: _useSavedAddress
+                        ? const Color(0xFF012D1D)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF012D1D), width: 1),
+                    border: Border.all(
+                      color: const Color(0xFF012D1D),
+                      width: 1,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -693,7 +811,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: _useSavedAddress ? Colors.white : const Color(0xFF012D1D),
+                        color: _useSavedAddress
+                            ? Colors.white
+                            : const Color(0xFF012D1D),
                       ),
                     ),
                   ),
@@ -707,9 +827,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: !_useSavedAddress ? const Color(0xFF012D1D) : Colors.white,
+                    color: !_useSavedAddress
+                        ? const Color(0xFF012D1D)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF012D1D), width: 1),
+                    border: Border.all(
+                      color: const Color(0xFF012D1D),
+                      width: 1,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -718,7 +843,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         fontFamily: 'Poppins',
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
-                        color: !_useSavedAddress ? Colors.white : const Color(0xFF012D1D),
+                        color: !_useSavedAddress
+                            ? Colors.white
+                            : const Color(0xFF012D1D),
                       ),
                     ),
                   ),
@@ -872,11 +999,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _showSnack('Lengkapi nama, deskripsi, dan harga dulu.', true);
       return;
     }
+    if (_productPhotos.isEmpty) {
+      _showSnack('Tambahkan minimal 1 foto barang.', true);
+      return;
+    }
     if (categoryId.isEmpty) {
       _showSnack('Pilih kategori terlebih dahulu.', true);
       return;
     }
-    if (_useSavedAddress && (_selectedAddressId == null || _selectedAddressId!.isEmpty)) {
+    if (_useSavedAddress &&
+        (_selectedAddressId == null || _selectedAddressId!.isEmpty)) {
       _showSnack('Pilih alamat tersimpan atau gunakan titik baru.', true);
       return;
     }
@@ -884,7 +1016,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     setState(() => _isSubmitting = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token');
+      final token = await _authSessionService.getValidIdToken(forceRefresh: true);
       if (token == null || token.isEmpty) {
         _showSnack('Token login tidak ditemukan. Silakan login ulang.', true);
         return;
@@ -910,6 +1042,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'Authorization': 'Bearer $token',
       };
 
+      String normalizeAuthError(String fallback) {
+        if (fallback.toLowerCase().contains('token')) {
+          return 'Sesi login sudah tidak valid. Silakan login ulang.';
+        }
+        return fallback;
+      }
+
       // Resolve addressId: reuse saved or create a new one.
       String addressId = (_selectedAddressId ?? '').trim();
       if (!_useSavedAddress) {
@@ -926,11 +1065,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
             'isDefault': false,
           }),
         );
-        final addressBody = jsonDecode(addressResp.body) as Map<String, dynamic>;
+        final addressBody =
+            jsonDecode(addressResp.body) as Map<String, dynamic>;
         if (addressResp.statusCode != 200 || addressBody['success'] != true) {
           _showSnack(
-            addressBody['error']?['message']?.toString() ??
-                'Gagal menyimpan alamat barang.',
+            normalizeAuthError(
+              addressBody['error']?['message']?.toString() ??
+                  'Gagal menyimpan alamat barang.',
+            ),
             true,
           );
           return;
@@ -959,16 +1101,60 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final itemBody = jsonDecode(itemResp.body) as Map<String, dynamic>;
       if (itemResp.statusCode != 200 || itemBody['success'] != true) {
         _showSnack(
-          itemBody['error']?['message']?.toString() ?? 'Gagal menambahkan barang.',
+          normalizeAuthError(
+            itemBody['error']?['message']?.toString() ??
+                'Gagal menambahkan barang.',
+          ),
           true,
         );
         return;
+      }
+
+      final itemId = (itemBody['data']?['id'] ?? '').toString();
+      if (itemId.isEmpty) {
+        _showSnack('ID barang tidak ditemukan setelah item dibuat.', true);
+        return;
+      }
+
+      for (var i = 0; i < _productPhotos.length; i++) {
+        final photo = _productPhotos[i];
+        final photoUrl = await _imageUploadService.uploadProcessedImage(
+          processed: photo,
+          storagePath: _imageUploadService.buildItemPhotoStoragePath(
+            itemId: itemId,
+            index: i + 1,
+          ),
+        );
+
+        final photoResp = await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/items/$itemId/photos'),
+          headers: headers,
+          body: jsonEncode({'photoUrl': photoUrl}),
+        );
+        final photoBody = jsonDecode(photoResp.body) as Map<String, dynamic>;
+        if (photoResp.statusCode != 200 || photoBody['success'] != true) {
+          _showSnack(
+            normalizeAuthError(
+              photoBody['error']?['message']?.toString() ??
+                  'Barang berhasil dibuat, tapi upload foto gagal.',
+            ),
+            true,
+          );
+          return;
+        }
       }
 
       _showSnack('Barang berhasil ditambahkan ke marketplace.', false);
       if (!_useSavedAddress) {
         _bootstrapFormData();
       }
+      if (!mounted) return;
+      setState(() {
+        _productPhotos.clear();
+        _nameController.clear();
+        _descriptionController.clear();
+        _priceController.clear();
+      });
     } catch (_) {
       _showSnack('Gagal menyiapkan payload produk.', true);
     } finally {
