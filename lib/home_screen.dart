@@ -4,6 +4,7 @@ import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'address_service.dart';
+import 'image_upload_service.dart';
 import 'item_detail_screen.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
@@ -25,8 +26,11 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
   final AddressService _addressService = const AddressService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
   String selectedCategory = 'All';
   String _defaultLocationLabel = 'Tembalang, Semarang';
+  String _userName = 'Han Soo Hee';
+  String _profilePhotoUrl = '';
   LatLng _mapCenter = _fallbackCenter;
 
   // Search state shared with SearchScreen
@@ -38,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen>
   // Animation for home sheet sliding down when search opens
   late final AnimationController _homeSheetAnim;
   late final Animation<Offset> _homeSheetSlide;
+  bool _isMapCardPressed = false;
   final List<String> categories = [
     'All',
     'Tech',
@@ -344,12 +349,20 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadDefaultLocationLabel() async {
     final prefs = await SharedPreferences.getInstance();
     final label = prefs.getString('user_default_location')?.trim();
+    final name = prefs.getString('user_name')?.trim();
+    final profilePhotoUrl = prefs.getString('user_profile_photo_url')?.trim();
     final lat = prefs.getDouble('user_default_lat');
     final lng = prefs.getDouble('user_default_lng');
     if (!mounted) return;
     setState(() {
       if (label != null && label.isNotEmpty) {
         _defaultLocationLabel = label;
+      }
+      if (name != null && name.isNotEmpty) {
+        _userName = name;
+      }
+      if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
+        _profilePhotoUrl = profilePhotoUrl;
       }
       if (lat != null && lng != null) {
         _mapCenter = LatLng(lat, lng);
@@ -396,6 +409,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
+      resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
           // =============================================================
@@ -483,7 +497,10 @@ class _HomeScreenState extends State<HomeScreen>
                       SliverToBoxAdapter(child: _buildNewArrivals()),
                       const SliverToBoxAdapter(child: SizedBox(height: 28)),
                       SliverToBoxAdapter(
-                        child: _buildSectionHeader("Most Trusted Nearby", showSeeMore: false),
+                        child: _buildSectionHeader(
+                          "Most Trusted Nearby",
+                          showSeeMore: false,
+                        ),
                       ),
                       const SliverToBoxAdapter(child: SizedBox(height: 16)),
                       SliverToBoxAdapter(child: _buildCategoryFilter()),
@@ -527,8 +544,10 @@ class _HomeScreenState extends State<HomeScreen>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/profile_user.png'),
+              image: DecorationImage(
+                image: _profilePhotoUrl.trim().isEmpty
+                    ? const AssetImage('assets/images/profile_user.png')
+                    : _imageUploadService.buildImageProvider(_profilePhotoUrl),
                 fit: BoxFit.cover,
               ),
             ),
@@ -538,8 +557,8 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Han Soo Hee',
+                Text(
+                  _userName,
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 14,
@@ -561,12 +580,12 @@ class _HomeScreenState extends State<HomeScreen>
                         _defaultLocationLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        color: Color(0xFFFDF9F4),
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: Color(0xFFFDF9F4),
+                        ),
                       ),
-                    ),
                     ),
                   ],
                 ),
@@ -674,9 +693,7 @@ class _HomeScreenState extends State<HomeScreen>
               duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                color: isSelected
-                    ? null
-                    : Colors.transparent,
+                color: isSelected ? null : Colors.transparent,
                 gradient: isSelected
                     ? const LinearGradient(
                         begin: Alignment.centerLeft,
@@ -723,47 +740,266 @@ class _HomeScreenState extends State<HomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Your Current Location",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF414844),
-            ),
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  "Your Current Location",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF414844),
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF4F1),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: const Color(0xFF012D1D).withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.place_rounded,
+                      size: 14,
+                      color: Color(0xFF012D1D),
+                    ),
+                    const SizedBox(width: 5),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 120),
+                      child: Text(
+                        _defaultLocationLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const MapExploreScreen()),
-              );
-            },
-            child: Container(
-              height: 160,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: const Color(0xFF012D1D), width: 0.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(25),
+              onHighlightChanged: (pressed) {
+                setState(() => _isMapCardPressed = pressed);
+              },
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MapExploreScreen()),
+                );
+              },
+              child: AnimatedScale(
+                duration: const Duration(milliseconds: 110),
+                curve: Curves.easeOut,
+                scale: _isMapCardPressed ? 0.985 : 1,
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 110),
+                  curve: Curves.easeOut,
+                  offset: _isMapCardPressed
+                      ? const Offset(0, 0.012)
+                      : Offset.zero,
+                  child: Ink(
+                    height: 184,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(25),
+                      border: Border.all(
+                        color: const Color(0xFF012D1D),
+                        width: 0.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: _isMapCardPressed ? 0.028 : 0.05,
+                          ),
+                          blurRadius: _isMapCardPressed ? 6 : 10,
+                          offset: Offset(0, _isMapCardPressed ? 2 : 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(25),
+                            child: ReusableMapCard(
+                              center: _mapCenter,
+                              zoom: 13,
+                              interactive: false,
+                              showCenterPin: true,
+                              height: 184,
+                              borderRadius: BorderRadius.circular(25),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(25),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.06),
+                                  const Color(
+                                    0xFF012D1D,
+                                  ).withValues(alpha: 0.10),
+                                  const Color(
+                                    0xFF012D1D,
+                                  ).withValues(alpha: 0.26),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 12,
+                          right: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.92),
+                              borderRadius: BorderRadius.circular(999),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x1A000000),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.map_outlined,
+                                  size: 14,
+                                  color: Color(0xFF012D1D),
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Explore Map',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF012D1D),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 14,
+                          right: 14,
+                          bottom: 14,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFFDF9F4,
+                              ).withValues(alpha: 0.94),
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0x14000000),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF012D1D),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.near_me_rounded,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Lihat barang di sekitar kamu',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF012D1D),
+                                        ),
+                                      ),
+                                      SizedBox(height: 2),
+                                      Text(
+                                        'Tap buat buka map interaktif dan atur radius',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(0xFF5E6762),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEDF2EE),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 18,
+                                    color: Color(0xFF012D1D),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(25),
-                child: ReusableMapCard(
-                  center: _mapCenter,
-                  zoom: 13,
-                  interactive: false,
-                  showCenterPin: true,
-                  overlayLabel: _defaultLocationLabel,
-                  height: 160,
-                  borderRadius: BorderRadius.circular(25),
                 ),
               ),
             ),
@@ -956,33 +1192,33 @@ class _HomeScreenState extends State<HomeScreen>
           mainAxisSpacing: 16,
           childAspectRatio: 0.65, // matching categories screen aspect ratio
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final product = products[index];
-            return FadeInUp(
-              key: ValueKey("${selectedCategory}_${product.name}_$index"),
-              delay: Duration(milliseconds: 50 * (index % 4)),
-              child: GestureDetector(
-                onTap: () {
-                  final cleanedPrice = product.price.replaceAll(RegExp(r'[^0-9]'), '');
-                  final pricePerHour = double.tryParse(cleanedPrice);
-                  
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemDetailScreen(
-                        itemName: product.name,
-                        pricePerHour: pricePerHour,
-                      ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final product = products[index];
+          return FadeInUp(
+            key: ValueKey("${selectedCategory}_${product.name}_$index"),
+            delay: Duration(milliseconds: 50 * (index % 4)),
+            child: GestureDetector(
+              onTap: () {
+                final cleanedPrice = product.price.replaceAll(
+                  RegExp(r'[^0-9]'),
+                  '',
+                );
+                final pricePerHour = double.tryParse(cleanedPrice);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItemDetailScreen(
+                      itemName: product.name,
+                      pricePerHour: pricePerHour,
                     ),
-                  );
-                },
-                child: ProductCard(product: product),
-              ),
-            );
-          },
-          childCount: products.length,
-        ),
+                  ),
+                );
+              },
+              child: ProductCard(product: product),
+            ),
+          );
+        }, childCount: products.length),
       ),
     );
   }

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 import 'api_config.dart';
+import 'auth_session_service.dart';
 
 class UserAddress {
   final String id;
@@ -42,6 +42,8 @@ class UserAddress {
 
 class AddressService {
   const AddressService();
+
+  static const AuthSessionService _authSessionService = AuthSessionService();
 
   Future<List<UserAddress>> fetchAddresses() async {
     final token = await _readToken();
@@ -131,8 +133,7 @@ class AddressService {
   }
 
   Future<String> _readToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = await _authSessionService.getValidIdToken(forceRefresh: true);
     if (token == null || token.isEmpty) {
       throw const AddressServiceException('Token login tidak ditemukan.');
     }

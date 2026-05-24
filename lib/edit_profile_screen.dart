@@ -1,8 +1,17 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_common_widgets.dart';
+import 'api_config.dart';
+import 'app_feedback.dart';
+import 'auth_session_service.dart';
+import 'image_upload_service.dart';
+import 'upload_image_policy.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -18,6 +27,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _phone = "+62081234567890";
   String _defaultLocation = "Tembalang, Semarang";
   final LatLng _profileMapCenter = const LatLng(-6.966667, 110.416664);
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  final AuthSessionService _authSessionService = const AuthSessionService();
+  String _profilePhotoUrl = '';
+  ProcessedImageFile? _pendingProfilePhoto;
+  bool _isSaving = false;
 
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
@@ -43,8 +57,98 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _phone = prefs.getString('user_phone') ?? "+62081234567890";
         _defaultLocation =
             prefs.getString('user_default_location') ?? "Tembalang, Semarang";
+        _profilePhotoUrl = prefs.getString('user_profile_photo_url') ?? '';
       });
     } catch (_) {}
+  }
+
+  Future<void> _pickProfilePhoto() async {
+    try {
+      final sourceChoice = await _imageUploadService.chooseImageSource(context);
+      if (sourceChoice == null) return;
+      final picked = await _imageUploadService.pickSingleImageFromSource(
+        policy: UploadImagePolicy.profile,
+        source: sourceChoice == ImageSourceChoice.camera
+            ? ImageSource.camera
+            : ImageSource.gallery,
+      );
+      if (picked == null || !mounted) return;
+      setState(() {
+        _pendingProfilePhoto = picked;
+      });
+    } catch (error) {
+      showAppErrorSnack(context, safeImageError(error));
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = await _authSessionService.getValidIdToken(forceRefresh: true) ?? '';
+      final userId = prefs.getString('user_id')?.trim() ?? '';
+      var resolvedPhotoUrl = _profilePhotoUrl;
+
+      if (_pendingProfilePhoto != null) {
+        if (userId.isEmpty) {
+          showAppErrorSnack(context, 'User ID tidak ditemukan. Silakan login ulang.');
+          return;
+        }
+        resolvedPhotoUrl = await _imageUploadService.uploadProcessedImage(
+          processed: _pendingProfilePhoto!,
+          storagePath: _imageUploadService.buildUserAvatarStoragePath(userId),
+        );
+      }
+
+      if (token.isNotEmpty) {
+        final response = await http.patch(
+          Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'name': _name,
+            'phone': _phone,
+            'profilePhotoUrl': resolvedPhotoUrl,
+          }),
+        );
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        if (response.statusCode != 200 || body['success'] != true) {
+          if (!mounted) return;
+          final message = body['error']?['message']?.toString() ?? 'Gagal memperbarui profil.';
+          showAppErrorSnack(
+            context,
+            message.toLowerCase().contains('token')
+                ? 'Sesi login sudah tidak valid. Silakan login ulang.'
+                : message,
+          );
+          return;
+        }
+      }
+
+      await prefs.setString('user_profile_photo_url', resolvedPhotoUrl);
+      if (!mounted) return;
+      setState(() {
+        _profilePhotoUrl = resolvedPhotoUrl;
+        _pendingProfilePhoto = null;
+      });
+      showAppSuccessSnack(context, 'Foto profil berhasil diperbarui.');
+      if (widget.onBack != null) {
+        widget.onBack!();
+      } else {
+        Navigator.maybePop(context);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      showAppErrorSnack(context, safeImageError(error));
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -94,7 +198,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     if (confirm == true) {
       final prefs = await SharedPreferences.getInstance();
+      final hasSeenOnboarding = prefs.getBool('onboarding_seen') ?? true;
+      await FirebaseAuth.instance.signOut();
       await prefs.clear();
+      await prefs.setBool('onboarding_seen', hasSeenOnboarding);
 
       if (!mounted) return;
 
@@ -247,9 +354,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(70),
-              child: Image.asset(
-                'assets/images/profile_user.png',
+              child: Image(
+                image: _resolvedProfileImage(),
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Image.asset(
+                  'assets/images/profile_user.png',
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
@@ -258,24 +369,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           Positioned(
             bottom: 0,
             right: 0,
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white, // ID: '536:1931' Background Kotak
-                borderRadius: BorderRadius.circular(10),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.edit_rounded, // ID: '536:1929' Edit Icon
-                color: Color(0xFF012D1D),
-                size: 22,
+            child: GestureDetector(
+              onTap: _isSaving ? null : _pickProfilePhoto,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white, // ID: '536:1931' Background Kotak
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.edit_rounded, // ID: '536:1929' Edit Icon
+                  color: Color(0xFF012D1D),
+                  size: 22,
+                ),
               ),
             ),
           ),
@@ -454,15 +568,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           top: 10,
         ),
         child: GestureDetector(
-          onTap: () {
-            // Confirm action
-            if (widget.onBack != null) {
-              widget
-                  .onBack!(); // Return home after confirm as simple prototype UX
-            } else {
-              Navigator.maybePop(context);
-            }
-          },
+          onTap: _isSaving ? null : _saveProfile,
           child: Container(
             height: 54, // Modern standard button height
             decoration: BoxDecoration(
@@ -476,20 +582,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
-            child: const Center(
-              child: Text(
-                "Konfirmasi", // ID: '536:2156'
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600, // SemiBold
-                  color: Colors.white,
-                ),
-              ),
+            child: Center(
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      "Konfirmasi", // ID: '536:2156'
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600, // SemiBold
+                        color: Colors.white,
+                      ),
+                    ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  ImageProvider _resolvedProfileImage() {
+    if (_pendingProfilePhoto != null) {
+      return _imageUploadService.buildImageProvider(_pendingProfilePhoto!.localPath);
+    }
+    if (_profilePhotoUrl.trim().isNotEmpty) {
+      return _imageUploadService.buildImageProvider(_profilePhotoUrl);
+    }
+    return const AssetImage('assets/images/profile_user.png');
   }
 }
