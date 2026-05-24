@@ -101,9 +101,7 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
     if (!mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => nextScreen,
-      ),
+      MaterialPageRoute(builder: (context) => nextScreen),
     );
   }
 
