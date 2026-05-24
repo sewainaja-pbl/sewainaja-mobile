@@ -15,6 +15,7 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
+  bool _isSearchActive = false;
 
   late final List<Widget> _screens;
 
@@ -22,7 +23,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _screens = [
-      const HomeScreen(),
+      HomeScreen(
+        onSearchActiveChanged: (active) {
+          setState(() => _isSearchActive = active);
+        },
+      ),
       CategoriesScreen(
         onBack: () {
           setState(() {
@@ -66,8 +71,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             children: _screens,
           ),
 
-          // 2. CUSTOM FLOATING BOTTOM NAVBAR (Hidden on index 2: AddProductScreen)
-          if (_selectedIndex != 2)
+          // 2. CUSTOM FLOATING BOTTOM NAVBAR
+          // Hidden on index 2 (AddProductScreen) and when search is active
+          if (_selectedIndex != 2 && !_isSearchActive)
             Align(
               alignment: Alignment.bottomCenter,
               child: SafeArea(
