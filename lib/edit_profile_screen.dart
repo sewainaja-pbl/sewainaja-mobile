@@ -234,8 +234,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           // Circular Avatar (ID: '536:1925')
           Container(
-            width: 102,
-            height: 102,
+            width: 140,
+            height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -246,7 +246,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(51),
+              borderRadius: BorderRadius.circular(70),
               child: Image.asset(
                 'assets/images/profile_user.png',
                 fit: BoxFit.cover,
@@ -259,11 +259,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             bottom: 0,
             right: 0,
             child: Container(
-              width: 32,
-              height: 32,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: Colors.white, // ID: '536:1931' Background Kotak
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -275,7 +275,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               child: const Icon(
                 Icons.edit_rounded, // ID: '536:1929' Edit Icon
                 color: Color(0xFF012D1D),
-                size: 18,
+                size: 22,
               ),
             ),
           ),
