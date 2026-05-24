@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_common_widgets.dart';
+import 'widgets/success_rental_modal.dart';
 
 class AjukanSewaScreen extends StatefulWidget {
   const AjukanSewaScreen({super.key});
@@ -626,19 +627,21 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
               ),
             ),
             // Right Checkout Action Button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D), // Background Deep Green
-                borderRadius: BorderRadius.circular(9999), // Full pill
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF012D1D).withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
+            GestureDetector(
+              onTap: () => SuccessRentalModal.show(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF012D1D), // Background Deep Green
+                  borderRadius: BorderRadius.circular(9999), // Full pill
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: const [
@@ -659,6 +662,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),
