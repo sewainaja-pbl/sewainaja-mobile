@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,15 +25,9 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -54,6 +45,7 @@ class DefaultFirebaseOptions {
     appId: '1:1073702990942:android:aab40d2cc856dd6f55f0cf',
     messagingSenderId: '1073702990942',
     projectId: 'sewainaja-b4834',
+    databaseURL: 'https://sewainaja-b4834-default-rtdb.firebaseio.com',
     storageBucket: 'sewainaja-b4834.firebasestorage.app',
   );
 
@@ -62,7 +54,43 @@ class DefaultFirebaseOptions {
     appId: '1:1073702990942:ios:b7a19447cce725bd55f0cf',
     messagingSenderId: '1073702990942',
     projectId: 'sewainaja-b4834',
+    databaseURL: 'https://sewainaja-b4834-default-rtdb.firebaseio.com',
     storageBucket: 'sewainaja-b4834.firebasestorage.app',
+    iosClientId: '1073702990942-p85k1nnf8a6kac3bp9rjtsodt1tcfvka.apps.googleusercontent.com',
     iosBundleId: 'com.example.sewainaja',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyCJCr3VkZBlqFTbBF0EfnLheSO5hhP5jdw',
+    appId: '1:1073702990942:web:395205356a1af0fe55f0cf',
+    messagingSenderId: '1073702990942',
+    projectId: 'sewainaja-b4834',
+    authDomain: 'sewainaja-b4834.firebaseapp.com',
+    databaseURL: 'https://sewainaja-b4834-default-rtdb.firebaseio.com',
+    storageBucket: 'sewainaja-b4834.firebasestorage.app',
+    measurementId: 'G-L6KK0K5GF9',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyDSMvgPE401Jm7pdvjO4uLtiT8U68NmgBo',
+    appId: '1:1073702990942:ios:b7a19447cce725bd55f0cf',
+    messagingSenderId: '1073702990942',
+    projectId: 'sewainaja-b4834',
+    databaseURL: 'https://sewainaja-b4834-default-rtdb.firebaseio.com',
+    storageBucket: 'sewainaja-b4834.firebasestorage.app',
+    iosClientId: '1073702990942-p85k1nnf8a6kac3bp9rjtsodt1tcfvka.apps.googleusercontent.com',
+    iosBundleId: 'com.example.sewainaja',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyCJCr3VkZBlqFTbBF0EfnLheSO5hhP5jdw',
+    appId: '1:1073702990942:web:4f21946639a9d98d55f0cf',
+    messagingSenderId: '1073702990942',
+    projectId: 'sewainaja-b4834',
+    authDomain: 'sewainaja-b4834.firebaseapp.com',
+    databaseURL: 'https://sewainaja-b4834-default-rtdb.firebaseio.com',
+    storageBucket: 'sewainaja-b4834.firebasestorage.app',
+    measurementId: 'G-PSQQNY2SN2',
+  );
+
 }
