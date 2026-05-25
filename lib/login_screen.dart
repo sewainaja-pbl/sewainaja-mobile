@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'presentation/controllers/auth_controller.dart';
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
@@ -47,6 +49,32 @@ class _LoginScreenState extends State<LoginScreen>
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveUserDataAndNavigate(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = (data['tokens']?['idToken'] ?? '').toString();
+    final user = data['user'] as Map<String, dynamic>? ?? const {};
+    if (token.isNotEmpty) {
+      await prefs.setString('token', token);
+    }
+    await prefs.setBool('onboarding_seen', true);
+    await prefs.setString('user_id', (user['id'] ?? '').toString());
+    await prefs.setString('user_name', (user['name'] ?? '').toString());
+    await prefs.setString('user_email', (user['email'] ?? '').toString());
+    await prefs.setString('user_phone', (user['phone'] ?? '').toString());
+    await prefs.setString(
+      'user_profile_photo_url',
+      (user['profilePhotoUrl'] ?? '').toString(),
+    );
+    if (!mounted) return;
+    _showSnackBar('Login berhasil!', isError: false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MainNavigationScreen(),
+      ),
+    );
   }
 
   // Custom SnackBar Premium Style
@@ -95,29 +123,7 @@ class _LoginScreenState extends State<LoginScreen>
           // Keep backend login as source of truth if Firebase session fails.
         }
 
-        final prefs = await SharedPreferences.getInstance();
-        final token = (data['data']?['tokens']?['idToken'] ?? '').toString();
-        final user = data['data']?['user'] as Map<String, dynamic>? ?? const {};
-        if (token.isNotEmpty) {
-          await prefs.setString('token', token);
-        }
-        await prefs.setBool('onboarding_seen', true);
-        await prefs.setString('user_id', (user['id'] ?? '').toString());
-        await prefs.setString('user_name', (user['name'] ?? '').toString());
-        await prefs.setString('user_email', (user['email'] ?? '').toString());
-        await prefs.setString('user_phone', (user['phone'] ?? '').toString());
-        await prefs.setString(
-          'user_profile_photo_url',
-          (user['profilePhotoUrl'] ?? '').toString(),
-        );
-        if (!mounted) return;
-        _showSnackBar('Login berhasil!', isError: false);
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MainNavigationScreen(),
-          ),
-        );
+        await _saveUserDataAndNavigate(data['data'] ?? {});
       } else {
         final apiMessage =
             data['error']?['message']?.toString() ??
@@ -292,6 +298,10 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authController = context.watch<AuthController>();
+    final isGoogleLoading = authController.status == AuthStatus.loading;
+    final isAnyLoading = _isLoading || _isResetLoading || isGoogleLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
@@ -385,7 +395,7 @@ class _LoginScreenState extends State<LoginScreen>
                           const SizedBox(height: 8),
                           TextField(
                             controller: _emailController,
-                            enabled: !_isLoading,
+                            enabled: !isAnyLoading,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -434,7 +444,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                               ),
                               GestureDetector(
-                                onTap: (_isLoading || _isResetLoading)
+                                onTap: isAnyLoading
                                     ? null
                                     : _handleForgotPassword,
                                 child: Text(
@@ -443,7 +453,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: (_isLoading || _isResetLoading)
+                                    color: isAnyLoading
                                         ? const Color(0xFF7B5804).withValues(
                                             alpha: 0.55,
                                           )
@@ -456,7 +466,7 @@ class _LoginScreenState extends State<LoginScreen>
                           const SizedBox(height: 8),
                           TextField(
                             controller: _passwordController,
-                            enabled: !_isLoading,
+                            enabled: !isAnyLoading,
                             obscureText: true,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
@@ -493,7 +503,7 @@ class _LoginScreenState extends State<LoginScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
+                          onPressed: isAnyLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF7B5804),
                             foregroundColor: Colors.white,
@@ -555,14 +565,14 @@ class _LoginScreenState extends State<LoginScreen>
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const MainNavigationScreen(),
-                              ),
-                            );
+                          onPressed: isAnyLoading ? null : () async {
+                            await authController.signInWithGoogle();
+                            if (!mounted) return;
+                            if (authController.status == AuthStatus.authenticated && authController.userData != null) {
+                               await _saveUserDataAndNavigate(authController.userData!);
+                            } else if (authController.status == AuthStatus.error) {
+                               _showSnackBar(authController.errorMessage ?? 'Gagal login dengan Google');
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -572,26 +582,32 @@ class _LoginScreenState extends State<LoginScreen>
                               borderRadius: BorderRadius.circular(9999),
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/images/google.png',
-                                width: 14,
-                                height: 14,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Google",
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF012D1D),
+                          child: isGoogleLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/google.png',
+                                      width: 14,
+                                      height: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      "Google",
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF012D1D),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
 
