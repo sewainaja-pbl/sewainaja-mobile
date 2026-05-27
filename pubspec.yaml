@@ -1934,3 +1934,128 @@ flutter:
 #     border_color: "#717973"     # Outline Stroke 1px
 #     background: "Transparent"   # Menggunakan border stroke
 ############################################################
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - TENGGAT (DEADLINE) SCREEN
+# =============================================================
+# Name: SewaIn Aja - Tenggat Screen
+# Description: Halaman detail tenggat waktu penyewaan barang yang sedang aktif.
+#              Diakses dari halaman Settings > Section "Sedang Berlangsung".
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+
+# -------------------------------------------------------------
+# ## UI STRUCTURE NODES
+# -------------------------------------------------------------
+# screen_info:
+#   name: "RentalDeadlineScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Tenggat"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#012D1D" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+
+# components:
+#   # --- 1. COUNTDOWN TIMER SECTION ---
+#   countdown_timer:
+#     margin_top: 24.0
+#     title: "Sisa Waktu"
+#     title_style: { family: "Poppins", size: 20, weight: 600, color: "#FFFFFF" }
+#     background_container:
+#       color: "#2F6743"
+#       border_radius: 20.0
+#       padding: { vertical: 20, horizontal: 16 }
+#     timer_blocks:
+#       layout: "Row"
+#       block_style:
+#         background: "#012D1D"
+#         border_radius: 10.0
+#         text_color: "#FFF8EF"
+#         text_size: 36
+#         text_weight: 600
+#       separators: ":" (color #012D1D, size 32)
+#       labels: ["Hari", "Jam", "Menit"] (color #012D1D, size 15, weight 600)
+
+#   # --- 2. TIME DETAILS SECTION ---
+#   time_details:
+#     margin_top: 16.0
+#     layout: "Row Space Between"
+#     start_time: "8 Jan (Mulai)" (Poppins 12, #414844)
+#     status_badge: "Status" (Poppins 14, weight 600, #414844)
+#     end_time: "10 Jan 2025 (Selesai)" (Poppins 12, #414844)
+#     warning_text:
+#       text: "H-24: Sewa berakhir besok pukul 10:00"
+#       style: { family: "Poppins", size: 12, color: "#414844" }
+#       alignment: "center"
+#       margin_top: 8.0
+
+#   # --- 3. TIMELINE STATUS SECTION ---
+#   timeline_status:
+#     margin_top: 24.0
+#     items:
+#       - text: "Serah Terima Berhasil Konfirmasi"
+#         style: { family: "Poppins", size: 12, color: "#414844" }
+#         icon_color: "#F8BD00" # Yellow dot
+#       - text: "Request sewa disetujui pemilik"
+#         style: { family: "Poppins", size: 12, color: "#414844" }
+#         icon_color: "#2F6743" # Green dot
+
+#   # --- 4. ITEM CARD SECTION ---
+#   item_card:
+#     margin_top: 24.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/..." }
+#     details:
+#       title: "Sony Camera a6000" (Poppins 16, weight 600, #414844)
+#       subtitle: "Pemilik: Han so Hee" (Poppins 12, #414844)
+#       date: "8 Jan - 10 Jan 2025" (Poppins 12, #414844)
+
+#   # --- 5. LOCATION MAP SECTION ---
+#   location_map:
+#     margin_top: 24.0
+#     title_overlay:
+#       text: "Lokasi Barang"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" }
+#       background: "#1B4332"
+#       border_radius: 15.0
+#     map_container:
+#       height: 150
+#       border_radius: 15.0
+#       image_asset: "assets/images/map_placeholder.png" # Atau gunakan widget map
+
+#   # --- 6. ACTION BUTTONS (BOTTOM) ---
+#   bottom_actions:
+#     layout: "Column"
+#     margin: { top: 32, bottom: 40, horizontal: 20 }
+#     button_1_return:
+#       text: "Kembalikan"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#1B4332" }
+#       background: "#FFFFFF"
+#       border: "0.5px solid #012D1D"
+#       border_radius: 30.0
+#     button_2_extend:
+#       text: "Request Perpanjangan"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#1B4332" }
+#       background: "#FFFFFF"
+#       border: "0.5px solid #012D1D"
+#       border_radius: 30.0
+#       margin_top: 12.0
+
+# -------------------------------------------------------------
+# ## DESIGN TOKENS
+# -------------------------------------------------------------
+# colors:
+#   primary_dark: "#012D1D"
+#   primary_green: "#2F6743"
+#   accent_green: "#1B4332"
+#   bg_surface: "#FDF9F4"
+#   text_dark: "#414844"
+#   text_light: "#FFFFFF"
+#   timer_text: "#FFF8EF"
+#   warning_yellow: "#F8BD00"

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile_screen.dart';
+import 'rental_deadline_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -321,9 +322,18 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             itemBuilder: (context, index) {
               final item = _activeRentals[index];
               final isActive = item['status'] == 'Aktif';
-              return Container(
-                width: 280,
-                margin: const EdgeInsets.only(right: 12),
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RentalDeadlineScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 280,
+                  margin: const EdgeInsets.only(right: 12),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -428,8 +438,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                   ],
                 ),
-              );
-            },
+              ),
+            );
+          },
           ),
         ),
       ],
