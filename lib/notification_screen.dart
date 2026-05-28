@@ -68,7 +68,7 @@ class NotificationScreen extends StatelessWidget {
           children: [
             Container(
               margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1EDE8),
                 borderRadius: BorderRadius.circular(999),
@@ -84,12 +84,12 @@ class NotificationScreen extends StatelessWidget {
                 unselectedLabelColor: Color(0xFF717973),
                 labelStyle: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
                 unselectedLabelStyle: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
                 tabs: [
@@ -137,31 +137,31 @@ class _NotificationList extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
       children: [
         Text(
           title,
           style: const TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 20,
+            fontSize: 16,
             fontWeight: FontWeight.w700,
             color: Color(0xFF012D1D),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           subtitle,
           style: const TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 13,
-            height: 1.5,
+            fontSize: 12,
+            height: 1.4,
             fontWeight: FontWeight.w500,
             color: Color(0xFF717973),
           ),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 12),
         ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.only(bottom: 10),
               child: _NotificationCard(item: item),
             )),
       ],
@@ -180,10 +180,10 @@ class _NotificationCard extends StatelessWidget {
       onTap: () => _showNotificationDetail(context, item),
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: item.highlight ? const Color(0xFFEAF4EE) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: item.highlight
                 ? const Color(0xFFCDE2D6)
@@ -192,8 +192,8 @@ class _NotificationCard extends StatelessWidget {
           boxShadow: const [
             BoxShadow(
               color: Color(0x0E000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
+              blurRadius: 10,
+              offset: Offset(0, 4),
             ),
           ],
         ),
@@ -201,27 +201,27 @@ class _NotificationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 color: item.highlight
                     ? const Color(0xFF0E4A31)
                     : const Color(0xFFF4F1EB),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
               ),
               alignment: Alignment.center,
               child: Text(
                 item.initials,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color:
                       item.highlight ? Colors.white : const Color(0xFF012D1D),
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,35 +233,37 @@ class _NotificationCard extends StatelessWidget {
                           item.title,
                           style: const TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 15,
+                            fontSize: 14,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF1C1C19),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _NotificationBadge(label: item.category),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     item.message,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 13,
-                      height: 1.55,
+                      fontSize: 12,
+                      height: 1.45,
                       fontWeight: FontWeight.w500,
                       color: Color(0xFF717973),
                     ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
                         item.time,
                         style: TextStyle(
                           fontFamily: 'Poppins',
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF717973),
                         ),
@@ -278,7 +280,7 @@ class _NotificationCard extends StatelessWidget {
                           'Baru',
                           style: TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF012D1D),
                           ),
@@ -425,7 +427,7 @@ class _NotificationBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF4F1EB),
         borderRadius: BorderRadius.circular(999),
@@ -434,7 +436,7 @@ class _NotificationBadge extends StatelessWidget {
         label,
         style: const TextStyle(
           fontFamily: 'Poppins',
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
           color: Color(0xFF012D1D),
         ),

@@ -5,6 +5,23 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../api_config.dart';
 
+class GoogleLoginException implements Exception {
+  final String userMessage;
+  final String debugCode;
+  final String stage;
+  final String? rawMessage;
+
+  const GoogleLoginException({
+    required this.userMessage,
+    required this.debugCode,
+    required this.stage,
+    this.rawMessage,
+  });
+
+  @override
+  String toString() => '$debugCode|$stage|$userMessage|${rawMessage ?? ''}';
+}
+
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -12,7 +29,14 @@ class AuthRepository {
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) throw Exception('LOGIN_CANCELLED');
+      if (googleUser == null) {
+        throw const GoogleLoginException(
+          userMessage: 'Login Google dibatalkan.',
+          debugCode: 'GOOGLE_CANCELLED',
+          stage: 'google_sign_in',
+          rawMessage: 'User closed Google account picker before completing sign in.',
+        );
+      }
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -26,7 +50,14 @@ class AuthRepository {
           await _firebaseAuth.signInWithCredential(credential);
 
       final String? idToken = await userCredential.user?.getIdToken();
-      if (idToken == null) throw Exception('FAILED_GET_TOKEN');
+      if (idToken == null) {
+        throw const GoogleLoginException(
+          userMessage: 'Token Google tidak berhasil diambil. Silakan coba lagi.',
+          debugCode: 'GOOGLE_ID_TOKEN_EMPTY',
+          stage: 'firebase_token',
+          rawMessage: 'Firebase user returned null ID token after Google credential sign in.',
+        );
+      }
 
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/auth/login-google'),
@@ -42,17 +73,31 @@ class AuthRepository {
         return body;
       }
 
-      final apiMessage =
-          body['error']?['message']?.toString() ??
-          body['error']?['code']?.toString() ??
-          'Gagal login dengan Google.';
-      throw Exception(apiMessage);
+      final apiMessage = body['error']?['message']?.toString().trim();
+      final apiCode =
+          body['error']?['code']?.toString().trim().replaceAll(' ', '_') ??
+          'BACKEND_LOGIN_GOOGLE_FAILED';
+      throw GoogleLoginException(
+        userMessage: (apiMessage != null && apiMessage.isNotEmpty)
+            ? apiMessage
+            : 'Gagal login dengan Google.',
+        debugCode: apiCode.isEmpty ? 'BACKEND_LOGIN_GOOGLE_FAILED' : apiCode,
+        stage: 'backend_login_google',
+        rawMessage: 'HTTP ${response.statusCode}: ${response.body}',
+      );
     } on PlatformException catch (e) {
-      throw Exception(_mapGooglePlatformError(e));
+      throw _mapGooglePlatformError(e);
     } on FirebaseAuthException catch (e) {
-      throw Exception(_mapFirebaseAuthError(e));
-    } on Exception catch (e) {
-      throw Exception(_mapGenericGoogleError(e.toString()));
+      throw _mapFirebaseAuthError(e);
+    } on GoogleLoginException {
+      rethrow;
+    } catch (e) {
+      throw GoogleLoginException(
+        userMessage: 'Gagal login dengan Google. Coba lagi sebentar lagi.',
+        debugCode: 'GOOGLE_LOGIN_UNKNOWN',
+        stage: 'unknown',
+        rawMessage: e.toString(),
+      );
     }
   }
 
@@ -67,55 +112,85 @@ class AuthRepository {
 
   User? get currentUser => _firebaseAuth.currentUser;
 
-  String _mapGooglePlatformError(PlatformException error) {
+  GoogleLoginException _mapGooglePlatformError(PlatformException error) {
     final code = error.code.toLowerCase();
     final message = (error.message ?? '').toLowerCase();
+    final rawMessage = 'PlatformException(code: ${error.code}, message: ${error.message ?? '-'}, details: ${error.details ?? '-'})';
 
     if (code == 'sign_in_failed' &&
         (message.contains('api10') ||
             message.contains('api 10') ||
             message.contains('developer_error'))) {
-      return 'Google Sign-In Android belum terkonfigurasi dengan benar. Cek SHA-1/SHA-256 dan OAuth client di Firebase.';
+      return GoogleLoginException(
+        userMessage:
+            'Google Sign-In Android belum terkonfigurasi dengan benar. Cek SHA-1/SHA-256 dan OAuth client di Firebase.',
+        debugCode: 'GOOGLE_DEVELOPER_ERROR',
+        stage: 'google_sign_in',
+        rawMessage: rawMessage,
+      );
     }
     if (code == 'network_error') {
-      return 'Jaringan bermasalah. Coba lagi setelah koneksi stabil.';
+      return GoogleLoginException(
+        userMessage: 'Jaringan bermasalah. Coba lagi setelah koneksi stabil.',
+        debugCode: 'GOOGLE_NETWORK_ERROR',
+        stage: 'google_sign_in',
+        rawMessage: rawMessage,
+      );
     }
     if (code == 'sign_in_canceled' || code == 'canceled') {
-      return 'Login Google dibatalkan.';
+      return GoogleLoginException(
+        userMessage: 'Login Google dibatalkan.',
+        debugCode: 'GOOGLE_CANCELLED',
+        stage: 'google_sign_in',
+        rawMessage: rawMessage,
+      );
     }
 
-    return 'Gagal login dengan Google. Coba lagi sebentar lagi.';
+    return GoogleLoginException(
+      userMessage: 'Gagal login dengan Google. Coba lagi sebentar lagi.',
+      debugCode: 'GOOGLE_PLATFORM_ERROR',
+      stage: 'google_sign_in',
+      rawMessage: rawMessage,
+    );
   }
 
-  String _mapFirebaseAuthError(FirebaseAuthException error) {
+  GoogleLoginException _mapFirebaseAuthError(FirebaseAuthException error) {
     switch (error.code) {
       case 'account-exists-with-different-credential':
-        return 'Email ini sudah terhubung ke metode login lain.';
+        return GoogleLoginException(
+          userMessage: 'Email ini sudah terhubung ke metode login lain.',
+          debugCode: 'FIREBASE_ACCOUNT_EXISTS_DIFFERENT_CREDENTIAL',
+          stage: 'firebase_auth',
+          rawMessage: error.message,
+        );
       case 'invalid-credential':
-        return 'Kredensial Google tidak valid. Silakan coba lagi.';
+        return GoogleLoginException(
+          userMessage: 'Kredensial Google tidak valid. Silakan coba lagi.',
+          debugCode: 'FIREBASE_INVALID_CREDENTIAL',
+          stage: 'firebase_auth',
+          rawMessage: error.message,
+        );
       case 'user-disabled':
-        return 'Akun ini sedang dinonaktifkan.';
+        return GoogleLoginException(
+          userMessage: 'Akun ini sedang dinonaktifkan.',
+          debugCode: 'FIREBASE_USER_DISABLED',
+          stage: 'firebase_auth',
+          rawMessage: error.message,
+        );
       case 'network-request-failed':
-        return 'Jaringan bermasalah. Coba lagi setelah koneksi stabil.';
+        return GoogleLoginException(
+          userMessage: 'Jaringan bermasalah. Coba lagi setelah koneksi stabil.',
+          debugCode: 'FIREBASE_NETWORK_REQUEST_FAILED',
+          stage: 'firebase_auth',
+          rawMessage: error.message,
+        );
       default:
-        return error.message ?? 'Gagal login dengan Google.';
+        return GoogleLoginException(
+          userMessage: error.message ?? 'Gagal login dengan Google.',
+          debugCode: 'FIREBASE_${error.code.toUpperCase().replaceAll('-', '_')}',
+          stage: 'firebase_auth',
+          rawMessage: error.message,
+        );
     }
-  }
-
-  String _mapGenericGoogleError(String raw) {
-    final normalized = raw.replaceFirst('Exception: ', '');
-    if (normalized == 'LOGIN_CANCELLED') {
-      return 'Login Google dibatalkan.';
-    }
-    if (normalized == 'FAILED_GET_TOKEN') {
-      return 'Token Google tidak berhasil diambil. Silakan coba lagi.';
-    }
-    if (normalized == 'UNAUTHORIZED') {
-      return 'Sesi Google tidak valid. Silakan coba login ulang.';
-    }
-    if (normalized == 'UNKNOWN_ERROR') {
-      return 'Gagal login dengan Google.';
-    }
-    return normalized;
   }
 }
