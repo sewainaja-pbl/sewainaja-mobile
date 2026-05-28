@@ -17,46 +17,19 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
   bool _isSearchActive = false;
 
-  late final List<Widget> _screens;
+  late final List<Widget?> _screens;
 
   @override
   void initState() {
     super.initState();
     _screens = [
-      HomeScreen(
-        onSearchActiveChanged: (active) {
-          setState(() => _isSearchActive = active);
-        },
-      ),
-      CategoriesScreen(
-        onBack: () {
-          setState(() {
-            _selectedIndex = 0; // Return to Home
-          });
-        },
-      ),
-      AddProductScreen(
-        onBack: () {
-          setState(() {
-            _selectedIndex = 0; // Return to Home
-          });
-        },
-      ),
-      ChatScreen(
-        onBack: () {
-          setState(() {
-            _selectedIndex = 0; // Return to Home
-          });
-        },
-      ),
-      ProfileSettingsScreen(
-        onBack: () {
-          setState(() {
-            _selectedIndex = 0; // Return to Home
-          });
-        },
-      ),
+      null,
+      null,
+      null,
+      null,
+      null,
     ];
+    _screens[0] = _buildScreen(0);
   }
 
   @override
@@ -68,7 +41,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           // 1. MAIN CONTENT AREA (IndexedStack keeps state alive for all screens)
           IndexedStack(
             index: _selectedIndex,
-            children: _screens,
+            children: List.generate(
+              _screens.length,
+              (index) => _screens[index] ?? const SizedBox.shrink(),
+            ),
           ),
 
           // 2. CUSTOM FLOATING BOTTOM NAVBAR
@@ -141,6 +117,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     return GestureDetector(
       onTap: () {
         setState(() {
+          _screens[index] ??= _buildScreen(index);
           _selectedIndex = index;
         });
       },
@@ -170,5 +147,55 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildScreen(int index) {
+    switch (index) {
+      case 0:
+        return HomeScreen(
+          onSearchActiveChanged: (active) {
+            setState(() => _isSearchActive = active);
+          },
+          onProfileRequested: () {
+            setState(() {
+              _screens[4] ??= _buildScreen(4);
+              _selectedIndex = 4;
+            });
+          },
+        );
+      case 1:
+        return CategoriesScreen(
+          onBack: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        );
+      case 2:
+        return AddProductScreen(
+          onBack: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        );
+      case 3:
+        return ChatScreen(
+          onBack: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        );
+      case 4:
+      default:
+        return ProfileSettingsScreen(
+          onBack: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+          },
+        );
+    }
   }
 }

@@ -60,7 +60,10 @@ class AddressService {
 
     final raw = (body['data'] as List<dynamic>? ?? const []);
     return raw
-        .whereType<Map<String, dynamic>>()
+        .whereType<Map>()
+        .map((item) => item.map(
+              (key, value) => MapEntry(key.toString(), value),
+            ))
         .map(UserAddress.fromJson)
         .toList();
   }

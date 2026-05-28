@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile_screen.dart';
+import 'image_upload_service.dart';
+import 'profile_sync_service.dart';
 import 'rental_deadline_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
@@ -13,18 +15,55 @@ class ProfileSettingsScreen extends StatefulWidget {
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String _name = 'Han Soo Hee';
+  String _defaultLocation = 'Tembalang, Semarang';
+  String _profilePhotoUrl = '';
+  String _userStatus = '';
+  final ImageUploadService _imageUploadService = ImageUploadService();
+  final ProfileSyncService _profileSyncService = const ProfileSyncService();
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    ProfileSyncService.profileRevision.addListener(
+      _handleProfileRevisionChanged,
+    );
+  }
+
+  @override
+  void dispose() {
+    ProfileSyncService.profileRevision.removeListener(
+      _handleProfileRevisionChanged,
+    );
+    super.dispose();
+  }
+
+  void _handleProfileRevisionChanged() {
+    _loadUserData();
   }
 
   Future<void> _loadUserData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final cached = await _profileSyncService.readCachedProfile();
+      if (!mounted) return;
       setState(() {
-        _name = prefs.getString('user_name') ?? 'Han Soo Hee';
+        _name = cached.displayName;
+        _profilePhotoUrl = cached.profilePhotoUrl;
+        _userStatus = cached.status;
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final cachedLocation = prefs.getString('user_default_location')?.trim();
+      if (cachedLocation != null && cachedLocation.isNotEmpty && mounted) {
+        setState(() {
+          _defaultLocation = cachedLocation;
+        });
+      }
+      final synced = await _profileSyncService.syncProfileFromApi();
+      if (synced == null || !mounted) return;
+      setState(() {
+        _name = synced.displayName;
+        _profilePhotoUrl = synced.profilePhotoUrl;
+        _userStatus = synced.status;
       });
     } catch (_) {}
   }
@@ -113,30 +152,36 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(32),
-                      child: Image.asset(
-                        'assets/images/profile_user.png',
+                      child: Image(
+                        image: _resolvedProfileImage(),
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            Image.asset(
+                              'assets/images/profile_user.png',
+                              fit: BoxFit.cover,
+                            ),
                       ),
                     ),
                   ),
                   // Verified badge
-                  Positioned(
-                    bottom: 0,
-                    right: -2,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF012D1D),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.verified_rounded,
-                        color: Colors.white,
-                        size: 14,
+                  if (_userStatus.trim().isNotEmpty)
+                    Positioned(
+                      bottom: 0,
+                      right: -2,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          color: _statusBadgeColor(),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          _statusBadgeIcon(),
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(width: 16),
@@ -154,30 +199,74 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         color: Color(0xFF1B4332),
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        // 5 stars
-                        ...List.generate(
-                          5,
-                          (i) => const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFF8BD00),
-                            size: 16,
-                          ),
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 14,
+                          color: Color(0xFF717973),
                         ),
                         const SizedBox(width: 4),
-                        const Text(
-                          '4.9 (123)',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF000000),
+                        Expanded(
+                          child: Text(
+                            _defaultLocation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF717973),
+                            ),
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    if (_userStatus.trim().isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _statusBackgroundColor(),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          _statusLabel(),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: _statusTextColor(),
+                          ),
+                        ),
+                      )
+                    else
+                      Row(
+                        children: [
+                          ...List.generate(
+                            5,
+                            (i) => const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFF8BD00),
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Text(
+                            '4.9 (123)',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF000000),
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -240,10 +329,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   }
 
   Widget _buildVerticalDivider() {
-    return Container(
-      width: 1,
-      color: const Color(0xFFD5BF87),
-    );
+    return Container(width: 1, color: const Color(0xFFD5BF87));
   }
 
   // ─────────────────────────────────────────────
@@ -334,113 +420,114 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 child: Container(
                   width: 280,
                   margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Product image
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        item['image']!,
-                        width: 64,
-                        height: 64,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.04),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Product image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          item['image']!,
                           width: 64,
                           height: 64,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0E0E0),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.image_outlined,
-                            color: Color(0xFF9E9E9E),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE0E0E0),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.image_outlined,
+                                  color: Color(0xFF9E9E9E),
+                                ),
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Product details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item['title']!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF414844),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item['owner']!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF414844),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item['date']!,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF414844),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Status badge
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFFF87400)
+                              : const Color(0xFF9E9E9E),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          item['status']!,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF000000),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Product details
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            item['title']!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF414844),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item['owner']!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF414844),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            item['date']!,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: Color(0xFF414844),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Status badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? const Color(0xFFF87400)
-                            : const Color(0xFF9E9E9E),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        item['status']!,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF000000),
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
           ),
         ),
       ],
@@ -455,13 +542,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _MenuItem(
         title: 'Edit Profil',
         icon: Icons.edit_outlined,
-        onTap: () {
-          Navigator.push(
+        onTap: () async {
+          await Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const EditProfileScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const EditProfileScreen()),
           );
+          _loadUserData();
         },
       ),
       _MenuItem(
@@ -474,11 +560,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         icon: Icons.favorite_border_rounded,
         onTap: () {},
       ),
-      _MenuItem(
-        title: 'Riwayat',
-        icon: Icons.history_rounded,
-        onTap: () {},
-      ),
+      _MenuItem(title: 'Riwayat', icon: Icons.history_rounded, onTap: () {}),
       _MenuItem(
         title: 'Pengaturan',
         icon: Icons.settings_outlined,
@@ -559,6 +641,80 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ],
       ),
     );
+  }
+
+  ImageProvider _resolvedProfileImage() {
+    if (_profilePhotoUrl.trim().isNotEmpty) {
+      return _imageUploadService.buildImageProvider(_profilePhotoUrl);
+    }
+    return const AssetImage('assets/images/profile_user.png');
+  }
+
+  String _statusLabel() {
+    switch (_userStatus.trim().toLowerCase()) {
+      case 'verified':
+        return 'Terverifikasi';
+      case 'pending':
+        return 'Menunggu Verifikasi';
+      case 'unverified':
+        return 'Belum Verifikasi';
+      case 'suspended':
+        return 'Ditangguhkan';
+      default:
+        return _userStatus;
+    }
+  }
+
+  Color _statusBackgroundColor() {
+    switch (_userStatus.trim().toLowerCase()) {
+      case 'verified':
+        return const Color(0xFFE9F7EF);
+      case 'pending':
+        return const Color(0xFFFFF4DB);
+      case 'suspended':
+        return const Color(0xFFFDECEC);
+      default:
+        return const Color(0xFFF1EDE8);
+    }
+  }
+
+  Color _statusTextColor() {
+    switch (_userStatus.trim().toLowerCase()) {
+      case 'verified':
+        return const Color(0xFF1B7F4C);
+      case 'pending':
+        return const Color(0xFF9A6700);
+      case 'suspended':
+        return const Color(0xFFB42318);
+      default:
+        return const Color(0xFF414844);
+    }
+  }
+
+  Color _statusBadgeColor() {
+    switch (_userStatus.trim().toLowerCase()) {
+      case 'verified':
+        return const Color(0xFF012D1D);
+      case 'pending':
+        return const Color(0xFF9A6700);
+      case 'suspended':
+        return const Color(0xFFB42318);
+      default:
+        return const Color(0xFF717973);
+    }
+  }
+
+  IconData _statusBadgeIcon() {
+    switch (_userStatus.trim().toLowerCase()) {
+      case 'verified':
+        return Icons.verified_rounded;
+      case 'pending':
+        return Icons.schedule_rounded;
+      case 'suspended':
+        return Icons.block_rounded;
+      default:
+        return Icons.person_outline_rounded;
+    }
   }
 }
 

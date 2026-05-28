@@ -10,9 +10,26 @@ import 'address_service.dart';
 import 'app_feedback.dart';
 import 'main_navigation_screen.dart';
 import 'map_common_widgets.dart';
+import 'profile_sync_service.dart';
+
+class DefaultAddressResult {
+  final String label;
+  final LatLng center;
+
+  const DefaultAddressResult({required this.label, required this.center});
+}
 
 class DefaultAddressSetupScreen extends StatefulWidget {
-  const DefaultAddressSetupScreen({super.key});
+  final bool returnSelectionOnSave;
+  final LatLng? initialCenter;
+  final String? initialLabel;
+
+  const DefaultAddressSetupScreen({
+    super.key,
+    this.returnSelectionOnSave = false,
+    this.initialCenter,
+    this.initialLabel,
+  });
 
   @override
   State<DefaultAddressSetupScreen> createState() => _DefaultAddressSetupScreenState();
@@ -30,6 +47,12 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialCenter != null) {
+      _center = widget.initialCenter!;
+    }
+    if (widget.initialLabel != null && widget.initialLabel!.trim().isNotEmpty) {
+      _addressLabel = widget.initialLabel!.trim();
+    }
     _initLocation();
   }
 
@@ -125,7 +148,14 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
         }
       }
 
+      ProfileSyncService.profileRevision.value++;
       if (!mounted) return;
+      if (widget.returnSelectionOnSave) {
+        Navigator.of(context).pop(
+          DefaultAddressResult(label: _addressLabel, center: _center),
+        );
+        return;
+      }
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationScreen()),

@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'onboarding_screen.dart';
 import 'package:latlong2/latlong.dart';
+import 'address_service.dart';
+import 'default_address_setup_screen.dart';
 import 'map_common_widgets.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
 import 'auth_session_service.dart';
 import 'image_upload_service.dart';
+import 'profile_sync_service.dart';
 import 'upload_image_policy.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -22,13 +23,18 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
-  String _name = "Han Soo Hee";
-  String _email = "hansoohee@gmail.com";
-  String _phone = "+62081234567890";
+  static const LatLng _fallbackMapCenter = LatLng(-6.966667, 110.416664);
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+  final FocusNode _nameFocusNode = FocusNode();
+  final FocusNode _phoneFocusNode = FocusNode();
+  final AddressService _addressService = const AddressService();
   String _defaultLocation = "Tembalang, Semarang";
-  final LatLng _profileMapCenter = const LatLng(-6.966667, 110.416664);
+  LatLng _profileMapCenter = _fallbackMapCenter;
   final ImageUploadService _imageUploadService = ImageUploadService();
   final AuthSessionService _authSessionService = const AuthSessionService();
+  final ProfileSyncService _profileSyncService = const ProfileSyncService();
   String _profilePhotoUrl = '';
   ProcessedImageFile? _pendingProfilePhoto;
   bool _isSaving = false;
@@ -45,21 +51,94 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _nameFocusNode.addListener(_refreshFieldState);
+    _phoneFocusNode.addListener(_refreshFieldState);
     _loadUserData();
+  }
+
+  void _refreshFieldState() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameFocusNode.removeListener(_refreshFieldState);
+    _phoneFocusNode.removeListener(_refreshFieldState);
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _nameFocusNode.dispose();
+    _phoneFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      final cached = await _profileSyncService.readCachedProfile();
+      if (!mounted) return;
       setState(() {
-        _name = prefs.getString('user_name') ?? "Han Soo Hee";
-        _email = prefs.getString('user_email') ?? "hansoohee@gmail.com";
-        _phone = prefs.getString('user_phone') ?? "+62081234567890";
-        _defaultLocation =
-            prefs.getString('user_default_location') ?? "Tembalang, Semarang";
-        _profilePhotoUrl = prefs.getString('user_profile_photo_url') ?? '';
+        _nameController.text = cached.displayName;
+        _emailController.text = cached.displayEmail;
+        _phoneController.text = cached.displayPhone;
+        _profilePhotoUrl = cached.profilePhotoUrl;
       });
+      final prefs = await SharedPreferences.getInstance();
+      final defaultLocation = prefs.getString('user_default_location');
+      final defaultLat = prefs.getDouble('user_default_lat');
+      final defaultLng = prefs.getDouble('user_default_lng');
+      if (defaultLocation != null && defaultLocation.trim().isNotEmpty && mounted) {
+        setState(() {
+          _defaultLocation = defaultLocation;
+        });
+      }
+      if (defaultLat != null && defaultLng != null && mounted) {
+        setState(() {
+          _profileMapCenter = LatLng(defaultLat, defaultLng);
+        });
+      }
+      final synced = await _profileSyncService.syncProfileFromApi();
+      if (synced == null || !mounted) return;
+      setState(() {
+        _nameController.text = synced.displayName;
+        _emailController.text = synced.displayEmail;
+        _phoneController.text = synced.displayPhone;
+        _profilePhotoUrl = synced.profilePhotoUrl;
+      });
+      await _loadDefaultAddressFromApi();
     } catch (_) {}
+  }
+
+  Future<void> _loadDefaultAddressFromApi() async {
+    try {
+      final address = await _addressService.fetchDefaultAddress();
+      if (address == null || !mounted) return;
+      final resolvedLabel = address.fullAddress.trim().isNotEmpty
+          ? address.fullAddress.trim()
+          : address.label.trim();
+      final lat = address.latitude;
+      final lng = address.longitude;
+      final prefs = await SharedPreferences.getInstance();
+      if (resolvedLabel.isNotEmpty) {
+        await prefs.setString('user_default_location', resolvedLabel);
+      }
+      if (lat != null && lng != null) {
+        await prefs.setDouble('user_default_lat', lat);
+        await prefs.setDouble('user_default_lng', lng);
+      }
+      if (!mounted) return;
+      setState(() {
+        if (resolvedLabel.isNotEmpty) {
+          _defaultLocation = resolvedLabel;
+        }
+        if (lat != null && lng != null) {
+          _profileMapCenter = LatLng(lat, lng);
+        }
+      });
+    } catch (_) {
+      // Keep cached location when address API is temporarily unavailable.
+    }
   }
 
   Future<void> _pickProfilePhoto() async {
@@ -77,22 +156,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _pendingProfilePhoto = picked;
       });
     } catch (error) {
+      if (!mounted) return;
       showAppErrorSnack(context, safeImageError(error));
     }
   }
 
   Future<void> _saveProfile() async {
     if (_isSaving) return;
+    final trimmedName = _nameController.text.trim();
+    final trimmedPhone = _phoneController.text.trim();
+    if (trimmedName.isEmpty) {
+      showAppErrorSnack(context, 'Nama tidak boleh kosong.');
+      return;
+    }
+    if (trimmedPhone.isEmpty) {
+      showAppErrorSnack(context, 'Nomor telepon tidak boleh kosong.');
+      return;
+    }
 
     setState(() => _isSaving = true);
     try {
       final prefs = await SharedPreferences.getInstance();
       final token = await _authSessionService.getValidIdToken(forceRefresh: true) ?? '';
       final userId = prefs.getString('user_id')?.trim() ?? '';
+      if (token.isEmpty) {
+        if (!mounted) return;
+        showAppErrorSnack(context, 'Sesi login sudah tidak valid. Silakan login ulang.');
+        return;
+      }
       var resolvedPhotoUrl = _profilePhotoUrl;
 
       if (_pendingProfilePhoto != null) {
         if (userId.isEmpty) {
+          if (!mounted) return;
           showAppErrorSnack(context, 'User ID tidak ditemukan. Silakan login ulang.');
           return;
         }
@@ -102,40 +198,52 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         );
       }
 
-      if (token.isNotEmpty) {
-        final response = await http.patch(
-          Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-          body: jsonEncode({
-            'name': _name,
-            'phone': _phone,
-            'profilePhotoUrl': resolvedPhotoUrl,
-          }),
+      final response = await http.patch(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': trimmedName,
+          'phone': trimmedPhone,
+          'profilePhotoUrl': resolvedPhotoUrl,
+        }),
+      );
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode != 200 || body['success'] != true) {
+        if (!mounted) return;
+        final message = body['error']?['message']?.toString() ?? 'Gagal memperbarui profil.';
+        showAppErrorSnack(
+          context,
+          message.toLowerCase().contains('token')
+              ? 'Sesi login sudah tidak valid. Silakan login ulang.'
+              : message,
         );
-        final body = jsonDecode(response.body) as Map<String, dynamic>;
-        if (response.statusCode != 200 || body['success'] != true) {
-          if (!mounted) return;
-          final message = body['error']?['message']?.toString() ?? 'Gagal memperbarui profil.';
-          showAppErrorSnack(
-            context,
-            message.toLowerCase().contains('token')
-                ? 'Sesi login sudah tidak valid. Silakan login ulang.'
-                : message,
-          );
-          return;
-        }
+        return;
       }
 
-      await prefs.setString('user_profile_photo_url', resolvedPhotoUrl);
+      final responseData = body['data'];
+      final updatedProfile = responseData is Map<String, dynamic>
+          ? CachedUserProfile.fromJson(responseData)
+          : CachedUserProfile(
+              name: trimmedName,
+              email: _emailController.text.trim(),
+              phone: trimmedPhone,
+              profilePhotoUrl: resolvedPhotoUrl,
+              status: '',
+            );
+      await _profileSyncService.saveProfileToCache(updatedProfile, notify: true);
       if (!mounted) return;
       setState(() {
-        _profilePhotoUrl = resolvedPhotoUrl;
+        _nameController.text = updatedProfile.displayName;
+        _emailController.text = updatedProfile.displayEmail;
+        _phoneController.text = updatedProfile.displayPhone;
+        _profilePhotoUrl = updatedProfile.profilePhotoUrl;
         _pendingProfilePhoto = null;
       });
-      showAppSuccessSnack(context, 'Foto profil berhasil diperbarui.');
+      if (!mounted) return;
+      showAppSuccessSnack(context, 'Profil berhasil diperbarui.');
       if (widget.onBack != null) {
         widget.onBack!();
       } else {
@@ -151,95 +259,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFFF8EF),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          "Logout",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        content: const Text(
-          "Apakah Anda yakin ingin keluar?",
-          style: TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              "Batal",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF1B4332),
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Keluar",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                color: Color(0xFFD32F2F),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      final prefs = await SharedPreferences.getInstance();
-      final hasSeenOnboarding = prefs.getBool('onboarding_seen') ?? true;
-      await FirebaseAuth.instance.signOut();
-      await prefs.clear();
-      await prefs.setBool('onboarding_seen', hasSeenOnboarding);
-
-      if (!mounted) return;
-
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        (route) => false,
-      );
-    }
-  }
-
-  Widget _buildLogoutButton() {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.symmetric(horizontal: 24),
-      child: OutlinedButton.icon(
-        onPressed: _handleLogout,
-        icon: const Icon(Icons.logout_rounded, color: Color(0xFFD32F2F)),
-        label: const Text(
-          "Logout",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFD32F2F),
-          ),
-        ),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: Color(0xFFD32F2F), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-          ),
-          backgroundColor: Colors.white,
-          elevation: 0,
+  Future<void> _editDefaultAddress() async {
+    if (_isSaving) return;
+    final result = await Navigator.push<DefaultAddressResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DefaultAddressSetupScreen(
+          returnSelectionOnSave: true,
+          initialCenter: _profileMapCenter,
+          initialLabel: _defaultLocation,
         ),
       ),
     );
+    if (result == null || !mounted) return;
+    setState(() {
+      _defaultLocation = result.label;
+      _profileMapCenter = result.center;
+    });
   }
 
   @override
@@ -319,11 +355,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
             // ### [SECTION 3: PROFILE FORM CARD] ###
             _buildProfileFormCard(),
-
-            const SizedBox(height: 24),
-
-            // ### [LOGOUT BUTTON] ###
-            _buildLogoutButton(),
           ],
         ),
       ),
@@ -419,21 +450,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           // 3A. NAMA
           _buildFormRow(
             label: "Nama", // ID: '536:1945'
-            value: _name, // ID: '536:2158'
+            controller: _nameController,
+            focusNode: _nameFocusNode,
+            helperText: 'Tap untuk ubah nama profil.',
           ),
           const SizedBox(height: 16),
 
           // 3B. EMAIL
           _buildFormRow(
             label: "Email", // ID: '536:1946'
-            value: _email, // ID: '536:2159'
+            controller: _emailController,
+            readOnly: true,
+            helperText: 'Email belum bisa diubah dari aplikasi.',
           ),
           const SizedBox(height: 16),
 
           // 3C. NO TELPON
           _buildFormRow(
             label: "No. Telpon", // ID: '536:1948'
-            value: _phone, // ID: '536:2161'
+            controller: _phoneController,
+            focusNode: _phoneFocusNode,
+            keyboardType: TextInputType.phone,
+            helperText: 'Tap untuk ubah nomor telepon.',
           ),
           const SizedBox(height: 16),
 
@@ -445,41 +483,150 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   // Helper to build standard Row (Nama, Email, Telpon)
-  Widget _buildFormRow({required String label, required String value}) {
+  Widget _buildFormRow({
+    required String label,
+    required TextEditingController controller,
+    FocusNode? focusNode,
+    bool readOnly = false,
+    TextInputType keyboardType = TextInputType.text,
+    String? helperText,
+  }) {
+    final accentColor = readOnly
+        ? const Color(0xFF717973)
+        : const Color(0xFF012D1D);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: const Color(0xFFF0ECE1), // Color_Row_Bg: Soft Beige
         borderRadius: BorderRadius.circular(11),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontFamily:
-                  'Plus Jakarta Sans', // Fallback to Poppins if missing, but we assume it works
-              fontSize: 14,
-              fontWeight: FontWeight.w600, // SemiBold
-              color: Color(0xFF1B4332), // Color_Primary
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: readOnly
+            ? null
+            : () {
+                focusNode?.requestFocus();
+              },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1B4332),
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: readOnly
+                        ? const Color(0xFFE4E0D5)
+                        : const Color(0xFFE9F2ED),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        readOnly
+                            ? Icons.lock_outline_rounded
+                            : Icons.edit_outlined,
+                        size: 14,
+                        color: accentColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        readOnly ? 'Read only' : 'Tap untuk ubah',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              textAlign: TextAlign.right,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                fontWeight: FontWeight.w400, // Regular
-                color: Colors.black, // Color_Text_Main
+            const SizedBox(height: 10),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: readOnly ? 0.52 : 0.96),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: readOnly
+                      ? const Color(0xFFD8D0C3)
+                      : (focusNode?.hasFocus ?? false)
+                            ? const Color(0xFF2F6743)
+                            : const Color(0xFFC9D5CE),
+                  width: (focusNode?.hasFocus ?? false) ? 1.4 : 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      readOnly: readOnly,
+                      keyboardType: keyboardType,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: readOnly
+                            ? const Color(0xFF717973)
+                            : const Color(0xFF1C1C19),
+                      ),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                        border: InputBorder.none,
+                        hintText: label,
+                        hintStyle: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          color: Color(0xFF9AA29D),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    readOnly
+                        ? Icons.info_outline_rounded
+                        : Icons.chevron_right_rounded,
+                    size: 18,
+                    color: accentColor.withValues(alpha: 0.8),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            if (helperText != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                helperText,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF717973),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -512,7 +659,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 child: Text(
                   _defaultLocation, // ID: '536:2186'
                   textAlign: TextAlign.right,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontFamily: 'Poppins',
@@ -523,6 +670,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          GestureDetector(
+            onTap: _editDefaultAddress,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFC9D5CE)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(
+                    Icons.edit_location_alt_rounded,
+                    size: 18,
+                    color: Color(0xFF012D1D),
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tap untuk ubah alamat utama',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF012D1D),
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: Color(0xFF012D1D),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 12),
 
