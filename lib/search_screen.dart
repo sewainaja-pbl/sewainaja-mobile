@@ -295,7 +295,7 @@ class SearchSheetState extends State<SearchSheet>
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
       physics: const BouncingScrollPhysics(),
       itemCount: _results.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final product = _results[index];
         return FadeInUp(

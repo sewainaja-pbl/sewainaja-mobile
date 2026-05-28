@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
-import 'animated_splash_screen.dart';
 import 'presentation/controllers/auth_controller.dart';
 import 'login_screen.dart';
 

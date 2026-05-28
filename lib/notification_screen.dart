@@ -3,69 +3,291 @@ import 'package:flutter/material.dart';
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
+  static const List<_InboxNotification> _recentNotifications = [
+    _InboxNotification(
+      title: 'Permintaan sewa baru',
+      message:
+          'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Cek detailnya sebelum kamu respon.',
+      time: 'Baru saja',
+      category: 'Sewa',
+      initials: 'AM',
+      highlight: true,
+    ),
+    _InboxNotification(
+      title: 'Pesan baru masuk',
+      message:
+          'Ryan menanyakan apakah barang masih tersedia untuk akhir pekan ini.',
+      time: '12 menit lalu',
+      category: 'Chat',
+      initials: 'RY',
+    ),
+    _InboxNotification(
+      title: 'Pengingat pengembalian',
+      message:
+          'Sewa kamera Fujifilm X-T30 akan selesai besok pukul 10.00.',
+      time: '1 jam lalu',
+      category: 'Pengingat',
+      initials: 'RM',
+    ),
+  ];
+
+  static const List<_InboxNotification> _unreadNotifications = [
+    _InboxNotification(
+      title: 'Permintaan sewa baru',
+      message:
+          'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Buka sekarang untuk lihat detail permintaannya.',
+      time: 'Baru saja',
+      category: 'Sewa',
+      initials: 'AM',
+      highlight: true,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4),
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
+        centerTitle: true,
         title: const Text(
-          'Notifications',
+          'Notifikasi',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 26,
+            fontSize: 22,
             fontWeight: FontWeight.w700,
             color: Color(0xFF012D1D),
           ),
         ),
-        centerTitle: false,
       ),
       body: DefaultTabController(
         length: 2,
         child: Column(
           children: [
             Container(
+              margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(
-                    color: const Color(0xFF717973).withValues(alpha: 0.2),
-                    width: 1.0,
-                  ),
-                ),
+                color: const Color(0xFFF1EDE8),
+                borderRadius: BorderRadius.circular(999),
               ),
               child: const TabBar(
-                indicatorColor: Color(0xFF012D1D),
-                indicatorWeight: 2.0,
+                dividerColor: Colors.transparent,
+                indicator: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(999)),
+                ),
+                indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Color(0xFF012D1D),
                 unselectedLabelColor: Color(0xFF717973),
                 labelStyle: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
                 unselectedLabelStyle: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
                 tabs: [
-                  Tab(text: 'Recent activity'),
-                  Tab(text: 'Unread'),
+                  Tab(text: 'Semua'),
+                  Tab(text: 'Belum dibaca'),
                 ],
               ),
             ),
             Expanded(
               child: TabBarView(
                 children: [
-                  _buildRecentActivityTab(),
-                  _buildUnreadTab(),
+                  _NotificationList(
+                    title: 'Hari ini',
+                    subtitle: 'Update terbaru yang paling relevan buat kamu.',
+                    items: _recentNotifications,
+                  ),
+                  _NotificationList(
+                    title: 'Butuh perhatian',
+                    subtitle:
+                        'Notifikasi yang belum kamu buka dan sebaiknya dicek lebih dulu.',
+                    items: _unreadNotifications,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationList extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<_InboxNotification> items;
+
+  const _NotificationList({
+    required this.title,
+    required this.subtitle,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF012D1D),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            height: 1.4,
+            fontWeight: FontWeight.w500,
+            color: Color(0xFF717973),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...items.map((item) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _NotificationCard(item: item),
+            )),
+      ],
+    );
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final _InboxNotification item;
+
+  const _NotificationCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showNotificationDetail(context, item),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: item.highlight ? const Color(0xFFEAF4EE) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: item.highlight
+                ? const Color(0xFFCDE2D6)
+                : const Color(0xFFF0EBE4),
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0E000000),
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: item.highlight
+                    ? const Color(0xFF0E4A31)
+                    : const Color(0xFFF4F1EB),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                item.initials,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color:
+                      item.highlight ? Colors.white : const Color(0xFF012D1D),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1C1C19),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      _NotificationBadge(label: item.category),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.message,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      height: 1.45,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF717973),
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Text(
+                        item.time,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF717973),
+                        ),
+                      ),
+                      if (item.highlight) ...[
+                        const SizedBox(width: 10),
+                        const Icon(
+                          Icons.circle,
+                          size: 8,
+                          color: Color(0xFF012D1D),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Baru',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -75,282 +297,209 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivityTab() {
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        _buildSectionHeader('Today'),
-        _buildRecentItem(
-          title: 'Seseorang menambahkan ke favorit',
-          time: '3 hours ago',
-          hasAvatar: false,
-        ),
-        _buildRecentItem(
-          avatarColor: const Color(0xFF005AFF),
-          avatarText: 'RD',
-          title: 'Robert Doe ',
-          subtitle: 'memberikan ulasan di barang anda',
-          time: '5 hours ago',
-        ),
-        _buildSectionHeader('Yesterdaty'),
-        _buildRecentItem(
-          avatarColor: const Color(0xFFFF6B4A),
-          avatarText: 'VA',
-          title: 'Robert Doe ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildRecentItem(
-          avatarColor: const Color(0xFF282A37),
-          avatarText: '',
-          title: 'Robert Doe ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildRecentItem(
-          avatarColor: const Color(0xFFFFFFFF),
-          avatarText: 'PA',
-          avatarTextColor: const Color(0xFF000000),
-          avatarBorder: true,
-          title: 'Pam Aeonas ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildSectionHeader('Week Ago'),
-        _buildRecentItem(
-          avatarColor: const Color(0xFFFF6B4A),
-          avatarText: 'VA',
-          title: 'Robert Doe ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildRecentItem(
-          avatarColor: const Color(0xFF282A37),
-          avatarText: '',
-          title: 'Robert Doe ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildRecentItem(
-          avatarColor: const Color(0xFFFFFFFF),
-          avatarText: 'PA',
-          avatarTextColor: const Color(0xFF000000),
-          avatarBorder: true,
-          title: 'Pam Aeonas ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-        _buildSectionHeader('Year Ago'),
-        _buildRecentItem(
-          avatarColor: const Color(0xFFFF6B4A),
-          avatarText: 'VA',
-          title: 'Robert Doe ',
-          subtitle: 'shared the meeting Boctamp Online Course',
-          time: '3 hours ago',
-        ),
-      ],
+  void _showNotificationDetail(BuildContext context, _InboxNotification item) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFF8EF),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7D2C9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                item.title,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.message,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF717973),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailRow(label: 'Pemohon', value: 'Aminah'),
+                    SizedBox(height: 10),
+                    _DetailRow(label: 'Barang', value: 'Sony a6000'),
+                    SizedBox(height: 10),
+                    _DetailRow(label: 'Durasi', value: '14-16 Juni'),
+                    SizedBox(height: 10),
+                    _DetailRow(label: 'Status', value: 'Menunggu respon'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF012D1D),
+                        side: const BorderSide(color: Color(0xFFBFC8C1)),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: const Text(
+                        'Nanti saja',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF012D1D),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: const Text(
+                        'Lihat ringkasan',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
+}
 
-  Widget _buildUnreadTab() {
-    return ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        _buildSectionHeader('Today'),
-        _buildUnreadItem(
-          avatarText: 'RD',
-          title: 'Aminah',
-          subtitle: 'Permintaan sewa',
-          time: '3 hours ago',
-        ),
-        _buildUnreadItem(
-          avatarText: 'RR',
-          title: 'Chat dari Ryan Reynolds',
-          subtitle: 'Barangnya untuk hari minggu ready gak?',
-          time: '3 hours ago',
-        ),
-        _buildSectionHeader('Yesterdaty'),
-      ],
-    );
-  }
+class _NotificationBadge extends StatelessWidget {
+  final String label;
 
-  Widget _buildSectionHeader(String title) {
+  const _NotificationBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFFDF9F4),
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 20, bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F1EB),
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(
-        title,
+        label,
         style: const TextStyle(
           fontFamily: 'Poppins',
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-          color: Color(0xFF000000),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF012D1D),
         ),
       ),
     );
   }
+}
 
-  // --- RECENT ACTIVITY ITEM ---
-  Widget _buildRecentItem({
-    Color? avatarColor,
-    String? avatarText,
-    Color avatarTextColor = Colors.white,
-    bool avatarBorder = false,
-    bool hasAvatar = true,
-    required String title,
-    String subtitle = '',
-    required String time,
-  }) {
-    return Container(
-      color: const Color(0xFFFFFFFF),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      margin: const EdgeInsets.only(bottom: 2), // jarak kecil sebagai pemisah
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (hasAvatar) ...[
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: avatarColor,
-                shape: BoxShape.circle,
-                border: avatarBorder ? Border.all(color: const Color(0xFFECEDF2), width: 1) : null,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                avatarText ?? '',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: avatarTextColor,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: Color(0xFF282A37),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: title,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      TextSpan(
-                        text: subtitle,
-                        style: const TextStyle(fontWeight: FontWeight.w400),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Color(0xFF515978),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+class _InboxNotification {
+  final String title;
+  final String message;
+  final String time;
+  final String category;
+  final String initials;
+  final bool highlight;
 
-  // --- UNREAD ITEM ---
-  Widget _buildUnreadItem({
-    required String avatarText,
-    required String title,
-    required String subtitle,
-    required String time,
-  }) {
-    return Container(
-      color: const Color(0xFFF6F7F9),
-      margin: const EdgeInsets.only(bottom: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: const BoxDecoration(
-              color: Color(0xFF282A37),
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              avatarText,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFFFFFFF),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF282A37),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Color(0xFF515978),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Color(0xFF717973),
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            width: 10,
-            height: 10,
-            decoration: const BoxDecoration(
+  const _InboxNotification({
+    required this.title,
+    required this.message,
+    required this.time,
+    required this.category,
+    required this.initials,
+    this.highlight = false,
+  });
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 72,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
               color: Color(0xFF012D1D),
-              shape: BoxShape.circle,
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF717973),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
