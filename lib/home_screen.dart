@@ -9,6 +9,7 @@ import 'item_detail_screen.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'models/product.dart';
+import 'profile_sync_service.dart';
 import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
@@ -16,7 +17,13 @@ import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueChanged<bool>? onSearchActiveChanged;
-  const HomeScreen({super.key, this.onSearchActiveChanged});
+  final VoidCallback? onProfileRequested;
+
+  const HomeScreen({
+    super.key,
+    this.onSearchActiveChanged,
+    this.onProfileRequested,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -27,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen>
   static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
   final AddressService _addressService = const AddressService();
   final ImageUploadService _imageUploadService = ImageUploadService();
+  final ProfileSyncService _profileSyncService = const ProfileSyncService();
   String selectedCategory = 'All';
   String _defaultLocationLabel = 'Tembalang, Semarang';
   String _userName = 'Han Soo Hee';
@@ -301,6 +309,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _loadDefaultLocationLabel();
+    ProfileSyncService.profileRevision.addListener(_handleProfileRevisionChanged);
 
     // Home sheet slides UP (out) when search opens, slides DOWN back in when closing
     _homeSheetAnim = AnimationController(
@@ -316,10 +325,19 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    ProfileSyncService.profileRevision.removeListener(
+      _handleProfileRevisionChanged,
+    );
     _searchController.dispose();
     _searchFocusNode.dispose();
     _homeSheetAnim.dispose();
     super.dispose();
+  }
+
+  void _handleProfileRevisionChanged() {
+    _loadCachedProfile();
+    _loadCachedLocation();
+    _syncDefaultLocationFromApi();
   }
 
   void _openSearch() {
@@ -347,10 +365,16 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadDefaultLocationLabel() async {
+    await _loadCachedProfile();
+    await _loadCachedLocation();
+    if (!mounted) return;
+    _syncProfileFromApi();
+    _syncDefaultLocationFromApi();
+  }
+
+  Future<void> _loadCachedLocation() async {
     final prefs = await SharedPreferences.getInstance();
     final label = prefs.getString('user_default_location')?.trim();
-    final name = prefs.getString('user_name')?.trim();
-    final profilePhotoUrl = prefs.getString('user_profile_photo_url')?.trim();
     final lat = prefs.getDouble('user_default_lat');
     final lng = prefs.getDouble('user_default_lng');
     if (!mounted) return;
@@ -358,23 +382,38 @@ class _HomeScreenState extends State<HomeScreen>
       if (label != null && label.isNotEmpty) {
         _defaultLocationLabel = label;
       }
-      if (name != null && name.isNotEmpty) {
-        _userName = name;
-      }
-      if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
-        _profilePhotoUrl = profilePhotoUrl;
-      }
       if (lat != null && lng != null) {
         _mapCenter = LatLng(lat, lng);
       }
     });
-    _syncDefaultLocationFromApi();
+  }
+
+  Future<void> _loadCachedProfile() async {
+    final profile = await _profileSyncService.readCachedProfile();
+    if (!mounted) return;
+    setState(() {
+      _userName = profile.displayName;
+      _profilePhotoUrl = profile.profilePhotoUrl;
+    });
+  }
+
+  Future<void> _syncProfileFromApi() async {
+    try {
+      final profile = await _profileSyncService.syncProfileFromApi();
+      if (profile == null || !mounted) return;
+      setState(() {
+        _userName = profile.displayName;
+        _profilePhotoUrl = profile.profilePhotoUrl;
+      });
+    } catch (_) {
+      // Keep cache as fallback if API sync fails.
+    }
   }
 
   Future<void> _syncDefaultLocationFromApi() async {
     try {
       final address = await _addressService.fetchDefaultAddress();
-      if (address == null || !mounted) return;
+      if (address == null) return;
 
       final resolvedLabel = address.fullAddress.trim().isNotEmpty
           ? address.fullAddress.trim()
@@ -538,56 +577,104 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              image: DecorationImage(
-                image: _profilePhotoUrl.trim().isEmpty
-                    ? const AssetImage('assets/images/profile_user.png')
-                    : _imageUploadService.buildImageProvider(_profilePhotoUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  _userName,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFDF9F4),
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 12,
-                      color: Color(0xFFFDF9F4),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _defaultLocationLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          color: Color(0xFFFDF9F4),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onProfileRequested,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 45,
+                        height: 45,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          image: DecorationImage(
+                            image: _profilePhotoUrl.trim().isEmpty
+                                ? const AssetImage('assets/images/profile_user.png')
+                                : _imageUploadService.buildImageProvider(
+                                    _profilePhotoUrl,
+                                  ),
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: widget.onProfileRequested,
+                        child: Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                _userName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFFFDF9F4),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              size: 16,
+                              color: Color(0xFFFDF9F4),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const MapExploreScreen(),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Row(
+                          children: [
+                              const Icon(
+                                Icons.location_on_rounded,
+                                size: 12,
+                                color: Color(0xFFFDF9F4),
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _defaultLocationLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    color: Color(0xFFFDF9F4),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
