@@ -4,6 +4,7 @@ import 'edit_profile_screen.dart';
 import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'rental_deadline_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -564,7 +565,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _MenuItem(
         title: 'Pengaturan',
         icon: Icons.settings_outlined,
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SettingsScreen()),
+          );
+        },
       ),
     ];
 
