@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 
+/// Widget kartu produk yang support baik asset image maupun network image.
+/// Gunakan [ProductCard] dengan [ProductData] untuk data legacy/static,
+/// atau gunakan [ProductCard.fromNetwork] untuk data dari Firestore.
 class ProductCard extends StatelessWidget {
   final ProductData product;
   final bool isHorizontal;
@@ -10,6 +13,16 @@ class ProductCard extends StatelessWidget {
     required this.product,
     this.isHorizontal = false,
   });
+
+  /// Membangun ImageProvider yang tepat:
+  /// - Jika image dimulai dengan "http" → NetworkImage
+  /// - Selain itu → AssetImage
+  ImageProvider _buildImageProvider(String imagePath) {
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return NetworkImage(imagePath);
+    }
+    return AssetImage(imagePath);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +36,7 @@ class ProductCard extends StatelessWidget {
           border: Border.all(
             color: const Color(0xFF2F6743),
             width: 0.5,
-          ), // Border 0.5px
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -42,11 +55,17 @@ class ProductCard extends StatelessWidget {
                 borderRadius: const BorderRadius.horizontal(
                   left: Radius.circular(15),
                 ),
-                image: DecorationImage(
-                  image: AssetImage(product.image),
-                  fit: BoxFit.contain,
-                ),
+                image: product.image.isNotEmpty
+                    ? DecorationImage(
+                        image: _buildImageProvider(product.image),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
+              child: product.image.isEmpty
+                  ? const Icon(Icons.image_not_supported_outlined,
+                      color: Color(0xFFB0B0B0))
+                  : null,
             ),
             Expanded(
               child: Padding(
@@ -115,7 +134,11 @@ class ProductCard extends StatelessWidget {
       );
     }
 
-    // Vertical card for grid/slider (styled exactly like categories_tech_screen.dart)
+    // Vertical card for grid/slider
+    final bool isNetworkImage =
+        product.image.startsWith('http://') ||
+        product.image.startsWith('https://');
+
     return Container(
       width: 160,
       decoration: BoxDecoration(
@@ -137,10 +160,59 @@ class ProductCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: const Color(0xFFD9D9D9),
                       borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: AssetImage(product.image),
-                        fit: BoxFit.cover,
-                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: product.image.isEmpty
+                          ? const Center(
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Color(0xFFB0B0B0),
+                                size: 32,
+                              ),
+                            )
+                          : isNetworkImage
+                          ? Image.network(
+                              product.image,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Color(0xFFB0B0B0),
+                                  size: 32,
+                                ),
+                              ),
+                              loadingBuilder: (_, child, progress) {
+                                if (progress == null) return child;
+                                return const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Color(0xFF012D1D),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              product.image,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (_, __, ___) => const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Color(0xFFB0B0B0),
+                                  size: 32,
+                                ),
+                              ),
+                            ),
                     ),
                   ),
                   Positioned(
