@@ -4,12 +4,13 @@ import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'address_service.dart';
+import 'data/models/item_model.dart';
+import 'data/repositories/item_repository.dart';
 import 'image_upload_service.dart';
 import 'item_detail_screen.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'models/product.dart';
-import 'profile_sync_service.dart';
 import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
@@ -18,7 +19,6 @@ import 'search_screen.dart';
 class HomeScreen extends StatefulWidget {
   final ValueChanged<bool>? onSearchActiveChanged;
   final VoidCallback? onProfileRequested;
-
   const HomeScreen({
     super.key,
     this.onSearchActiveChanged,
@@ -34,282 +34,51 @@ class _HomeScreenState extends State<HomeScreen>
   static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
   final AddressService _addressService = const AddressService();
   final ImageUploadService _imageUploadService = ImageUploadService();
-  final ProfileSyncService _profileSyncService = const ProfileSyncService();
+  final ItemRepository _itemRepo = ItemRepository();
+
   String selectedCategory = 'All';
   String _defaultLocationLabel = 'Tembalang, Semarang';
   String _userName = 'Han Soo Hee';
   String _profilePhotoUrl = '';
   LatLng _mapCenter = _fallbackCenter;
 
+  // Kategori dari Firestore + "All" selalu ada di depan
+  List<String> _firestoreCategories = [];
+
   // Search state shared with SearchScreen
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   bool _isSearchActive = false;
-  final GlobalKey<SearchSheetState> _searchSheetKey = GlobalKey<SearchSheetState>();
+  final GlobalKey<SearchSheetState> _searchSheetKey =
+      GlobalKey<SearchSheetState>();
 
   // Animation for home sheet sliding down when search opens
   late final AnimationController _homeSheetAnim;
   late final Animation<Offset> _homeSheetSlide;
   bool _isMapCardPressed = false;
-  final List<String> categories = [
-    'All',
-    'Tech',
-    'Power Tools',
-    'Outfit',
-    'Camp Tools',
-    'Sports',
-    'Cook',
-  ];
 
-  // List Produk Riil Kategori Tech
-  final List<ProductData> _techProducts = [
-    ProductData(
-      name: "Vivo Y15s 8/128GB",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/handphone.jpg",
-    ),
-    ProductData(
-      name: "Realme C55 12/512GB",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/hp_realme.jpg",
-    ),
-    ProductData(
-      name: "EOS 5D Mark IV",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/camera_canon.jpg",
-    ),
-    ProductData(
-      name: "Sony FX30",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/camera_sony.jpg",
-    ),
-    ProductData(
-      name: "Asus Zenfone 12 Ultra 16/512GB",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/hp_asus.jpg",
-    ),
-    ProductData(
-      name: "Nikon Coolpix B500",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/camera_nikon.jpg",
-    ),
-  ];
-
-  // List Produk Riil Kategori Power Tools
-  final List<ProductData> _powerToolsProducts = [
-    ProductData(
-      name: "Bor Listrik Cordless 12V",
-      price: "Rp.50,000",
-      rating: "4.8(124)",
-      image: "assets/images/bor_listrik.png",
-    ),
-    ProductData(
-      name: "Mesin Gerinda Tangan 4-Inch",
-      price: "Rp.45,000",
-      rating: "4.7(88)",
-      image: "assets/images/mesin_gerinda.png",
-    ),
-    ProductData(
-      name: "Gergaji Circular Listrik 7-Inch",
-      price: "Rp.75,000",
-      rating: "4.9(42)",
-      image: "assets/images/gergaji_circular.png",
-    ),
-    ProductData(
-      name: "Obeng Listrik Cordless Mini",
-      price: "Rp.30,000",
-      rating: "4.6(15)",
-      image: "assets/images/obeng_listrik.png",
-    ),
-    ProductData(
-      name: "Mesin Serut Kayu Listrik",
-      price: "Rp.60,000",
-      rating: "4.8(54)",
-      image: "assets/images/mesin_serut.png",
-    ),
-    ProductData(
-      name: "Mesin Amplas Listrik",
-      price: "Rp.35,000",
-      rating: "4.7(29)",
-      image: "assets/images/mesin_amplas.png",
-    ),
-  ];
-
-  // List Produk Riil Kategori Outfit
-  final List<ProductData> _outfitProducts = [
-    ProductData(
-      name: "Kemeja Panjang Krem",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/kemeja_warna_putih.jpg",
-    ),
-    ProductData(
-      name: "Kemeja Warna Coklat",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/kemeja_lengan_panjang.jpg",
-    ),
-    ProductData(
-      name: "Jas Hitam",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/jaz_hitam.jpg",
-    ),
-    ProductData(
-      name: "Jas Abu-Abu",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/jaz_abu.jpg",
-    ),
-    ProductData(
-      name: "Celana Panjang Jeans",
-      price: "Rp.120,000",
-      rating: "4.8(292)",
-      image: "assets/images/celana_jeans.jpg",
-    ),
-    ProductData(
-      name: "Celana Panjang Corduroy",
-      price: "Rp.45,000",
-      rating: "4.8(292)",
-      image: "assets/images/celana.jpg",
-    ),
-  ];
-
-  // List Produk Riil Kategori Camp Tools
-  final List<ProductData> _campToolsProducts = [
-    ProductData(
-      name: "Tenda Camping Dome 4 Orang",
-      price: "Rp.80,000",
-      rating: "4.8(192)",
-      image: "assets/images/tenda_camping.png",
-    ),
-    ProductData(
-      name: "Tas Carrier Outdoor 60L",
-      price: "Rp.45,000",
-      rating: "4.7(120)",
-      image: "assets/images/tas_carrier.png",
-    ),
-    ProductData(
-      name: "Sleeping Bag Mummy Premium",
-      price: "Rp.25,000",
-      rating: "4.9(78)",
-      image: "assets/images/sleeping_bag.png",
-    ),
-    ProductData(
-      name: "Kompor Camping Portable Gas",
-      price: "Rp.20,000",
-      rating: "4.8(115)",
-      image: "assets/images/kompor_camping.png",
-    ),
-    ProductData(
-      name: "Lentera LED Camping Rechargeable",
-      price: "Rp.15,000",
-      rating: "4.6(43)",
-      image: "assets/images/lentera_camping.png",
-    ),
-    ProductData(
-      name: "Matras Angin Camping Double",
-      price: "Rp.35,000",
-      rating: "4.8(62)",
-      image: "assets/images/matras_camping.png",
-    ),
-  ];
-
-  // List Produk Riil Kategori Cook
-  final List<ProductData> _cookProducts = [
-    ProductData(
-      name: "Panci Camping Set",
-      price: "Rp.25,000",
-      rating: "4.9(110)",
-      image: "assets/images/cook_category.jpg",
-    ),
-    ProductData(
-      name: "Kompor Portable",
-      price: "Rp.30,000",
-      rating: "4.8(250)",
-      image: "assets/images/cook_category.jpg",
-    ),
-    ProductData(
-      name: "Set Pisau Dapur",
-      price: "Rp.15,000",
-      rating: "4.7(60)",
-      image: "assets/images/cook_category.jpg",
-    ),
-    ProductData(
-      name: "Grill Pan BBQ",
-      price: "Rp.35,000",
-      rating: "4.9(85)",
-      image: "assets/images/cook_category.jpg",
-    ),
-  ];
-
-  // List Produk Riil Kategori Sports
-  final List<ProductData> _sportsProducts = [
-    ProductData(
-      name: "Sepeda Gunung MTB",
-      price: "Rp.100,000",
-      rating: "4.8(292)",
-      image: "assets/images/sports_category.jpg",
-    ),
-    ProductData(
-      name: "Treadmill Elektrik",
-      price: "Rp.150,000",
-      rating: "4.9(120)",
-      image: "assets/images/sports_category.jpg",
-    ),
-    ProductData(
-      name: "Raket Tenis Wilson",
-      price: "Rp.50,000",
-      rating: "4.7(85)",
-      image: "assets/images/sports_category.jpg",
-    ),
-    ProductData(
-      name: "Set Stik Golf Professional",
-      price: "Rp.200,000",
-      rating: "4.9(30)",
-      image: "assets/images/sports_category.jpg",
-    ),
-  ];
-
-  // Fungsi menyaring produk secara dinamis
-  List<ProductData> _getFilteredProducts() {
-    switch (selectedCategory) {
-      case 'Tech':
-        return _techProducts;
-      case 'Power Tools':
-        return _powerToolsProducts;
-      case 'Outfit':
-        return _outfitProducts;
-      case 'Camp Tools':
-        return _campToolsProducts;
-      case 'Sports':
-        return _sportsProducts;
-      case 'Cook':
-        return _cookProducts;
-      case 'All':
-      default:
-        return [
-          ..._techProducts,
-          ..._powerToolsProducts,
-          ..._outfitProducts,
-          ..._campToolsProducts,
-          ..._cookProducts,
-          ..._sportsProducts,
-        ];
+  /// Kategori yang ditampilkan di filter chip: "All" + kategori dari Firestore.
+  List<String> get categories {
+    if (_firestoreCategories.isEmpty) {
+      // Fallback lokal saat Firestore belum load
+      return [
+        'All',
+        'Tech',
+        'Power Tools',
+        'Outfit',
+        'Camp Tools',
+        'Sports',
+        'Cook',
+      ];
     }
+    return ['All', ..._firestoreCategories];
   }
 
   @override
   void initState() {
     super.initState();
     _loadDefaultLocationLabel();
-    ProfileSyncService.profileRevision.addListener(_handleProfileRevisionChanged);
+    _loadCategories();
 
     // Home sheet slides UP (out) when search opens, slides DOWN back in when closing
     _homeSheetAnim = AnimationController(
@@ -325,19 +94,27 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
-    ProfileSyncService.profileRevision.removeListener(
-      _handleProfileRevisionChanged,
-    );
     _searchController.dispose();
     _searchFocusNode.dispose();
     _homeSheetAnim.dispose();
     super.dispose();
   }
 
-  void _handleProfileRevisionChanged() {
-    _loadCachedProfile();
-    _loadCachedLocation();
-    _syncDefaultLocationFromApi();
+  /// Load kategori dari Firestore collection `item_categories`.
+  Future<void> _loadCategories() async {
+    try {
+      final names = await _itemRepo.fetchCategoryNames();
+      if (!mounted) return;
+      setState(() {
+        _firestoreCategories = names;
+        // Reset ke 'All' jika kategori yang dipilih tidak ada lagi
+        if (!categories.contains(selectedCategory)) {
+          selectedCategory = 'All';
+        }
+      });
+    } catch (_) {
+      // Keep fallback categories on error
+    }
   }
 
   void _openSearch() {
@@ -365,16 +142,10 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _loadDefaultLocationLabel() async {
-    await _loadCachedProfile();
-    await _loadCachedLocation();
-    if (!mounted) return;
-    _syncProfileFromApi();
-    _syncDefaultLocationFromApi();
-  }
-
-  Future<void> _loadCachedLocation() async {
     final prefs = await SharedPreferences.getInstance();
     final label = prefs.getString('user_default_location')?.trim();
+    final name = prefs.getString('user_name')?.trim();
+    final profilePhotoUrl = prefs.getString('user_profile_photo_url')?.trim();
     final lat = prefs.getDouble('user_default_lat');
     final lng = prefs.getDouble('user_default_lng');
     if (!mounted) return;
@@ -382,38 +153,23 @@ class _HomeScreenState extends State<HomeScreen>
       if (label != null && label.isNotEmpty) {
         _defaultLocationLabel = label;
       }
+      if (name != null && name.isNotEmpty) {
+        _userName = name;
+      }
+      if (profilePhotoUrl != null && profilePhotoUrl.isNotEmpty) {
+        _profilePhotoUrl = profilePhotoUrl;
+      }
       if (lat != null && lng != null) {
         _mapCenter = LatLng(lat, lng);
       }
     });
-  }
-
-  Future<void> _loadCachedProfile() async {
-    final profile = await _profileSyncService.readCachedProfile();
-    if (!mounted) return;
-    setState(() {
-      _userName = profile.displayName;
-      _profilePhotoUrl = profile.profilePhotoUrl;
-    });
-  }
-
-  Future<void> _syncProfileFromApi() async {
-    try {
-      final profile = await _profileSyncService.syncProfileFromApi();
-      if (profile == null || !mounted) return;
-      setState(() {
-        _userName = profile.displayName;
-        _profilePhotoUrl = profile.profilePhotoUrl;
-      });
-    } catch (_) {
-      // Keep cache as fallback if API sync fails.
-    }
+    _syncDefaultLocationFromApi();
   }
 
   Future<void> _syncDefaultLocationFromApi() async {
     try {
       final address = await _addressService.fetchDefaultAddress();
-      if (address == null) return;
+      if (address == null || !mounted) return;
 
       final resolvedLabel = address.fullAddress.trim().isNotEmpty
           ? address.fullAddress.trim()
@@ -577,104 +333,56 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
+          Container(
+            width: 45,
+            height: 45,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              image: DecorationImage(
+                image: _profilePhotoUrl.trim().isEmpty
+                    ? const AssetImage('assets/images/profile_user.png')
+                    : _imageUploadService.buildImageProvider(_profilePhotoUrl),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: widget.onProfileRequested,
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 45,
-                        height: 45,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          image: DecorationImage(
-                            image: _profilePhotoUrl.trim().isEmpty
-                                ? const AssetImage('assets/images/profile_user.png')
-                                : _imageUploadService.buildImageProvider(
-                                    _profilePhotoUrl,
-                                  ),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
+                Text(
+                  _userName,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFFDF9F4),
                   ),
                 ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: widget.onProfileRequested,
-                        child: Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                _userName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: Color(0xFFFDF9F4),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              size: 16,
-                              color: Color(0xFFFDF9F4),
-                            ),
-                          ],
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      size: 12,
+                      color: Color(0xFFFDF9F4),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _defaultLocationLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 11,
+                          color: Color(0xFFFDF9F4),
                         ),
                       ),
-                      const SizedBox(height: 2),
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const MapExploreScreen(),
-                            ),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Row(
-                          children: [
-                              const Icon(
-                                Icons.location_on_rounded,
-                                size: 12,
-                                color: Color(0xFFFDF9F4),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _defaultLocationLabel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    color: Color(0xFFFDF9F4),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -770,7 +478,7 @@ class _HomeScreenState extends State<HomeScreen>
         padding: const EdgeInsets.symmetric(horizontal: 24),
         physics: const BouncingScrollPhysics(),
         itemCount: categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final cat = categories[index];
           final isSelected = cat == selectedCategory;
@@ -806,7 +514,8 @@ class _HomeScreenState extends State<HomeScreen>
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     color: isSelected ? Colors.white : const Color(0xFF012D1D),
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -1218,95 +927,270 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildNewArrivals() {
-    final products = [
-      ProductData(
-        name: "Sony W830",
-        price: "Rp.120,000",
-        rating: 4.8,
-        image: 'assets/images/sony_camera.png',
-      ),
-      ProductData(
-        name: "Sony Dual-Sense PS5",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/ps5_controller.png',
-      ),
-      ProductData(
-        name: "Apple Airpods Max 2",
-        price: "Rp.45,000",
-        rating: 4.8,
-        image: 'assets/images/airpods_max.png',
-      ),
-    ];
+  // ---------------------------------------------------------------------------
+  // NEW ARRIVALS — StreamBuilder dari Firestore (limit 5, sort createdAt DESC)
+  // ---------------------------------------------------------------------------
 
+  Widget _buildNewArrivals() {
+    return StreamBuilder<List<ItemModel>>(
+      stream: _itemRepo.watchNewArrivals(limit: 5),
+      builder: (context, snapshot) {
+        // Loading state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildNewArrivalsLoading();
+        }
+
+        // Error atau kosong
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildNewArrivalsEmpty();
+        }
+
+        final items = snapshot.data!;
+
+        return SizedBox(
+          height: 210,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              final product = ProductData(
+                name: item.name,
+                price: item.formattedPricePerDay,
+                rating: item.ownerRating > 0
+                    ? item.ownerRating.toStringAsFixed(1)
+                    : '—',
+                image: item.primaryPhoto,
+              );
+              return FadeInUp(
+                delay: Duration(milliseconds: 80 * index),
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemName: item.name,
+                        pricePerHour: item.pricePerHour,
+                      ),
+                    ),
+                  ),
+                  child: ProductCard(product: product),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNewArrivalsLoading() {
     return SizedBox(
       height: 210,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        physics: const BouncingScrollPhysics(),
-        itemCount: products.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 16),
-        itemBuilder: (context, index) {
-          final p = products[index];
-          return FadeInUp(
-            delay: const Duration(milliseconds: 100),
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ItemDetailScreen(),
-                ),
-              ),
-              child: ProductCard(product: p),
-            ),
-          );
-        },
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 3,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (_, __) => _buildShimmerCard(width: 160, height: 210),
       ),
     );
   }
 
-  Widget _buildTrustedNearbySliver() {
-    final products = _getFilteredProducts();
-
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 0.65, // matching categories screen aspect ratio
+  Widget _buildNewArrivalsEmpty() {
+    return SizedBox(
+      height: 100,
+      child: Center(
+        child: Text(
+          'Belum ada barang terbaru',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            color: const Color(0xFF414844).withValues(alpha: 0.5),
+          ),
         ),
-        delegate: SliverChildBuilderDelegate((context, index) {
-          final product = products[index];
-          return FadeInUp(
-            key: ValueKey("${selectedCategory}_${product.name}_$index"),
-            delay: Duration(milliseconds: 50 * (index % 4)),
-            child: GestureDetector(
-              onTap: () {
-                final cleanedPrice = product.price.replaceAll(
-                  RegExp(r'[^0-9]'),
-                  '',
-                );
-                final pricePerHour = double.tryParse(cleanedPrice);
+      ),
+    );
+  }
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemDetailScreen(
-                      itemName: product.name,
-                      pricePerHour: pricePerHour,
+  // ---------------------------------------------------------------------------
+  // MOST TRUSTED NEARBY SLIVER — StreamBuilder dari Firestore + filter kategori
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTrustedNearbySliver() {
+    return StreamBuilder<List<ItemModel>>(
+      stream: _itemRepo.watchAvailableItems(
+        categoryName: selectedCategory == 'All' ? null : selectedCategory,
+      ),
+      builder: (context, snapshot) {
+        // Loading state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            sliver: SliverGrid(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 0.65,
+              ),
+              delegate: SliverChildBuilderDelegate(
+                (_, __) => _buildShimmerCard(
+                  width: double.infinity,
+                  height: double.infinity,
+                ),
+                childCount: 4,
+              ),
+            ),
+          );
+        }
+
+        // Error atau kosong
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+          return SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      size: 48,
+                      color: const Color(0xFF012D1D).withValues(alpha: 0.25),
                     ),
+                    const SizedBox(height: 12),
+                    Text(
+                      selectedCategory == 'All'
+                          ? 'Belum ada barang tersedia'
+                          : 'Tidak ada barang di kategori "$selectedCategory"',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        color: const Color(0xFF414844).withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        final items = snapshot.data!;
+
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 0.65,
+            ),
+            delegate: SliverChildBuilderDelegate(
+              (context, index) {
+                final item = items[index];
+                final product = ProductData(
+                  name: item.name,
+                  price: item.formattedPricePerDay,
+                  rating: item.ownerRating > 0
+                      ? item.ownerRating.toStringAsFixed(1)
+                      : '—',
+                  image: item.primaryPhoto,
+                );
+                return FadeInUp(
+                  key: ValueKey(
+                    '${selectedCategory}_${item.id}_$index',
+                  ),
+                  delay: Duration(milliseconds: 50 * (index % 4)),
+                  child: GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ItemDetailScreen(
+                            itemName: item.name,
+                            pricePerHour: item.pricePerHour,
+                          ),
+                        ),
+                      );
+                    },
+                    child: ProductCard(product: product),
                   ),
                 );
               },
-              child: ProductCard(product: product),
+              childCount: items.length,
             ),
-          );
-        }, childCount: products.length),
-      ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // SHIMMER PLACEHOLDER CARD saat loading Firestore
+  // ---------------------------------------------------------------------------
+
+  Widget _buildShimmerCard({required double width, required double height}) {
+    return _ShimmerCard(width: width, height: height);
+  }
+}
+
+/// Widget shimmer sederhana untuk state loading.
+class _ShimmerCard extends StatefulWidget {
+  final double width;
+  final double height;
+
+  const _ShimmerCard({required this.width, required this.height});
+
+  @override
+  State<_ShimmerCard> createState() => _ShimmerCardState();
+}
+
+class _ShimmerCardState extends State<_ShimmerCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat(reverse: true);
+    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            color: Color.lerp(
+              const Color(0xFFE8E4DC),
+              const Color(0xFFF5F1E8),
+              _anim.value,
+            ),
+          ),
+        );
+      },
     );
   }
 }
