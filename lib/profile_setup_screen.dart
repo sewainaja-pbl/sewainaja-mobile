@@ -56,6 +56,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         _pendingProfilePhoto = picked;
       });
     } catch (error) {
+      if (!mounted) return;
       showAppErrorSnack(context, safeImageError(error));
     }
   }
@@ -72,6 +73,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (_pendingProfilePhoto != null) {
         if (userId.isEmpty) {
+          if (!mounted) return;
           showAppErrorSnack(context, 'User ID belum tersedia. Ulangi registrasi atau login ulang.');
           return;
         }

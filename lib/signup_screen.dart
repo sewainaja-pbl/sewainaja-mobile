@@ -136,6 +136,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         if (uid.isNotEmpty) {
           await prefs.setString('user_id', uid);
         }
+        if (!mounted) return;
         _showSnackBar('Akun berhasil terdaftar!', isError: false);
         Navigator.pushReplacement(
           context,

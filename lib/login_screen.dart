@@ -67,6 +67,7 @@ class _LoginScreenState extends State<LoginScreen>
       'user_profile_photo_url',
       (user['profilePhotoUrl'] ?? '').toString(),
     );
+    await prefs.setString('user_status', (user['status'] ?? '').toString());
     if (!mounted) return;
     _showSnackBar('Login berhasil!', isError: false);
     Navigator.pushReplacement(
