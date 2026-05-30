@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'return_item_scan_screen.dart';
 
 class RentalDeadlineScreen extends StatelessWidget {
   const RentalDeadlineScreen({super.key});
@@ -39,7 +40,7 @@ class RentalDeadlineScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _buildLocationMap(),
             const SizedBox(height: 32),
-            _buildBottomActions(),
+            _buildBottomActions(context),
             const SizedBox(height: 40),
           ],
         ),
@@ -374,21 +375,29 @@ class RentalDeadlineScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomActions() {
+  Widget _buildBottomActions(BuildContext context) {
     return Column(
       children: [
-        _buildActionButton('Kembalikan'),
+        _buildActionButton(
+          'Kembalikan',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ReturnItemScanScreen()),
+            );
+          },
+        ),
         const SizedBox(height: 12),
         _buildActionButton('Request Perpanjangan'),
       ],
     );
   }
 
-  Widget _buildActionButton(String text) {
+  Widget _buildActionButton(String text, {VoidCallback? onPressed}) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
-        onPressed: () {},
+        onPressed: onPressed ?? () {},
         style: OutlinedButton.styleFrom(
           backgroundColor: const Color(0xFFFFFFFF),
           padding: const EdgeInsets.symmetric(vertical: 16),

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'edit_profile_screen.dart';
+import 'handover_show_qr_screen.dart';
 import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'rental_deadline_screen.dart';
+import 'scan_qr_renter_screen.dart';
+import 'owner_return_show_qr_screen.dart';
 import 'settings_screen.dart';
 import 'my_items_screen.dart';
 import 'favorites_screen.dart';
@@ -342,6 +345,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   static const List<Map<String, String>> _activeRentals = [
     {
+      'image': 'assets/images/camera_canon.jpg',
+      'title': 'Canon EOS 5D Mark IV',
+      'owner': 'Penyewa: Andini Larasati',
+      'date': '8 Jan - 10 Jan 2025',
+      'status': 'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
+    },
+    {
+      'image': 'assets/images/camera_sony.jpg',
+      'title': 'Sony Camera a6000',
+      'owner': 'Penyewa: Andini Larasati',
+      'date': '8 Jan - 10 Jan 2025',
+      'status': 'Selesai', // Owner returning
+    },
+    {
       'image': 'assets/images/camera_sony.jpg',
       'title': 'Sony Camera a6000',
       'owner': 'Pemilik: Han so Hee',
@@ -414,12 +431,35 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               final isActive = item['status'] == 'Aktif';
               return GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RentalDeadlineScreen(),
-                    ),
-                  );
+                  if (item['status'] == 'Pending') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ScanQRRenterScreen(itemData: item),
+                      ),
+                    );
+                  } else if (item['status'] == 'OwnerPending') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HandoverShowQRScreen(itemData: item),
+                      ),
+                    );
+                  } else if (item['status'] == 'Selesai') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const OwnerReturnShowQRScreen(),
+                      ),
+                    );
+                  } else {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RentalDeadlineScreen(),
+                      ),
+                    );
+                  }
                 },
                 child: Container(
                   width: 280,
@@ -514,16 +554,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         decoration: BoxDecoration(
                           color: isActive
                               ? const Color(0xFFF87400)
-                              : const Color(0xFF9E9E9E),
+                              : item['status'] == 'Selesai'
+                                  ? const Color(0xFFC1ECD4)
+                                  : const Color(0xFFE0E0E0),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           item['status']!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF000000),
+                            color: item['status'] == 'Selesai' 
+                                ? const Color(0xFF1B4332) 
+                                : const Color(0xFF000000),
                           ),
                         ),
                       ),
