@@ -11,6 +11,7 @@ import 'app_feedback.dart';
 import 'auth_session_service.dart';
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
+import 'widgets/add_item_success_modal.dart';
 
 class AddProductScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -1144,11 +1145,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         }
       }
 
-      _showSnack('Barang berhasil ditambahkan ke marketplace.', false);
       if (!_useSavedAddress) {
         _bootstrapFormData();
       }
       if (!mounted) return;
+      AddItemSuccessModal.show(context);
+
       setState(() {
         _productPhotos.clear();
         _nameController.clear();

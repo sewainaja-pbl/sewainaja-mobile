@@ -5,6 +5,9 @@ import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'rental_deadline_screen.dart';
 import 'settings_screen.dart';
+import 'my_items_screen.dart';
+import 'favorites_screen.dart';
+import 'transaction_history_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -554,14 +557,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       _MenuItem(
         title: 'Barang Saya',
         icon: Icons.inventory_2_outlined,
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MyItemsScreen()),
+          );
+        },
       ),
       _MenuItem(
         title: 'Favorit Saya',
         icon: Icons.favorite_border_rounded,
-        onTap: () {},
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+          );
+        },
       ),
-      _MenuItem(title: 'Riwayat', icon: Icons.history_rounded, onTap: () {}),
+      _MenuItem(
+        title: 'Riwayat',
+        icon: Icons.history_rounded,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+          );
+        },
+      ),
       _MenuItem(
         title: 'Pengaturan',
         icon: Icons.settings_outlined,
