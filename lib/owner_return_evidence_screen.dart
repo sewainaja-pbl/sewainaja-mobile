@@ -21,13 +21,14 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
       );
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Verifikasi dan rating berhasil disimpan!'),
-        backgroundColor: Color(0xFF1B4332),
-      ),
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const _OwnerReturnSuccessModal();
+      },
     );
-    Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   @override
@@ -313,6 +314,178 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Color(0xFFFDF9F4),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OwnerReturnSuccessModal extends StatelessWidget {
+  const _OwnerReturnSuccessModal();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30.0),
+      ),
+      backgroundColor: const Color(0xFFFDF9F4),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Close Button
+            Align(
+              alignment: Alignment.topRight,
+              child: GestureDetector(
+                onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+                child: const Icon(Icons.close, color: Color(0xFF414844), size: 24),
+              ),
+            ),
+            
+            // Checkmark Icon
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: Color(0xFFC1ECD4),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF012D1D),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Color(0xFFC1ECD4), size: 20),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Title
+            const Text(
+              'Pengembalian Selesai!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Subtitle
+            const Text(
+              'Proses serah terima pengembalian barang telah berhasil. Dana sewa akan segera diteruskan ke saldo Anda.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF414844),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Item Details Card
+            Container(
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFAF2E7), // Light beige for inner card
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: Image.asset(
+                      'assets/images/camera_sony.jpg',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'RINCIAN SEWA',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF8A6136),
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Sony Camera a6000',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF414844)),
+                            SizedBox(width: 4),
+                            Text(
+                              '8 Jan - 10 Jan',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF414844),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            
+            // Action Button
+            GestureDetector(
+              onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                decoration: BoxDecoration(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(999.0),
+                  border: Border.all(color: const Color(0xFF1B4332), width: 1.0),
+                ),
+                child: const Center(
+                  child: Text(
+                    'Kembali ke Beranda',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1B4332),
                     ),
                   ),
                 ),
