@@ -25,11 +25,14 @@ dependencies:
   firebase_auth: ^6.5.1
   firebase_storage: ^13.3.0
   cloud_firestore: ^6.4.1
-  image_picker: ^1.1.2
+  image_picker: ^1.2.2
   flutter_image_compress: ^2.4.0
   path_provider: ^2.1.5
   google_sign_in: ^6.2.1
   provider: ^6.1.2
+  mobile_scanner: ^5.2.3
+  qr_flutter: ^4.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -2061,6 +2064,7 @@ flutter:
 #   timer_text: "#FFF8EF"
 #   warning_yellow: "#F8BD00"
 #
+#
 ############################################################
 # METADATA DESAIN FIGMA - SewaIn Aja (Add Item Success Card)
 ############################################################
@@ -2445,3 +2449,669 @@ flutter:
 #   time: "9:41"
 #   style: "iPhone Standard Dark Icons"
 ############################################################
+#
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SCAN QR (PENYEWA)
+# =============================================================
+# Name: SewaIn Aja - Serah Terima Scan QR Screen
+# Description: Halaman penyewa untuk memindai QR Code pemilik barang.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "HandoverScanScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Scan QR pemilik barang untuk mengkonfirmasi serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. CAMERA SCANNER VIEWPORT ---
+#   scanner_viewport:
+#     margin_top: 32.0
+#     margin_horizontal: 24.0
+#     height: 350.0 
+#     border: "1px solid #1B4332"
+#     border_radius: 23.0
+#     background_color: "#000000" # Background gelap saat kamera loading
+#     overlay_elements:
+#       - text: "Scan QR"
+#         style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" } # Dibuat putih agar kontras dengan kamera
+#         alignment: "center"
+#       - flip_camera_btn:
+#           icon: "change_circle_outlined"
+#           icon_color: "#FDF9F4"
+#           alignment: "bottom_right"
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Memindai QR berarti masa sewa Anda resmi dimulai. Pastikan Anda telah mengecek kondisi barang bersama Pemilik dan mengambil foto bukti kondisi awal sebelum memindai."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.5 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - UPLOAD BUKTI KONDISI SEBELUM PEMINJAMAN
+# =============================================================
+# Name: SewaIn Aja - Upload Bukti Kondisi SEBELUM PEMINJAMAN Screen
+# Description: Halaman penyewa untuk mengunggah foto kondisi barang sebelum memulai sewa.
+#              Mendukung multiple upload (max 20 foto) dengan tampilan Grid/Wrap.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "UploadEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. RENTAL ITEM CARD ---
+#   item_card:
+#     margin: { top: 24.0, horizontal: 20.0 }
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 2. UPLOAD GALLERY SECTION ---
+#   upload_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Upload Foto"
+#       style: { family: "Poppins", size: 18, weight: 700, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 20.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       logic:
+#         max_items: 20
+#         elements:
+#           - photo_item:
+#               size: "70x70" # Ukuran disesuaikan agar pas 4 kolom di layar
+#               border_radius: 12.0
+#               background_color: "#C1ECD4" # Hijau mint pudar sesuai gambar
+#               image_fit: "cover"
+#               action: "Tampilkan ikon [X] merah kecil di pojok kanan atas untuk menghapus foto"
+#           - add_button:
+#               visibility: "Tampil HANYA JIKA jumlah foto < 20"
+#               size: "70x70"
+#               border: "1.5px solid #012D1D"
+#               border_radius: 12.0
+#               background_color: "#FFFFFF"
+#               icon: { name: "add", size: 28, color: "#012D1D" }
+#
+#   # --- 3. INSTRUCTION & WARNING BANNER ---
+#   instruction_text:
+#     margin: { top: 16.0, horizontal: 24.0 }
+#     text: "Kirimkan bukti kondisi barang sebelum peminjaman"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   warning_banner:
+#     margin: { top: 24.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6"
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Foto wajib diunggah sebelum transaksi dimulai. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa"
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SHOW QR (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Serah Terima Show QR Screen (Owner)
+# Description: Halaman pemilik barang untuk menampilkan QR Code kepada penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "HandoverShowQRScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Tunjukkan kode QR ini ke penyewa sebagai tanda serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. QR CODE DISPLAY AREA ---
+#   qr_display_box:
+#     margin_top: 32.0
+#     margin_horizontal: 40.0
+#     alignment: "center"
+#     layout: "Column"
+#     elements:
+#       - qr_image:
+#           size: "200x200"
+#           widget: "QrImageView (Gunakan package qr_flutter atau placeholder Container)"
+#       - label_text:
+#           margin_top: 16.0
+#           text: "QR Serah Terima"
+#           style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Menggunakan merah pudar agar teks hitam kontras
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Pemindaian QR ini adalah bukti sah bahwa barang telah diserahkan. Setelah di-scan, waktu sewa akan resmi berjalan. Jangan serahkan barang sebelum QR ini berhasil dipindai."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - VERIFIKASI FOTO (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Verify Evidence Screen
+# Description: Halaman bagi pemilik barang untuk memverifikasi foto bukti
+#              kondisi awal yang telah diunggah oleh penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+#
+# screen_info:
+#   name: "OwnerVerifyEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION TEXT ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Foto bukti kondisi barang sebelum peminjaman yang dikirimkan oleh penyewa"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. PHOTO EVIDENCE GALLERY (READ-ONLY) ---
+#   evidence_gallery_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Bukti Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       elements:
+#         - photo_item:
+#             size: "70x70" # Ukuran disesuaikan agar pas di layar
+#             border_radius: 11.0 
+#             background_color: "#C1ECD4" # Hijau mint pudar sebagai placeholder gambar
+#             image_fit: "cover"
+#             logic: "Tampilkan list foto yang diunggah penyewa secara READ-ONLY (Tanpa tombol hapus/tambah)."
+#
+#   # --- 4. ACTION BUTTON ---
+#   action_button:
+#     margin: { top: 40.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SCAN QR (KEMBALIKAN BARANG)
+# =============================================================
+# Name: SewaIn Aja - Return Item Scan QR Screen (Renter)
+# Description: Halaman penyewa untuk memindai QR Code pemilik barang 
+#              saat MENGEMBALIKAN barang (menghentikan waktu sewa).
+#              Diakses dari tombol "Kembalikan" di RentalDeadlineScreen.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "ReturnItemScanScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Scan QR pemilik barang untuk mengkonfirmasi serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. CAMERA SCANNER VIEWPORT ---
+#   scanner_viewport:
+#     margin_top: 32.0
+#     margin_horizontal: 24.0
+#     height: 350.0 
+#     border: "1px solid #1B4332"
+#     border_radius: 23.0
+#     background_color: "#000000" 
+#     overlay_elements:
+#       - text: "Scan QR"
+#         style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" }
+#         alignment: "center"
+#       - flip_camera_btn:
+#           icon: "change_circle_outlined"
+#           icon_color: "#FDF9F4"
+#           alignment: "bottom_right"
+#
+#   # --- 4. RETURN WARNING BANNER (CRITICAL) ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Scan QR ini berfungsi untuk menghentikan waktu sewa dan menonaktifkan pelacakan GPS. Jika terlewat, transaksi akan terus berjalan dan tagihan penyewa dapat membengkak."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.5 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - PENGEMBALIAN BUKTI & RATING
+# =============================================================
+# Name: SewaIn Aja - Return Evidence & Rating Screen (Renter)
+# Description: Halaman penyewa untuk mengunggah bukti foto kondisi barang 
+#              SETELAH masa sewa, sekaligus memberikan rating kepada pemilik.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "ReturnEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. RENTAL ITEM CARD ---
+#   item_card:
+#     margin: { top: 24.0, horizontal: 20.0 }
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 2. UPLOAD GALLERY SECTION (MAX 10) ---
+#   upload_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     instruction_text:
+#       text: "Kirimkan bukti kondisi barang setelah peminjaman"
+#       style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#       margin_bottom: 16.0
+#     header:
+#       text: "Upload Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       logic:
+#         max_items: 10
+#         elements:
+#           - photo_item:
+#               size: "70x70"
+#               border_radius: 11.0
+#               background_color: "#C1ECD4"
+#               image_fit: "cover"
+#               action: "Tampilkan ikon [X] merah untuk menghapus foto"
+#           - add_button:
+#               visibility: "Tampil HANYA JIKA jumlah foto < 10"
+#               size: "70x70"
+#               border: "1px solid #1B4332"
+#               border_radius: 11.0
+#               background_color: "#FFFFFF"
+#               icon: { name: "add", size: 28, color: "#012D1D" }
+#
+#   # --- 3. RATING SECTION ---
+#   rating_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Rating Pemilik"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     stars:
+#       layout: "Row"
+#       count: 5
+#       icon: "star_rounded"
+#       active_color: "#F8BD00"
+#       inactive_color: "#EFEFEF"
+#     review_input:
+#       margin_top: 16.0
+#       background_color: "#EFEFEF"
+#       border_radius: 11.0
+#       padding: { horizontal: 16.0, vertical: 12.0 }
+#       hint_text: "Berikan ulasan anda disini..."
+#       hint_style: { family: "Poppins", size: 13, weight: 400, color: "#717973" }
+#       min_lines: 3
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 24.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6"
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Foto wajib diunggah setelah transaksi selesai. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa"
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+#
+#   # --- 5. SUBMIT BUTTON ---
+#   action_button:
+#     margin: { top: 16.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SHOW QR PENGEMBALIAN (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Return Show QR Screen
+# Description: Halaman pemilik barang untuk menampilkan QR Code kepada penyewa 
+#              saat proses PENGEMBALIAN barang (menghentikan waktu sewa).
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "OwnerReturnShowQRScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Tunjukkan kode QR ini ke penyewa sebagai tanda serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. QR CODE DISPLAY AREA ---
+#   qr_display_box:
+#     margin_top: 32.0
+#     margin_horizontal: 40.0
+#     alignment: "center"
+#     layout: "Column"
+#     elements:
+#       - qr_image:
+#           size: "200x200"
+#           widget: "QrImageView (Gunakan package qr_flutter atau placeholder Container)"
+#       - label_text:
+#           margin_top: 16.0
+#           text: "QR Serah Terima"
+#           style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#
+#   # --- 4. RETURN WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       # Catatan: Teks ini disesuaikan agar logis untuk konteks pengembalian barang.
+#       content: "Pemindaian QR ini adalah bukti sah bahwa barang telah dikembalikan. Setelah di-scan, waktu sewa akan resmi dihentikan. Jangan terima barang sebelum QR ini berhasil dipindai oleh penyewa."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - VERIFIKASI PENGEMBALIAN (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Return Evidence & Rating Screen
+# Description: Halaman pemilik untuk melihat foto kondisi akhir barang yang 
+#              dikirim penyewa, SEKALIGUS memberikan rating untuk penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+#
+# screen_info:
+#   name: "OwnerReturnEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION TEXT ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Foto bukti kondisi barang setelah peminjaman yang dikirimkan oleh penyewa"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. EVIDENCE GALLERY (READ-ONLY) ---
+#   evidence_gallery_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Bukti Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       elements:
+#         - photo_item:
+#             size: "70x70"
+#             border_radius: 11.0 
+#             background_color: "#C1ECD4" # Hijau mint pudar sebagai placeholder gambar
+#             image_fit: "cover"
+#             logic: "Tampilkan list foto pengembalian secara READ-ONLY (Tanpa tombol hapus/tambah)."
+#
+#   # --- 3. RATING RENTER SECTION (INTERACTIVE) ---
+#   rating_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Rating Penyewa"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     stars:
+#       layout: "Row"
+#       count: 5
+#       icon: "star_rounded"
+#       active_color: "#F8BD00"
+#       inactive_color: "#EFEFEF"
+#     review_input:
+#       margin_top: 16.0
+#       background_color: "#EFEFEF"
+#       border_radius: 11.0
+#       padding: { horizontal: 16.0, vertical: 12.0 }
+#       hint_text: "Berikan ulasan anda disini..."
+#       hint_style: { family: "Poppins", size: 13, weight: 400, color: "#717973" }
+#       min_lines: 3
+#
+#   # --- 4. ACTION BUTTON ---
+#   action_button:
+#     margin: { top: 40.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+#

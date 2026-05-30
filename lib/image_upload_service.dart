@@ -121,8 +121,18 @@ class ImageUploadService {
     XFile picked,
     UploadImagePolicy policy,
   ) async {
-    final tempDir = await getTemporaryDirectory();
     final originalBytes = await picked.length();
+
+    // Web does not support flutter_image_compress or getTemporaryDirectory
+    if (kIsWeb) {
+      return ProcessedImageFile(
+        localPath: picked.path,
+        sizeInBytes: originalBytes,
+        policy: policy,
+      );
+    }
+
+    final tempDir = await getTemporaryDirectory();
     var quality = policy.initialQuality;
     ProcessedImageFile? candidate;
 
