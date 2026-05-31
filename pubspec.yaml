@@ -3115,3 +3115,409 @@ flutter:
 #     text: "Konfirmasi"
 #     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
 #
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Rental Request Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Permintaan Sewa"
+#   canvas_dimensions: "393x965"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "375:1760"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#012D1D"     # Hijau Gelap Kontras
+#     icon_color: "#FDF9F4"     # Krem Terang
+#
+#   title_section:
+#     id: "375:1759"
+#     text: "Permintaan"        # Judul Halaman Detail Permintaan
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#012D1D"          # Hijau Gelap
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "417:1851"
+#     stroke_weight: "1px"
+#     color: "Transparent/System"
+#
+############################################################
+# KARTU RINGKASAN PERMINTAAN (ITEM SUMMARY CARD)
+############################################################
+# item_summary_card:
+#   id: "375:1708"
+#   type: "FRAME"
+#   background_color: "#FFFFFF"
+#   border_radius: "40px"
+#   dimensions: "342x700"
+#
+#   #--- DATA PENYEWA (RENTER INFO) ---
+#   renter_profile:
+#     id: "375:1846"
+#     avatar_placeholder_id: "375:1825"  # Radius 5px
+#     name: "Aminah"
+#     font_family: "Poppins"
+#     font_size: 16
+#     rating: "4.9"
+#     rating_font: "Plus Jakarta Sans, 14px"
+#     rating_icon_color: "#414844"
+#
+#   section_divider_label:
+#     text: "PRODUK DIPESAN"
+#     font: "Poppins, 10px, Bold"
+#     color: "#717973"
+#
+#   #--- DETAIL PRODUK YANG DIMINTA ---
+#   product_details:
+#     id: "375:1813"
+#     name: "Sony ɑ6000 Body Only"
+#     font: "Poppins, 16px, Bold"
+#     color: "#012D1D"
+#     price_rate: "Rp. 15,000,00/jam"
+#     price_color: "#7B5804"   # Coklat Identitas
+#     image_thumbnail:
+#       id: "375:1715"
+#       type: "RECTANGLE"
+#       border_radius: "15px"
+#
+#   #--- DURASI & TOTAL BIAYA ---
+#   rental_calculation:
+#     id: "375:1847"
+#     duration_label: "DURASI"
+#     duration_value: "3 Hari"  # Font: Poppins, 16px, Semibold
+#     cost_label: "TOTAL BIAYA"
+#     cost_value: "Rp 1.080.000" # Font: Poppins, 16px, Bold
+#     cost_color: "#012D1D"
+#
+#   #--- JADWAL SEWA DETAIL (TIMELINE) ---
+#   rental_schedule_box:
+#     id: "375:1859"
+#     background_color: "#F7F3EE" # Abu-abu Krem Hangat
+#     border_radius: "16px"
+#     label: "JADWAL SEWA"
+#     
+#     start_date_box:
+#       label: "MULAI"
+#       value: "15 April"
+#       border_radius: "12px"
+#       background: "#FFFFFF"
+#     
+#     end_date_box:
+#       label: "KEMBALI"
+#       value: "17 April"
+#       border_radius: "12px"
+#       background: "#FFFFFF"
+#
+#     time_pickup_box:
+#       label: "Ambil"
+#       value: "19:00"
+#       border_radius: "12px"
+#
+#     time_return_box:
+#       label: "KEMBALI"
+#       value: "19:00"
+#       border_radius: "12px"
+#
+############################################################
+# GRUP TOMBOL AKSI (ACTION BUTTONS)
+############################################################
+# action_controls:
+#   #--- AKSI UTAMA PERMINTAAN ---
+#   request_actions:
+#     id: "375:1876"
+#     
+#     reject_button:
+#       id: "375:1877"
+#       label: "Tolak"
+#       font: "Poppins, 16px, Bold"
+#       color: "#BA1A1A"        # Merah Peringatan
+#       border_radius: "9999px" # Pill Shape
+#       border_weight: "2px"
+#
+#     approve_button:
+#       id: "375:1879"
+#       label: "Setujui Permintaan"
+#       font: "Poppins, 16px, Bold"
+#       color: "#FFFFFF"
+#       background: "#012D1D"   # Hijau Gelap
+#       border_radius: "9999px" # Pill Shape
+#
+#   #--- HUBUNGI shortcut ---
+#   contact_shortcut:
+#     id: "375:1883"
+#     label: "Hubungi Penyewa"
+#     font: "Plus Jakarta Sans, 16px, Bold"
+#     color: "#FFFFFF"
+#     background: "#A78D52"     # Emas/Khaki Aksen
+#     border_radius: "9999px"
+#     icon: "Chat Vector (FFFFFF)"
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_overlay:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Transaction Detail Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Detail Transaksi"
+#   canvas_dimensions: "393x1177"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "534:1994"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#012D1D"     # Hijau Gelap Kontras
+#     icon_color: "#FDF9F4"     # Krem Terang
+#
+#   title_section:
+#     id: "534:1993"
+#     text: "Detail"            # Judul Layar Detail Alur Transaksi
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#012D1D"
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "534:1992"
+#     stroke_weight: "1px"
+#
+############################################################
+# KARTU STATUS TRANSAKSI UTAMA (TRANSACTION STATUS HEAD)
+############################################################
+# transaction_status_card:
+#   id: "534:2051"
+#   type: "FRAME"
+#   background_color: "#2F6743"   # Hijau Terang Status (SewaIn Aja Secondary)
+#   border_radius: "20px"
+#   dimensions: "350x165"
+#
+#   status_badge_icon:
+#     id: "534:2044"
+#     background: "#012D1D"     # Bulatan Hijau Gelap
+#     icon_color: "#FFFFFF"
+#     shape: "Circle (9999px)"
+#
+#   status_text:
+#     id: "534:2049"
+#     text: "Menunggu Serah Terima" # Status Saat Ini
+#     font_family: "Poppins"
+#     font_size: 20
+#     font_weight: 700
+#     color: "#FFFFFF"
+#
+############################################################
+# RINGKASAN ITEM YANG DISEWA (ITEM SUMMARY CARD)
+############################################################
+# item_summary_card:
+#   id: "534:2052"
+#   type: "FRAME"
+#   background_color: "#FFFFFF"
+#   border_radius: "40px"
+#   dimensions: "342x180"
+#
+#   details:
+#     category_tag:
+#       id: "534:2055"
+#       text: "Camera"
+#       font: "Manrope, 11px, Bold"
+#       color: "#7B5804"        # Coklat Identitas
+#
+#     product_name:
+#       id: "534:2057"
+#       text: "Sony ɑ6000 Body Only"
+#       font: "Poppins, 24px, Bold"
+#       color: "#012D1D"
+#
+#     price_rate:
+#       id: "534:2058"
+#       text: "Rp. 15,000,00/jam"
+#       font: "Poppins, 16px, Medium"
+#       color: "#7B5804"
+#
+#     product_image:
+#       id: "534:2059"
+#       type: "RECTANGLE"
+#       name: "image 4"
+#       border_radius: "15px"
+#
+############################################################
+# TIMELINE ALUR JALANNYA TRANSAKSI
+############################################################
+# transaction_timeline_box:
+#   id: "534:2070"
+#   type: "FRAME"
+#   background_color: "#F7F3EE"   # Abu-abu Krem Hangat
+#   border_radius: "32px"
+#   
+#   header:
+#     icon: "Vector (012D1D)"
+#     title: "Timeline Transaksi" # Font: Manrope, 18px, Bold
+#
+#   axis_line:
+#     id: "534:2076"
+#     color: "#C1C8C2"            # Garis Vertikal Penghubung Step Timeline
+#
+#   steps:
+#     - step_1: "Completed"
+#       id: "534:2077"
+#       badge_color: "#C1ECD4"    # Hijau Indikator Selesai
+#       title: "Requested"
+#       time: "14 Apr, 2025 • 09:12 AM"
+#       note: '"Saya akan menyewa untuk keperluan fotografi."'
+#
+#     - step_2: "Completed"
+#       id: "534:2090"
+#       badge_color: "#C1ECD4"
+#       title: "Approved"
+#       time: "Oct 24, 2023 • 02:45 PM"
+#       note: "Disetujui Pemilik."
+#
+#     - step_3: "Active (Current Step)"
+#       id: "534:2103"
+#       badge_color: "#012D1D"    # Hijau Gelap (Menandakan Step Aktif Saat Ini)
+#       title: "Menunggu Serah Terima"
+#       badge_label: "ACTIVE STEP" # Teks indikator internal figma
+#
+#     - step_4: "Upcoming"
+#       id: "534:2125"
+#       badge_color: "#C1C8C2"    # Abu-abu (Belum Terjadi)
+#       title: "Sewa berlangsung"
+#       time_expectation: "Expected Oct 26, 2023"
+#
+############################################################
+# TOMBOL AKSI UTAMA (BOTTOM ACTION BUTTON)
+############################################################
+# bottom_action:
+#   primary_button:
+#     id: "534:2135"
+#     label: "Mulai Serah Terima"  # Tombol Interaksi Utama
+#     font_family: "Plus Jakarta Sans"
+#     font_size: 18
+#     font_weight: 700
+#     text_color: "#FFFFFF"
+#     background_color: "#7B5804" # Coklat Utama SewaIn Aja
+#     border_radius: "9999px"     # Pill Shape Button
+#     icon: "Vector (FFFFFF)"
+############################################################
+# UI SISTEM Overlay
+############################################################
+# system_overlay:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Approve Request Modal)
+############################################################
+# component_info:
+#   name: "Confirmation Card"
+#   id: "519:1664"
+#   type: "FRAME"
+#   dimensions: "342x538"
+#   border_radius: "40px"
+#   background_color: "#FFFFFF"
+#   parent_frame: "APPROVE (534:2333)"
+#   parent_bg: "#1B4332"        # Hijau Tua
+#
+############################################################
+# INDIKATOR VISUAL SUKSES (BADGE ELEMEN)
+############################################################
+# success_badge:
+#   id: "534:2303"
+#   type: "FRAME"
+#   background_color: "#C1ECD4"   # Hijau Muda Transparan
+#   border_radius: "9999px"       # Lingkaran Sempurna
+#   dimensions: "64x64"
+#   icon:
+#     id: "534:2305"
+#     type: "VECTOR"
+#     color: "#012D1D"            # Hijau Gelap
+#
+############################################################
+# KONTEN TEKS MODAL
+############################################################
+# text_content:
+#   id: "519:1665"
+#   type: "FRAME"
+#   
+#   title:
+#     id: "519:1668"
+#     text: "Permintaan Disetujui!"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 20
+#     color: "#012D1D"            # Hijau Gelap
+#
+#   subtitle:
+#     id: "519:1670"
+#     text: "Kini Anda bisa mulai berkomunikasi dengan penyewa untuk mengatur serah terima barang."
+#     font_family: "Poppins"
+#     font_weight: 400
+#     font_size: 12
+#     color: "#414844"            # Abu-abu Gelap
+#
+############################################################
+# TOMBOL AKSI UTAMA & NAVIGASI
+############################################################
+# action_buttons_group:
+#   id: "519:1671"
+#   type: "FRAME"
+#   dimensions: "278xHug"
+#   
+#   #--- TOMBOL UTAMA: CHAT ---
+#   primary_action:
+#     id: "519:1672"
+#     type: "FRAME"
+#     label: "Chat Penyewa"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     text_color: "#FFFFFF"
+#     background_color: "#7B5804" # Coklat Utama Aplikasi
+#     border_radius: "9999px"     # Pill Shape Button
+#     leading_icon: "Vector (FFFFFF)"
+#
+#   #--- TOMBOL KEDUA: LIHAT DETAIL ---
+#   secondary_action:
+#     id: "519:1676"
+#     type: "FRAME"
+#     label: "Lihat Detail Transaksi"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     text_color: "#012D1D"       # Hijau Gelap
+#     background_color: "#F1EDE8" # Abu-abu Krem Terang
+#     border_radius: "9999px"     # Pill Shape Button
+#
+#   #--- LINK BAWAH: KEMBALI ---
+#   tertiary_link:
+#     id: "519:1678"
+#     type: "FRAME"
+#     label: "Kembali ke Beranda"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     color: "#414844"            # Abu-abu Gelap Text Link
+#     trailing_icon: "Vector (414844)"
+############################################################
