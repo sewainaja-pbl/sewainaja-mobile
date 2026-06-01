@@ -397,7 +397,7 @@ class _NotificationSettingsScreenState
         borderRadius: BorderRadius.circular(24),
       ),
       child: const Text(
-        'Pengaturan ini masih disimpan di perangkat dulu, jadi kamu sudah bisa atur ritmenya sambil kita siapkan integrasi notifikasi yang lebih lengkap.',
+        'Preferensi ini masih disimpan di perangkat, jadi kamu bisa atur ritme notifikasi tanpa mengubah data akun utama.',
         style: TextStyle(
           fontFamily: 'Poppins',
           fontSize: 13,

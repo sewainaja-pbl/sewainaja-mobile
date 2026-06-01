@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'notification_service.dart';
 import 'presentation/controllers/auth_controller.dart';
-import 'login_screen.dart';
+import 'animated_splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,6 +13,7 @@ void main() async {
   } catch (e) {
     debugPrint("Firebase initialization skipped or failed: $e");
   }
+  await NotificationService.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -23,6 +25,9 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider<NotificationService>.value(
+          value: NotificationService.instance,
+        ),
       ],
       child: MaterialApp(
         title: 'SewainAja',
@@ -33,7 +38,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           fontFamily: 'Poppins',
         ),
-        home: const LoginScreen(),
+        home: const AnimatedSplashScreen(),
       ),
     );
   }

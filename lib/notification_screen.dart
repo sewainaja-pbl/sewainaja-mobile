@@ -1,123 +1,402 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class NotificationScreen extends StatelessWidget {
+import 'notification_service.dart';
+
+class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
 
-  static const List<_InboxNotification> _recentNotifications = [
-    _InboxNotification(
-      title: 'Permintaan sewa baru',
-      message:
-          'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Cek detailnya sebelum kamu respon.',
-      time: 'Baru saja',
-      category: 'Sewa',
-      initials: 'AM',
-      highlight: true,
-    ),
-    _InboxNotification(
-      title: 'Pesan baru masuk',
-      message:
-          'Ryan menanyakan apakah barang masih tersedia untuk akhir pekan ini.',
-      time: '12 menit lalu',
-      category: 'Chat',
-      initials: 'RY',
-    ),
-    _InboxNotification(
-      title: 'Pengingat pengembalian',
-      message:
-          'Sewa kamera Fujifilm X-T30 akan selesai besok pukul 10.00.',
-      time: '1 jam lalu',
-      category: 'Pengingat',
-      initials: 'RM',
-    ),
-  ];
+  @override
+  State<NotificationScreen> createState() => _NotificationScreenState();
+}
 
-  static const List<_InboxNotification> _unreadNotifications = [
-    _InboxNotification(
-      title: 'Permintaan sewa baru',
-      message:
-          'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Buka sekarang untuk lihat detail permintaannya.',
-      time: 'Baru saja',
-      category: 'Sewa',
-      initials: 'AM',
-      highlight: true,
-    ),
-  ];
+class _NotificationScreenState extends State<NotificationScreen> {
+  static const AppNotification _pinnedDummyNotification = AppNotification(
+    id: 'dummy-feature-placeholder',
+    title: 'Permintaan sewa baru',
+    message:
+        'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Dummy ini sengaja dipin di atas buat jalur fitur yang nanti dilanjutin temanmu.',
+    timeLabel: 'Baru saja',
+    category: 'Sewa',
+    initials: 'AM',
+    isRead: false,
+    highlight: true,
+    isDummy: true,
+    isPinned: true,
+    type: 'request',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      context.read<NotificationService>().fetchNotifications();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Notifikasi',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF012D1D),
+    return Consumer<NotificationService>(
+      builder: (context, notificationService, _) {
+        final allItems = [_pinnedDummyNotification, ...notificationService.notifications];
+        final unreadItems = allItems
+            .where((item) => item.isDummy || !item.isRead)
+            .toList();
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFFDF9F4),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFFFDF9F4),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            title: const Text(
+              'Notifikasi',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+            actions: [
+              if (notificationService.unreadCount > 0)
+                TextButton(
+                  onPressed: notificationService.markAllAsRead,
+                  child: const Text(
+                    'Baca semua',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                ),
+            ],
           ),
-        ),
-      ),
-      body: DefaultTabController(
-        length: 2,
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF1EDE8),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const TabBar(
-                dividerColor: Colors.transparent,
-                indicator: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.all(Radius.circular(999)),
+          body: DefaultTabController(
+            length: 2,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1EDE8),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const TabBar(
+                    dividerColor: Colors.transparent,
+                    indicator: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(Radius.circular(999)),
+                    ),
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    labelColor: Color(0xFF012D1D),
+                    unselectedLabelColor: Color(0xFF717973),
+                    labelStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    unselectedLabelStyle: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    tabs: [
+                      Tab(text: 'Semua'),
+                      Tab(text: 'Belum dibaca'),
+                    ],
+                  ),
                 ),
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelColor: Color(0xFF012D1D),
-                unselectedLabelColor: Color(0xFF717973),
-                labelStyle: TextStyle(
+                if (notificationService.errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    child: _InfoBanner(
+                      message: notificationService.errorMessage!,
+                    ),
+                  ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      _NotificationList(
+                        title: 'Hari ini',
+                        subtitle:
+                            'Dummy yang dipin tetap paling atas, lalu update notifikasi akunmu muncul di bawahnya.',
+                        items: allItems,
+                        isLoading: notificationService.isLoading,
+                        onRefresh: notificationService.fetchNotifications,
+                        onTap: _handleNotificationTap,
+                      ),
+                      _NotificationList(
+                        title: 'Butuh perhatian',
+                        subtitle:
+                            'Notifikasi yang belum dibaca tetap dikumpulkan di sini supaya gampang dicek cepat.',
+                        items: unreadItems,
+                        isLoading: notificationService.isLoading,
+                        onRefresh: notificationService.fetchNotifications,
+                        onTap: _handleNotificationTap,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _handleNotificationTap(AppNotification item) async {
+    if (!item.isDummy && !item.isRead) {
+      await context.read<NotificationService>().markAsRead(item.id);
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    if (item.isDummy) {
+      _showDummyDetail(context, item);
+      return;
+    }
+
+    _showNotificationDetail(context, item);
+  }
+
+  void _showDummyDetail(BuildContext context, AppNotification item) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFF8EF),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7D2C9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                item.title,
+                style: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 12,
+                  fontSize: 20,
                   fontWeight: FontWeight.w700,
+                  color: Color(0xFF012D1D),
                 ),
-                unselectedLabelStyle: TextStyle(
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.message,
+                style: const TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF717973),
                 ),
-                tabs: [
-                  Tab(text: 'Semua'),
-                  Tab(text: 'Belum dibaca'),
-                ],
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _NotificationList(
-                    title: 'Hari ini',
-                    subtitle: 'Update terbaru yang paling relevan buat kamu.',
-                    items: _recentNotifications,
+              if (item.imageUrl != null) ...[
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: Image.network(
+                      item.imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: const Color(0xFFF1EDE8),
+                        alignment: Alignment.center,
+                        child: const Text(
+                          'Gambar notifikasi gagal dimuat',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF717973),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                  _NotificationList(
-                    title: 'Butuh perhatian',
-                    subtitle:
-                        'Notifikasi yang belum kamu buka dan sebaiknya dicek lebih dulu.',
-                    items: _unreadNotifications,
-                  ),
-                ],
+                ),
+              ],
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailRow(label: 'Status', value: 'Dummy pinned'),
+                    SizedBox(height: 10),
+                    _DetailRow(
+                      label: 'Tujuan',
+                      value: 'Slot placeholder untuk flow lanjutan yang nanti disambung temanmu.',
+                    ),
+                    SizedBox(height: 10),
+                    _DetailRow(
+                      label: 'Catatan',
+                      value: 'Kartu ini sengaja selalu tampil paling atas.',
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sip, lanjut nanti',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showNotificationDetail(BuildContext context, AppNotification item) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          decoration: const BoxDecoration(
+            color: Color(0xFFFFF8EF),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD7D2C9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                item.title,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.message,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF717973),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _DetailRow(label: 'Kategori', value: item.category),
+                    const SizedBox(height: 10),
+                    _DetailRow(label: 'Waktu', value: item.timeLabel),
+                    if (item.type != null) ...[
+                      const SizedBox(height: 10),
+                      _DetailRow(label: 'Tipe', value: item.type!),
+                    ],
+                    if (item.transactionId != null) ...[
+                      const SizedBox(height: 10),
+                      _DetailRow(
+                        label: 'Transaksi',
+                        value: item.transactionId!,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: const Text(
+                    'Tutup',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -125,59 +404,91 @@ class NotificationScreen extends StatelessWidget {
 class _NotificationList extends StatelessWidget {
   final String title;
   final String subtitle;
-  final List<_InboxNotification> items;
+  final List<AppNotification> items;
+  final bool isLoading;
+  final Future<void> Function() onRefresh;
+  final ValueChanged<AppNotification> onTap;
 
   const _NotificationList({
     required this.title,
     required this.subtitle,
     required this.items,
+    required this.isLoading,
+    required this.onRefresh,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF012D1D),
-          ),
+    if (isLoading && items.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF012D1D),
         ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            height: 1.4,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF717973),
-          ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: const Color(0xFF012D1D),
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
         ),
-        const SizedBox(height: 12),
-        ...items.map((item) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _NotificationCard(item: item),
-            )),
-      ],
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF012D1D),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF717973),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            const _EmptyState()
+          else
+            ...items.map(
+              (item) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _NotificationCard(
+                  item: item,
+                  onTap: () => onTap(item),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
 class _NotificationCard extends StatelessWidget {
-  final _InboxNotification item;
+  final AppNotification item;
+  final VoidCallback onTap;
 
-  const _NotificationCard({required this.item});
+  const _NotificationCard({
+    required this.item,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showNotificationDetail(context, item),
+      onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -256,19 +567,63 @@ class _NotificationCard extends StatelessWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (item.imageUrl != null) ...[
+                    const SizedBox(height: 10),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: SizedBox(
+                        height: 96,
+                        width: double.infinity,
+                        child: Image.network(
+                          item.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: const Color(0xFFF4F1EB),
+                            alignment: Alignment.center,
+                            child: const Text(
+                              'Gambar tidak tersedia',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF717973),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
-                        item.time,
-                        style: TextStyle(
+                        item.timeLabel,
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF717973),
                         ),
                       ),
-                      if (item.highlight) ...[
+                      if (item.isPinned) ...[
+                        const SizedBox(width: 10),
+                        const Icon(
+                          Icons.push_pin_rounded,
+                          size: 14,
+                          color: Color(0xFF012D1D),
+                        ),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'Pinned',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                      ] else if (item.highlight) ...[
                         const SizedBox(width: 10),
                         const Icon(
                           Icons.circle,
@@ -294,127 +649,6 @@ class _NotificationCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showNotificationDetail(BuildContext context, _InboxNotification item) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFF8EF),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7D2C9),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                item.title,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.message,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  height: 1.55,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF717973),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DetailRow(label: 'Pemohon', value: 'Aminah'),
-                    SizedBox(height: 10),
-                    _DetailRow(label: 'Barang', value: 'Sony a6000'),
-                    SizedBox(height: 10),
-                    _DetailRow(label: 'Durasi', value: '14-16 Juni'),
-                    SizedBox(height: 10),
-                    _DetailRow(label: 'Status', value: 'Menunggu respon'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF012D1D),
-                        side: const BorderSide(color: Color(0xFFBFC8C1)),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      child: const Text(
-                        'Nanti saja',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF012D1D),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                      ),
-                      child: const Text(
-                        'Lihat ringkasan',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 }
@@ -443,24 +677,6 @@ class _NotificationBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-class _InboxNotification {
-  final String title;
-  final String message;
-  final String time;
-  final String category;
-  final String initials;
-  final bool highlight;
-
-  const _InboxNotification({
-    required this.title,
-    required this.message,
-    required this.time,
-    required this.category,
-    required this.initials,
-    this.highlight = false,
-  });
 }
 
 class _DetailRow extends StatelessWidget {
@@ -500,6 +716,68 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _InfoBanner extends StatelessWidget {
+  final String message;
+
+  const _InfoBanner({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F3EE),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        message,
+        style: const TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF7B5804),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: const Column(
+        children: [
+          Icon(
+            Icons.notifications_none_rounded,
+            size: 42,
+            color: Color(0xFF9EA39D),
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Belum ada notifikasi lain saat ini.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF717973),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
