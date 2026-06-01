@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_common_widgets.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -363,8 +362,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: radius,
-                    child: Image.file(
-                      File(photo.localPath),
+                    child: Image(
+                      image: _imageUploadService.buildProcessedImageProvider(photo),
                       fit: BoxFit.cover,
                       filterQuality: FilterQuality.medium,
                     ),

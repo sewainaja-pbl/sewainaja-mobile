@@ -9,6 +9,7 @@ import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
+import 'notification_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -69,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen>
       (user['profilePhotoUrl'] ?? '').toString(),
     );
     await prefs.setString('user_status', (user['status'] ?? '').toString());
+    await NotificationService.instance.syncAfterLogin();
     if (!mounted) return;
     _showSnackBar('Login berhasil!', isError: false);
     Navigator.pushReplacement(

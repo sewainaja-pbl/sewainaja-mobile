@@ -1,36 +1,31 @@
-import 'dart:io';
-
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'upload_image_policy.dart';
 
 class ProcessedImageFile {
   final String localPath;
+  final Uint8List bytes;
   final int sizeInBytes;
   final UploadImagePolicy policy;
 
   const ProcessedImageFile({
     required this.localPath,
+    required this.bytes,
     required this.sizeInBytes,
     required this.policy,
   });
-
-  File get file => File(localPath);
 }
 
 enum ImageSourceChoice { camera, gallery }
 
 class ImageUploadService {
-  ImageUploadService({
-    ImagePicker? picker,
-    FirebaseStorage? storage,
-  })  : _picker = picker ?? ImagePicker(),
-        _storage = storage ?? FirebaseStorage.instance;
+  ImageUploadService({ImagePicker? picker, FirebaseStorage? storage})
+    : _picker = picker ?? ImagePicker(),
+      _storage = storage ?? FirebaseStorage.instance;
 
   final ImagePicker _picker;
   final FirebaseStorage _storage;
@@ -81,7 +76,8 @@ class ImageUploadService {
                   icon: Icons.photo_library_outlined,
                   title: 'Galeri',
                   subtitle: 'Pilih foto yang sudah ada',
-                  onTap: () => Navigator.pop(context, ImageSourceChoice.gallery),
+                  onTap: () =>
+                      Navigator.pop(context, ImageSourceChoice.gallery),
                 ),
               ],
             ),
@@ -122,42 +118,43 @@ class ImageUploadService {
     UploadImagePolicy policy,
   ) async {
     final originalBytes = await picked.length();
+    final originalData = await picked.readAsBytes();
 
-    // Web does not support flutter_image_compress or getTemporaryDirectory
+    // Web does not support flutter_image_compress.
     if (kIsWeb) {
+      if (!policy.isWithinLimit(originalBytes)) {
+        return null;
+      }
       return ProcessedImageFile(
         localPath: picked.path,
+        bytes: originalData,
         sizeInBytes: originalBytes,
         policy: policy,
       );
     }
 
-    final tempDir = await getTemporaryDirectory();
     var quality = policy.initialQuality;
     ProcessedImageFile? candidate;
 
     while (quality >= policy.minimumQuality) {
-      final targetPath =
-          '${tempDir.path}\\${DateTime.now().microsecondsSinceEpoch}_q$quality.jpg';
-      final result = await FlutterImageCompress.compressAndGetFile(
+      final compressed = await FlutterImageCompress.compressWithFile(
         picked.path,
-        targetPath,
         minWidth: policy.targetLongestSide,
         minHeight: policy.targetLongestSide,
         quality: quality,
         format: CompressFormat.jpeg,
       );
 
-      if (result == null) break;
+      if (compressed == null || compressed.isEmpty) break;
 
-      final bytes = await result.length();
       candidate = ProcessedImageFile(
-        localPath: result.path,
-        sizeInBytes: bytes,
+        localPath: picked.path,
+        bytes: compressed,
+        sizeInBytes: compressed.length,
         policy: policy,
       );
 
-      if (policy.isWithinLimit(bytes)) {
+      if (policy.isWithinLimit(compressed.length)) {
         return candidate;
       }
       quality -= 8;
@@ -169,6 +166,7 @@ class ImageUploadService {
     if (policy.isWithinLimit(originalBytes)) {
       return ProcessedImageFile(
         localPath: picked.path,
+        bytes: originalData,
         sizeInBytes: originalBytes,
         policy: policy,
       );
@@ -181,8 +179,8 @@ class ImageUploadService {
     required String storagePath,
   }) async {
     final ref = _storage.ref().child(storagePath);
-    final task = await ref.putFile(
-      File(processed.localPath),
+    final task = await ref.putData(
+      processed.bytes,
       SettableMetadata(
         contentType: 'image/jpeg',
         customMetadata: {
@@ -216,7 +214,13 @@ class ImageUploadService {
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return NetworkImage(trimmed);
     }
-    return FileImage(File(trimmed));
+    throw ArgumentError(
+      'Local file path preview is not supported in this method',
+    );
+  }
+
+  ImageProvider buildProcessedImageProvider(ProcessedImageFile processed) {
+    return MemoryImage(processed.bytes);
   }
 }
 

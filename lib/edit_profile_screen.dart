@@ -796,7 +796,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   ImageProvider _resolvedProfileImage() {
     if (_pendingProfilePhoto != null) {
-      return _imageUploadService.buildImageProvider(_pendingProfilePhoto!.localPath);
+      return _imageUploadService.buildProcessedImageProvider(_pendingProfilePhoto!);
     }
     if (_profilePhotoUrl.trim().isNotEmpty) {
       return _imageUploadService.buildImageProvider(_profilePhotoUrl);

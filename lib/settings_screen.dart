@@ -7,7 +7,7 @@ import 'data/repositories/auth_repository.dart';
 import 'default_address_setup_screen.dart';
 import 'help_center_screen.dart';
 import 'login_security_screen.dart';
-import 'login_screen.dart';
+import 'animated_splash_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
 import 'owner_return_show_qr_screen.dart';
@@ -145,13 +145,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       await _authRepository.signOut();
       final prefs = await SharedPreferences.getInstance();
-      final hasSeenOnboarding = prefs.getBool('onboarding_seen') ?? true;
       await prefs.clear();
-      await prefs.setBool('onboarding_seen', hasSeenOnboarding);
+      // Setelah logout, tampilkan onboarding lagi sebelum login ulang.
+      await prefs.setBool('onboarding_seen', false);
 
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const AnimatedSplashScreen()),
         (route) => false,
       );
     } catch (_) {
