@@ -127,6 +127,7 @@ class NewArrivalsScreen extends StatelessWidget {
                     builder: (context) => ItemDetailScreen(
                       itemName: item.name,
                       pricePerHour: item.pricePerHour,
+                      imagePath: item.primaryPhoto,
                     ),
                   ),
                 ),

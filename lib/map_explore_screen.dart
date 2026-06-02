@@ -1023,6 +1023,7 @@ class _SelectedItemCard extends StatelessWidget {
                   builder: (_) => ItemDetailScreen(
                     itemName: item.name,
                     pricePerHour: item.pricePerHour,
+                    imagePath: item.photoUrl,
                   ),
                 ),
               );

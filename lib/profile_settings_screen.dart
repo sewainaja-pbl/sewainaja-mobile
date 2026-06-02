@@ -11,6 +11,7 @@ import 'settings_screen.dart';
 import 'my_items_screen.dart';
 import 'favorites_screen.dart';
 import 'transaction_history_screen.dart';
+import 'profile_view_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -124,8 +125,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   // SECTION 1: PROFILE CARD
   // ─────────────────────────────────────────────
   Widget _buildProfileCard() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileViewScreen(
+              ownerName: _name,
+              rating: "4.9",
+              listingCount: "20",
+              avatarImage: _resolvedProfileImage(),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -303,8 +318,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildStatColumn(String title, String value) {
     return Expanded(

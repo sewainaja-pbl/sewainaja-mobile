@@ -3520,3 +3520,256 @@ flutter:
 #     color: "#414844"            # Abu-abu Gelap Text Link
 #     trailing_icon: "Vector (414844)"
 ############################################################
+
+# ================================================================================
+# ## FINAL AI AGENT PROMPT SPEC:SEWAINAJA - SISTEM REKOMENDASI MACHINE LEARNING
+# ================================================================================
+#
+# ## 1. ARSITEKTUR INTI & INTEGRASI
+# - Tipe Arsitektur: Opsi B (Integrasi dinamis real-time menggunakan Firebase Admin SDK)
+# - Framework Backend: FastAPI (Python 3.10+)
+# - Sumber Database: Firebase Firestore
+# - Kredensial Database: ml_backend/firebase-credentials.json (DIABAIKAN di .gitignore)
+# - Paket Python Utama: fastapi, uvicorn, scikit-surprise, scikit-learn, pandas, firebase-admin
+#
+# ## 2. ENDPOINT & SKENARIO REKOMENDASI
+#
+# ### A. Rekomendasi Halaman Beranda / Home Screen (/recommend)
+# - Endpoint: POST `/recommend`
+# - Payload: { "userId": "String (opsional)" }
+# - Logika ML:
+#   - Pengguna Aktif (User lama): Jika riwayat transaksi/rating ada, lakukan Collaborative Filtering SVD.
+#   - Pengguna Baru (Cold Start Fallback): Tampilkan rekomendasi berdasarkan kepopuleran
+#     atau rating rata-rata dari barang yang aktif (tersedia), diprioritaskan dari kategori yang paling sering disewa.
+#
+# ### B. Rekomendasi Detail Barang & Pencarian (/search-recommend)
+# - Endpoint: POST `/search-recommend`
+# - Payload: { "itemId": "String" }
+# - Logika ML:
+#   - Menggunakan Content-Based Filtering dengan membaca TF-IDF Matrix & Cosine Similarity yang sudah di-prekomputasi (cached).
+#   - Menganalisis kemiripan teks pada kolom "name", "description", dan "categoryName" dari koleksi Firestore "items".
+#   - Hanya menampilkan barang-barang dengan status "available".
+#
+# ### C. Operasional Training & Tuning (/train) - DIJALANKAN TERPISAH
+# - Endpoint: POST `/train` (Dikhususkan untuk Admin / Cron Job berkala)
+# - Logika ML:
+#   - Menarik data terbaru dari Firestore.
+#   - Melakukan pre-komputasi (caching) TF-IDF Matrix untuk mempercepat `/search-recommend`.
+#   - Mengeksekusi proses Hypertuning (Random Search) SVD dan Pengecekan Overfit/Underfit (Tolak model jika selisih Test vs Train RMSE > 0.15).
+#   - Menyimpan parameter terbaik ke dalam model (.pkl atau memori).
+# - Tujuan: Memastikan endpoint prediksi (/recommend) sangat cepat (milidetik) karena terbebas dari beban komputasi training.
+#
+# ## 3. HYPERPARAMETER TUNING & SPESIFIKASI FITTING
+# - Algoritma Model: SVD (Singular Value Decomposition) dari `scikit-surprise`
+# - Strategi Tuning: Random Search (RandomizedSearchCV)
+# - Kisi Hyperparameter (Grid):
+#   - `n_factors` (jumlah faktor laten): [10, 50, 100]
+#   - `lr_all` (learning rate): [0.002, 0.005, 0.01]
+#   - `reg_all` (regularization / penalti): [0.02, 0.05, 0.1, 0.2] (Diperluas untuk mencegah overfit)
+# - Metrik Evaluasi: Root Mean Squared Error (RMSE) & Mean Absolute Error (MAE)
+# - Protokol Validasi: Pembagian Train-Test 80/20 atau Cross Validation 5-Fold
+# - Diagnosis Fitting Model:
+#   - Good Fit: RMSE Latih (Train) Rendah & RMSE Uji (Test) Rendah (selisih < 0.05)
+#   - Overfitting: RMSE Latih sangat rendah & RMSE Uji tinggi -> Tindakan: Kurangi n_factors atau naikkan reg_all.
+#   - Underfitting: RMSE Latih tinggi & RMSE Uji tinggi -> Tindakan: Naikkan n_factors atau latih dengan epoch lebih banyak.
+#
+# ## 4. ASUMPSI SKEMA DATABASE (FIRESTORE)
+# - Koleksi `items`:
+#   - Kolom: { "id", "name", "description", "categoryName", "status" ("available"), "ownerRating", "photos" }
+# - Koleksi `user_interactions` / `ratings`:
+#   - Kolom: { "userId", "itemId", "rating" (1 sampai 5) }
+#   - Pemetaan Interaksi Implisit (Jika rating tidak diisi langsung oleh user):
+#     - Melihat Barang (View) = 1
+#     - Menambahkan Favorit = 3
+#     - Transaksi Sewa (Rent) = 5
+#     - PENTING (Pre-processing): Jika user memiliki beberapa aksi ke barang yang sama, gunakan nilai maksimum (group by max).
+# ================================================================================
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - OWNER PROFILE SCREEN
+# =============================================================
+# Name: SewaIn Aja - Owner Profile
+# Description: Halaman profil pemilik barang (Owner) dengan struktur Stack
+#              dan DraggableScrollableSheet agar konsisten dan transisinya 
+#              serasi dengan Homepage.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & BebasNeue
+# Icons: Material Icons (arrow_back, share, star, chat_bubble_outline, person_add_alt_1, search)
+# Animation: animate_do (FadeInUp untuk product cards & reviews)
+# Grid: SliverGrid (Bawaan Flutter)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: FIXED GREEN BACKGROUND PROFILE HEADER]
+# ID: Background -> Scaffold backgroundColor: #012D1D
+# Posisi: Positioned(top: 0, left: 0, right: 0) + SafeArea
+
+# --- 1A. TOP APP BAR ACTION ---
+# Layout: Row, padding horizontal 24px, spaceBetween
+# - Back Button: Circle container (white 15% opacity), icon arrow_back (#FDF9F4)
+#   onTap: Navigator.pop
+# - Share Button: Circle container (white 15% opacity), icon share (#FDF9F4)
+
+# --- 1B. OWNER MAIN INFO ---
+# Layout: Row, padding horizontal 24px, gap 16px
+# - Avatar Box: Stack
+#   - Avatar (Circle 75x75, border putih 2px, asset: profile_owner.png)
+#   - Rating Badge (Positioned bottom): Container kuning (#F8BD00), icon star + "4.3" (#012D1D, Poppins Bold 11)
+# - Info Column:
+#   - Name Row: "Mas Tahes" (Poppins Bold 18, #FDF9F4) + Icon verified (#F8BD00)
+#   - Join Date: "Member since 2010" (Poppins Regular 12, #FDF9F4 70% opacity)
+#   - Stats Row: "103 Followers" & "20+ Active Listings" (Poppins Medium 12, #FDF9F4)
+
+# --- 1C. ACTION BUTTONS ---
+# Layout: Row, padding horizontal 24px, padding top 16px, gap 12px
+# - Follow Button: ElevatedButton, bg #F8BD00, text "Follow" (#012D1D, Poppins SemiBold 14), radius 12
+# - Message Button: OutlinedButton, border #FDF9F4, text "Message" (#FDF9F4, Poppins SemiBold 14), radius 12
+
+# ### [LAYER 2: DRAGGABLE SCROLLABLE SHEET (BODY CONTENT)]
+# Widget: DraggableScrollableSheet
+# initialChildSize: 0.65 | minChildSize: 0.65 | maxChildSize: 1.0 | snap: true
+# Background: #FFF8EF (Cream), borderRadius top 30px
+# Layout Base: ListView atau CustomScrollView dengan padding horizontal 24px
+
+# --- DRAG HANDLE ---
+# Center Container: width 40, height 5, color #D6C7A1 50%, radius 10, margin vertical 12
+
+# --- 2A. ABOUT ME SECTION ---
+# Header: "ABOUT ME" (Poppins Bold 14, #414844)
+# Description: "Passionate gadget & tools enthusiast. I specialize in premium and well-maintained items..." 
+# (Poppins Regular 13, #414844, lineHeight 1.5)
+
+# --- 2B. STRENGTHS BADGE SECTION ---
+# Layout: Wrap, gap 8px, margin top 12px
+# Chips: Container bg #012D1D 10% opacity, radius 20, padding 6x14
+# - Chip 1: "Fast Communication (3)" (Poppins Medium 12, #012D1D)
+# - Chip 2: "Fair Pricing (2)" (Poppins Medium 12, #012D1D)
+
+# --- DIVIDER ---
+# Container: height 0.5, color #414844 20% opacity, margin vertical 16px
+
+# --- 2C. REVIEWS PREVIEW SECTION ---
+# Header Row: "User Reviews" (Poppins Bold 16, #414844) + "See All" (Poppins SemiBold 13, #012D1D)
+# Review Card: Container bg #FFFFFF, radius 12, padding 14px, margin top 12px
+# - Reviewer Row: Avatar (30x30) + Name "Ceazar" (Poppins SemiBold 13, #414844) + Date "Dec 30, 2025" (right align)
+# - Rating Stars: 5 Icon star ukuran kecil (#F8BD00)
+# - Comment: "Barang ori, kondisinya mulus banget pas disewa..." (Poppins Regular 12, #414844)
+
+# --- DIVIDER ---
+# Container: height 0.5, color #414844 20% opacity, margin vertical 16px
+
+# --- 2D. OWNER LISTINGS (CATALOG) ---
+# Header: "Mas's Listings" (Poppins Bold 16, #414844)
+# Search Bar Mini: Container bg #FFFFFF, radius 12, padding 10x16, icon search (#012D1D) + "Search listings..."
+# Grid (SliverGrid): crossAxisCount 2, spacing 16, childAspectRatio 0.65
+# Products Card Style (SYNC WITH HOMEPAGE):
+#   - Container: bg #FFFFFF, radius 12, padding 12px
+#   - Image: height 120, radius 10, asset gambar produk
+#   - Title: "Sony W830 #1" (Poppins Medium 14, #414844)
+#   - Price: "Rp.120,000/Day" (Poppins Bold 14, #012D1D)
+# Animation: FadeInUp per item (delay 50ms)
+# onTap: Navigator.push ke ItemDetailScreen
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Header_Bg: "#012D1D" (Deep Forest Green)
+# Color_Sheet_Bg: "#FFF8EF" (Cream - draggable sheet)
+# Color_Text_Light: "#FDF9F4" (Off-White - teks di header)
+# Color_Text_Dark: "#414844" (Dark Gray - teks di sheet)
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Accent: "#F8BD00" (Premium Yellow Gold)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Stack Structure: Layer 1 (fixed header profil) + Layer 2 (DraggableScrollableSheet) dalam Stack.
+# 2. Scaffold backgroundColor: #012D1D wajib agar saat sheet di-scroll ke bawah, latar belakang profil tetap seamless.
+# 3. Grid Bottom Padding: Tambahkan padding bottom 40px di akhir area Listings Grid agar tidak terpotong saat di-scroll.
+# 4. Avatar Overlap: Pastikan posisi Rating Badge (bintang kuning) menumpuk (overlap) tepat di tengah bawah foto avatar menggunakan Positioned dalam Stack.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SEE ALL REVIEWS SCREEN
+# =============================================================
+# Name: SewaIn Aja - See All Reviews
+# Description: Halaman daftar ulasan lengkap untuk seorang Owner atau Produk,
+#              mencakup ringkasan rating dan list komentar pengguna.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & BebasNeue
+# Icons: Material Icons (arrow_back, star, star_half, thumb_up_alt, thumb_up_off_alt)
+# Layout: Scaffold -> CustomScrollView -> SliverList
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+# Agar menyatu dengan tema konten utama SewaIn Aja
+
+# --- 1A. TOP APP BAR ---
+# Widget: SliverAppBar (pinned: true, floating: true)
+# Background: #FFF8EF, elevation: 0
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "Reviews for Mas Tahes" (Poppins Bold 18, #012D1D)
+# CenterTitle: false
+
+# --- 1B. OVERALL RATING SECTION ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 24px, top 16px, bottom 24px
+# Styling: background #FDF9F4, borderRadius 24px, padding 32px
+# Children (Row, crossAxisAlignment: start):
+#   - Left Column (Score Info):
+#     - Text "4.3" (Poppins Bold 48, #012D1D, height 1.1)
+#     - Row (5 Stars): 4 star penuh, 1 star_half (size 18, color #F8BD00)
+#     - Text "10 reviews" (Poppins Medium 12, #414844)
+#   - Right Column (Distribution Bars): Expanded -> Column (gap 8px)
+#     - Row (5 Star): Text "5" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.7, height 8, radius 4)
+#     - Row (4 Star): Text "4" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.2, height 8, radius 4)
+#     - Row (3 Star): Text "3" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.1, height 8, radius 4)
+#     - Row (2 Star): Text "2" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.0, height 8, radius 4)
+#     - Row (1 Star): Text "1" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.0, height 8, radius 4)
+#     *Note: Lebar Stack/Progress Bar harus flex/Expanded agar menyesuaikan ruang.
+
+# --- 1C. REVIEWS LIST ---
+# Widget: SliverList
+# Layout Base: Padding horizontal 24px, gap antar item 16px, padding bottom 40px
+
+#   --- Reusable Review Card Component ---
+#   Container: bg #FFFFFF, borderRadius 24px, padding 24px, margin bottom 16px
+#   Children (Column, gap 16px):
+#     - Reviewer Header Row (Row, spaceBetween):
+#       - Left: Row -> Avatar (Circle 48x48) + Column -> Name "Sarah Jenkins" (Poppins Bold 16, #012D1D) & Date "Dec 30, 2025" (Poppins Regular 12, #414844)
+#       - Right: Row (5 Stars) -> size 14, color #F8BD00
+#     - Review Text: Text "Julian was incredibly helpful..." (Poppins Regular 14, #1C1C19, height 1.6)
+#     - Footer Action Row (Row, spaceBetween):
+#       - Helpful Button: Container bg #FDF9F4 (atau #C1ECD4 30% opacity), radius 20, padding 8x16, Row -> Icon thumb_up_off_alt (size 14, #012D1D) + Text "Helpful (2)" (Poppins Medium 12, #012D1D)
+#       - Rented Item Thumbnail (Optional): Container 48x48, borderRadius 8, DecorationImage (asset produk) -> Jika review untuk item tertentu.
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF" (Cream - latar belakang Scaffold)
+# Color_Card_Bg: "#FFFFFF" (White - latar belakang review card)
+# Color_Section_Bg: "#FDF9F4" (Off-White - latar belakang overall rating)
+# Color_Text_Dark: "#012D1D" (Deep Forest Green - judul dan angka besar)
+# Color_Text_Sub: "#414844" (Dark Gray - tanggal, review text)
+# Color_Accent_Star: "#F8BD00" (Premium Yellow Gold)
+# Color_Bar_Empty: "#E6E2DD" (Light Gray - sisa bar progress)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. CustomScrollView: Gunakan CustomScrollView dengan SliverAppBar dan SliverList agar proses scroll halus dan app bar bereaksi secara dinamis.
+# 2. Progress Bar Sizing: Pada Overall Rating, bagian grafik baris (1-5 bintang) harus dibungkus dalam widget `Expanded` di dalam struktur Row agar otomatis mengisi sisa lebar layar dan tidak overflow.
+# 3. Padding Konsisten: Semua konten dalam halaman ini (baik section ringkasan maupun kartu review) harus memiliki margin horizontal 24px agar sejajar dengan Homepage.

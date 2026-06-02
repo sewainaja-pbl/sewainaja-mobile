@@ -143,6 +143,7 @@ class SearchSheetState extends State<SearchSheet>
         builder: (_) => ItemDetailScreen(
           itemName: product.name,
           pricePerHour: pricePerHour,
+          imagePath: product.image,
         ),
       ),
     );

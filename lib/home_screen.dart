@@ -974,6 +974,7 @@ class _HomeScreenState extends State<HomeScreen>
                       builder: (context) => ItemDetailScreen(
                         itemName: item.name,
                         pricePerHour: item.pricePerHour,
+                        imagePath: item.primaryPhoto,
                       ),
                     ),
                   ),
@@ -1116,6 +1117,7 @@ class _HomeScreenState extends State<HomeScreen>
                           builder: (context) => ItemDetailScreen(
                             itemName: item.name,
                             pricePerHour: item.pricePerHour,
+                            imagePath: item.primaryPhoto,
                           ),
                         ),
                       );

@@ -1,20 +1,27 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'ajukan_sewa_screen.dart';
 import 'map_common_widgets.dart';
+import 'profile_view_screen.dart';
+
 
 class ItemDetailScreen extends StatefulWidget {
   final String? itemName;
   final double? pricePerHour;
   final String? sellerLocation;
+  final String? imagePath;
+  final bool isLocalAsset;
 
   const ItemDetailScreen({
     super.key,
     this.itemName,
     this.pricePerHour,
     this.sellerLocation,
+    this.imagePath,
+    this.isLocalAsset = false,
   });
 
   @override
@@ -43,11 +50,13 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             left: 0,
             right: 0,
             height: screenHeight * heroImageHeightFactor, // Hero image height
-            child: Image.asset(
-              'assets/images/Iklan.jpg', // Menggunakan Iklan.jpg sesuai user prompt
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-            ),
+            child: widget.imagePath != null && widget.imagePath!.isNotEmpty
+                ? (widget.isLocalAsset
+                    ? Image.file(File(widget.imagePath!), fit: BoxFit.cover, alignment: Alignment.center)
+                    : (widget.imagePath!.startsWith('http://') || widget.imagePath!.startsWith('https://')
+                        ? Image.network(widget.imagePath!, fit: BoxFit.cover, alignment: Alignment.center)
+                        : Image.asset(widget.imagePath!, fit: BoxFit.cover, alignment: Alignment.center)))
+                : Image.asset('assets/images/Iklan.jpg', fit: BoxFit.cover, alignment: Alignment.center),
           ),
 
           // -------------------------------------------------------------------
@@ -295,10 +304,30 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
+  String _getDynamicDescription(String? itemName) {
+    if (itemName == null || itemName.trim().isEmpty) return "Barang sewaan berkualitas dengan kondisi yang masih sangat baik. Sangat cocok digunakan untuk berbagai keperluan Anda.";
+    
+    final lowerName = itemName.toLowerCase();
+    if (lowerName.contains("sony a6000")) {
+      return "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan.";
+    } else if (lowerName.contains("airpods")) {
+      return "Apple AirPods Max 2 memberikan pengalaman mendengarkan audio yang tak tertandingi dengan Active Noise Cancellation terdepan di industri. Bantalan telinga sangat nyaman dipakai berjam-jam. Kondisi mulus 99%, baterai awet, lengkap dengan Smart Case bawaan.";
+    } else if (lowerName.contains("ps5") || lowerName.contains("dual-sense") || lowerName.contains("controller")) {
+      return "Controller Sony DualSense PS5 original, kondisi fisik mulus dan fungsi tombol serta analog 100% normal tanpa drift. Haptic feedback dan adaptive triggers berfungsi sempurna. Cocok untuk mabar bersama teman atau sekadar bermain solo.";
+    } else if (lowerName.contains("sony w830") || lowerName.contains("cybershot")) {
+      return "Kamera digital saku Sony W830 20.1 MP. Kamera yang sangat praktis dibawa kemana saja, hasil foto tajam khas Sony dengan 8x optical zoom. Cocok untuk mengabadikan momen casual dan street photography. Termasuk memory card 32GB dan pouch.";
+    } else if (lowerName.contains("tenda")) {
+      return "Tenda camping kapasitas 4 orang dengan bahan double layer tahan air (waterproof). Frame kokoh dan mudah dirakit, sangat cocok untuk kegiatan outdoor atau hiking bersama teman dan keluarga.";
+    } else if (lowerName.contains("bor") || lowerName.contains("drill")) {
+      return "Mesin bor listrik bertenaga dengan berbagai kecepatan. Lengkap dengan set mata bor untuk kayu, besi, dan beton. Kondisi terawat dan siap digunakan untuk kebutuhan pertukangan Anda.";
+    } else {
+      return "$itemName merupakan barang sewaan berkualitas yang kami tawarkan dengan kondisi fisik dan fungsi terbaik. Barang selalu dirawat secara rutin sehingga dapat berfungsi dengan optimal untuk menunjang aktivitas Anda. Jangan ragu untuk menyewa atau menghubungi *owner* jika ada pertanyaan lebih lanjut mengenai spesifikasi detail barang ini.";
+    }
+  }
+
   // 2D. DESCRIPTION SECTION (DENGAN EXPAND TOGGLE)
   Widget _buildDescription() {
-    const String fullDescription =
-        "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan.";
+    final String fullDescription = _getDynamicDescription(widget.itemName);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,93 +399,106 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2B. SELLER PROFILE CARD
   Widget _buildSellerProfileCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white, // ID: '259:1991'
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: Colors.black, // Border: 1px Solid #000000
-          width: 1,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ProfileViewScreen(
+              ownerName: "Han Soo Hee",
+              avatarImage: AssetImage('assets/images/profile_user.png'),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white, // ID: '259:1991'
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.black, // Border: 1px Solid #000000
+            width: 1,
+          ),
         ),
-      ),
-      child: Row(
-        children: [
-          // Avatar Image
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: const DecorationImage(
-                image: AssetImage('assets/images/profile_user.png'),
-                fit: BoxFit.cover,
+        child: Row(
+          children: [
+            // Avatar Image
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: const DecorationImage(
+                  image: AssetImage('assets/images/profile_user.png'),
+                  fit: BoxFit.cover,
+                ),
+                border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
               ),
-              border: Border.all(color: const Color(0xFFE0E0E0), width: 1),
             ),
-          ),
-          const SizedBox(width: 12),
-          // Seller Name & Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  "Han Soo Hee",
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontWeight: FontWeight.w500, // Regular to Medium
-                    fontSize: 12,
-                    color: Colors.black,
+            const SizedBox(width: 12),
+            // Seller Name & Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Han Soo Hee",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w500, // Regular to Medium
+                      fontSize: 12,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFFF8BD00),
-                      size: 12,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      "4.9",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 10,
-                        color: Colors.black,
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        color: Color(0xFFF8BD00),
+                        size: 12,
                       ),
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      "| ${widget.sellerLocation ?? "Tembalang, Banyumanik"}",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 10,
-                        color: Colors.black54,
+                      SizedBox(width: 4),
+                      Text(
+                        "4.9",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                          color: Colors.black,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      SizedBox(width: 4),
+                      Text(
+                        "| ${widget.sellerLocation ?? "Tembalang, Banyumanik"}",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Chat Action Button
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+            // Chat Action Button
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF012D1D).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const FaIcon(
+                FontAwesomeIcons.solidCommentDots,
+                size: 16,
+                color: Color(0xFF012D1D),
+              ),
             ),
-            child: const FaIcon(
-              FontAwesomeIcons.solidCommentDots,
-              size: 16,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

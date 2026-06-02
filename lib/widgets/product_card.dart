@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 
@@ -15,9 +16,13 @@ class ProductCard extends StatelessWidget {
   });
 
   /// Membangun ImageProvider yang tepat:
+  /// - Jika image adalah path lokal -> FileImage
   /// - Jika image dimulai dengan "http" → NetworkImage
   /// - Selain itu → AssetImage
   ImageProvider _buildImageProvider(String imagePath) {
+    if (product.isLocalAsset) {
+      return FileImage(File(imagePath));
+    }
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return NetworkImage(imagePath);
     }

@@ -1,33 +1,70 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
 
-class MyItemsScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'item_detail_screen.dart';
+
+class MyItemsScreen extends StatefulWidget {
   const MyItemsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<MyItemsScreen> createState() => _MyItemsScreenState();
+}
+
+class _MyItemsScreenState extends State<MyItemsScreen> {
+  List<Map<String, dynamic>> _displayItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
+
+  Future<void> _loadItems() async {
     final List<Map<String, dynamic>> dummyItems = [
       {
         "name": "Sony W830 with 8x Optical Zoom",
-        "price": "Rp.120,000/Day",
+        "price": "Rp.120.000/Day",
         "rating": "4.8(292)",
-        "image": "assets/images/Iklan.jpg", // Menggunakan fallback asset
+        "image": "assets/images/Iklan.jpg",
         "more_options": true,
       },
       {
         "name": "Sony Dual-Sense PS5",
-        "price": "Rp.45,000/Day",
+        "price": "Rp.45.000/Day",
         "rating": "4.8(292)",
         "image": "assets/images/Iklan.jpg",
         "more_options": true,
       },
       {
         "name": "Sony Dual-Sense PS5 (Baris Baru)",
-        "price": "Rp.45,000/Day",
+        "price": "Rp.45.000/Day",
         "rating": "4.8(292)",
         "image": "assets/images/Iklan.jpg",
         "more_options": true,
       },
     ];
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localItemsStr = prefs.getString('local_user_items') ?? '[]';
+      final List<dynamic> localItemsDynamic = jsonDecode(localItemsStr);
+      final List<Map<String, dynamic>> localItems = List<Map<String, dynamic>>.from(localItemsDynamic);
+      
+      setState(() {
+        _displayItems = [...localItems, ...dummyItems];
+      });
+    } catch (e) {
+      debugPrint('Failed to load local items: $e');
+      setState(() {
+        _displayItems = dummyItems;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
@@ -67,9 +104,9 @@ class MyItemsScreen extends StatelessWidget {
           crossAxisSpacing: 16,
           childAspectRatio: 0.70, // Menyesuaikan agar text dan gambar proporsional
         ),
-        itemCount: dummyItems.length,
+        itemCount: _displayItems.length,
         itemBuilder: (context, index) {
-          final item = dummyItems[index];
+          final item = _displayItems[index];
           return _buildItemCard(item);
         },
       ),
@@ -77,15 +114,42 @@ class MyItemsScreen extends StatelessWidget {
   }
 
   Widget _buildItemCard(Map<String, dynamic> item) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: const Color(0xFF2F6743), // Outline Hijau SewaInAja
-          width: 0.5,
+    // Check if the image is a local file or asset
+    final isLocalAsset = item['isLocalAsset'] == true;
+    final imageProvider = isLocalAsset 
+        ? FileImage(File(item["image"])) as ImageProvider
+        : AssetImage(item["image"]);
+
+    return GestureDetector(
+      onTap: () {
+        double parsedPrice = 0.0;
+        try {
+          String priceStr = item["price"].toString().replaceAll(RegExp(r'[^0-9]'), '');
+          parsedPrice = double.parse(priceStr);
+        } catch (_) {}
+        
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemDetailScreen(
+              itemName: item["name"],
+              pricePerHour: parsedPrice / 24, // Convert dummy daily price to hourly
+              sellerLocation: "Semarang",
+              imagePath: item["image"],
+              isLocalAsset: item['isLocalAsset'] == true,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFFFF),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: const Color(0xFF2F6743), // Outline Hijau SewaInAja
+            width: 0.5,
+          ),
         ),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -100,7 +164,7 @@ class MyItemsScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
                       image: DecorationImage(
-                        image: AssetImage(item["image"]),
+                        image: imageProvider,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -194,6 +258,6 @@ class MyItemsScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }

@@ -1147,6 +1147,35 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (!_useSavedAddress) {
         _bootstrapFormData();
       }
+      
+      // Save item to local SharedPreferences for immediate UI update in My Items and Profile View
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final localItemsStr = prefs.getString('local_user_items') ?? '[]';
+        final List<dynamic> localItems = jsonDecode(localItemsStr);
+        
+        // Find category name for display
+        final categoryName = _categories.firstWhere(
+          (cat) => (cat['id'] ?? '').toString() == categoryId,
+          orElse: () => {'category': 'Lainnya'}
+        )['category'];
+
+        localItems.insert(0, {
+          'id': itemId,
+          'name': name,
+          'price': 'Rp.${price.toInt().toString().replaceAllMapped(RegExp(r"\\B(?=(\\d{3})+(?!\\d))"), (match) => ".")}/Day',
+          'category': categoryName,
+          'rating': '0.0(0)', // Default for new item
+          'image': _productPhotos.isNotEmpty ? _productPhotos.first.localPath : 'assets/images/Iklan.jpg',
+          'isLocalAsset': _productPhotos.isNotEmpty, // Because it's an XFile path
+          'more_options': true,
+        });
+        
+        await prefs.setString('local_user_items', jsonEncode(localItems));
+      } catch (e) {
+        debugPrint('Failed to save to local_user_items: $e');
+      }
+
       if (!mounted) return;
       AddItemSuccessModal.show(context);
 
