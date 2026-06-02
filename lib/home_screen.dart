@@ -39,8 +39,8 @@ class _HomeScreenState extends State<HomeScreen>
   final ItemRepository _itemRepo = ItemRepository();
 
   String selectedCategory = 'All';
-  String _defaultLocationLabel = 'Tembalang, Semarang';
-  String _userName = 'Han Soo Hee';
+  String _defaultLocationLabel = '';
+  String _userName = '';
   String _profilePhotoUrl = '';
   LatLng _mapCenter = _fallbackCenter;
 
@@ -1045,6 +1045,8 @@ class _HomeScreenState extends State<HomeScreen>
                     context,
                     MaterialPageRoute(
                       builder: (context) => ItemDetailScreen(
+                        itemId: item.id,
+                        item: item,
                         itemName: item.name,
                         pricePerHour: item.pricePerHour,
                       ),
@@ -1187,6 +1189,8 @@ class _HomeScreenState extends State<HomeScreen>
                         context,
                         MaterialPageRoute(
                           builder: (context) => ItemDetailScreen(
+                            itemId: item.id,
+                            item: item,
                             itemName: item.name,
                             pricePerHour: item.pricePerHour,
                           ),

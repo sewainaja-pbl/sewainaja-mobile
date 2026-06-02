@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/item_model.dart';
 
 /// Repository untuk mengakses collection `items` di Firestore.
@@ -29,9 +30,14 @@ class ItemRepository {
       query = query.where('categoryName', isEqualTo: categoryName);
     }
 
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return query.snapshots().map((snapshot) {
       final items =
           snapshot.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+      if (currentUserId != null) {
+        items.removeWhere((item) => item.ownerId == currentUserId);
+      }
       // Shuffle random di client — tanpa algoritma, sesuai permintaan
       items.shuffle();
       return items;
@@ -47,26 +53,31 @@ class ItemRepository {
   /// Fallback: jika orderBy('createdAt') kosong (dokumen tidak punya field
   /// createdAt), fetch semua lalu sort client-side, ambil [limit] terbaru.
   Stream<List<ItemModel>> watchNewArrivals({int limit = 5}) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return _itemsRef
         .orderBy('createdAt', descending: true)
-        .limit(limit)
         .snapshots()
         .asyncMap((snapshot) async {
+      List<ItemModel> items = [];
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs
+        items = snapshot.docs
             .map((doc) => ItemModel.fromFirestore(doc))
             .toList();
+      } else {
+        // Fallback: dokumen tidak punya createdAt — fetch semua, sort client-side
+        final all = await _itemsRef.get();
+        items =
+            all.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+        items.sort((a, b) {
+          if (a.createdAt == null && b.createdAt == null) return 0;
+          if (a.createdAt == null) return 1;
+          if (b.createdAt == null) return -1;
+          return b.createdAt!.compareTo(a.createdAt!);
+        });
       }
-      // Fallback: dokumen tidak punya createdAt — fetch semua, sort client-side
-      final all = await _itemsRef.get();
-      final items =
-          all.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
-      items.sort((a, b) {
-        if (a.createdAt == null && b.createdAt == null) return 0;
-        if (a.createdAt == null) return 1;
-        if (b.createdAt == null) return -1;
-        return b.createdAt!.compareTo(a.createdAt!);
-      });
+      if (currentUserId != null) {
+        items.removeWhere((item) => item.ownerId == currentUserId);
+      }
       return items.take(limit).toList();
     });
   }
@@ -79,25 +90,31 @@ class ItemRepository {
   /// Tidak ada filter status maupun batas waktu.
   /// Fallback: jika orderBy('createdAt') kosong, fetch semua + sort client-side.
   Stream<List<ItemModel>> watchAllNewArrivals() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return _itemsRef
         .orderBy('createdAt', descending: true)
         .snapshots()
         .asyncMap((snapshot) async {
+      List<ItemModel> items = [];
       if (snapshot.docs.isNotEmpty) {
-        return snapshot.docs
+        items = snapshot.docs
             .map((doc) => ItemModel.fromFirestore(doc))
             .toList();
+      } else {
+        // Fallback: sort client-side
+        final all = await _itemsRef.get();
+        items =
+            all.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+        items.sort((a, b) {
+          if (a.createdAt == null && b.createdAt == null) return 0;
+          if (a.createdAt == null) return 1;
+          if (b.createdAt == null) return -1;
+          return b.createdAt!.compareTo(a.createdAt!);
+        });
       }
-      // Fallback: sort client-side
-      final all = await _itemsRef.get();
-      final items =
-          all.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
-      items.sort((a, b) {
-        if (a.createdAt == null && b.createdAt == null) return 0;
-        if (a.createdAt == null) return 1;
-        if (b.createdAt == null) return -1;
-        return b.createdAt!.compareTo(a.createdAt!);
-      });
+      if (currentUserId != null) {
+        items.removeWhere((item) => item.ownerId == currentUserId);
+      }
       return items;
     });
   }

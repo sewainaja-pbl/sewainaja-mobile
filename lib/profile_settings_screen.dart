@@ -21,8 +21,8 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
-  String _name = 'Han Soo Hee';
-  String _defaultLocation = 'Tembalang, Semarang';
+  String _name = '';
+  String _defaultLocation = '';
   String _profilePhotoUrl = '';
   String _userStatus = '';
   final ImageUploadService _imageUploadService = ImageUploadService();

@@ -1021,6 +1021,7 @@ class _SelectedItemCard extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => ItemDetailScreen(
+                    itemId: item.id,
                     itemName: item.name,
                     pricePerHour: item.pricePerHour,
                   ),

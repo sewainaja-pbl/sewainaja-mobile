@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -43,17 +44,39 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
   String _addressLabel = 'Semarang, Jawa Tengah';
   bool _isLoadingLocation = true;
   bool _isSubmitting = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialCenter != null) {
       _center = widget.initialCenter!;
+      _isLoadingLocation = false;
     }
     if (widget.initialLabel != null && widget.initialLabel!.trim().isNotEmpty) {
       _addressLabel = widget.initialLabel!.trim();
     }
-    _initLocation();
+    
+    if (widget.initialCenter == null) {
+      _initLocation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onMapCameraMove(LatLng newCenter) {
+    setState(() {
+      _center = newCenter;
+    });
+    
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      _reverseGeocode();
+    });
   }
 
   Future<void> _initLocation() async {
@@ -184,12 +207,14 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF8EF),
         elevation: 0,
+        centerTitle: true,
         iconTheme: const IconThemeData(color: Color(0xFF012D1D)),
         title: const Text(
           'Set Alamat Utama',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
             color: Color(0xFF012D1D),
           ),
         ),
@@ -220,8 +245,9 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
               child: ReusableMapCard(
                 center: _center,
                 zoom: 14,
-                interactive: false,
+                interactive: true,
                 showCenterPin: true,
+                onCenterChanged: _onMapCameraMove,
                 overlayLabel: _addressLabel,
                 height: 210,
                 borderRadius: BorderRadius.circular(18),

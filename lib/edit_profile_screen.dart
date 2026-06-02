@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -30,7 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _phoneFocusNode = FocusNode();
   final AddressService _addressService = const AddressService();
-  String _defaultLocation = "Tembalang, Semarang";
+  String _defaultLocation = "";
   LatLng _profileMapCenter = _fallbackMapCenter;
   final ImageUploadService _imageUploadService = ImageUploadService();
   final AuthSessionService _authSessionService = const AuthSessionService();
@@ -38,6 +39,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _profilePhotoUrl = '';
   ProcessedImageFile? _pendingProfilePhoto;
   bool _isSaving = false;
+  Timer? _debounceTimer;
+  bool _isScrollEnabled = true;
 
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
@@ -64,6 +67,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _nameFocusNode.removeListener(_refreshFieldState);
     _phoneFocusNode.removeListener(_refreshFieldState);
     _nameController.dispose();
@@ -278,6 +282,75 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
   }
 
+  void _onMapCameraMove(LatLng newCenter) {
+    setState(() {
+      _profileMapCenter = newCenter;
+    });
+    
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      _reverseGeocode();
+    });
+  }
+
+  Future<void> _reverseGeocode() async {
+    try {
+      final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse').replace(
+        queryParameters: {
+          'lat': _profileMapCenter.latitude.toString(),
+          'lon': _profileMapCenter.longitude.toString(),
+          'format': 'jsonv2',
+          'zoom': '16',
+        },
+      );
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': 'sewainaja-mobile/1.0 (profile-map)'},
+      );
+      if (response.statusCode != 200) return;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final raw = (body['display_name'] ?? '').toString().trim();
+      if (raw.isEmpty) return;
+      if (!mounted) return;
+      
+      final shortAddr = _shortAddress(raw);
+      setState(() {
+        _defaultLocation = shortAddr;
+      });
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_default_location', shortAddr);
+      await prefs.setDouble('user_default_lat', _profileMapCenter.latitude);
+      await prefs.setDouble('user_default_lng', _profileMapCenter.longitude);
+      
+      final token = prefs.getString('token');
+      if (token != null && token.isNotEmpty) {
+        try {
+          await _addressService.upsertDefaultAddress(
+            label: 'Alamat Utama',
+            fullAddress: shortAddr,
+            latitude: _profileMapCenter.latitude,
+            longitude: _profileMapCenter.longitude,
+          );
+        } catch (_) {}
+      }
+      
+      ProfileSyncService.profileRevision.value++;
+    } catch (_) {}
+  }
+
+  String _shortAddress(String raw) {
+    final parts = raw
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.length >= 3) {
+      return '${parts[0]}, ${parts[1]}, ${parts[2]}';
+    }
+    return parts.isNotEmpty ? parts.join(', ') : 'Semarang, Jawa Tengah';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -288,36 +361,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
-        titleSpacing: 24,
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
-            children: [
-              // Back Button
-              GestureDetector(
-                onTap: _handleBack,
-                child: const Icon(
-                  Icons.arrow_back_rounded, // ID: '536:1764'
-                  color: Color(0xFF012D1D),
-                  size: 28,
-                ),
+        centerTitle: true,
+        leadingWidth: 76,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 24, top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: _handleBack,
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: Color(0xFF012D1D),
+                size: 28,
               ),
-              const Spacer(),
-              // Title "Edit Profile"
-              const Text(
-                "Edit Profile", // ID: '536:1766'
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize:
-                      24, // Using 24 instead of 30 to prevent overflow and match modern app scales
-                  fontWeight: FontWeight.w600, // SemiBold
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const Spacer(),
-              // Placeholder for balance
-              const SizedBox(width: 28),
-            ],
+            ),
+          ),
+        ),
+        title: const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text(
+            "Edit Profile",
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
         bottom: PreferredSize(
@@ -342,7 +411,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // --- MAIN BODY ---
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: _isScrollEnabled ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 40), // Spacing for scroll
         child: Column(
           children: [
@@ -727,14 +796,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: ReusableMapCard(
-                center: _profileMapCenter,
-                zoom: 13,
-                interactive: false,
-                showCenterPin: true,
-                overlayLabel: _defaultLocation,
-                height: 120,
-                borderRadius: BorderRadius.circular(10),
+              child: Listener(
+                onPointerDown: (_) => setState(() => _isScrollEnabled = false),
+                onPointerUp: (_) => setState(() => _isScrollEnabled = true),
+                onPointerCancel: (_) => setState(() => _isScrollEnabled = true),
+                child: ReusableMapCard(
+                  center: _profileMapCenter,
+                  zoom: 13,
+                  interactive: true,
+                  showCenterPin: true,
+                  onCenterChanged: _onMapCameraMove,
+                  overlayLabel: _defaultLocation,
+                  height: 120,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ),

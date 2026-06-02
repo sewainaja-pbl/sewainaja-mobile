@@ -1,18 +1,243 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 import 'map_common_widgets.dart';
 import 'widgets/success_rental_modal.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
+import 'app_feedback.dart';
+import 'image_upload_service.dart';
 
 class AjukanSewaScreen extends StatefulWidget {
-  const AjukanSewaScreen({super.key});
+  final Map<String, dynamic>? itemData;
+  const AjukanSewaScreen({super.key, this.itemData});
 
   @override
   State<AjukanSewaScreen> createState() => _AjukanSewaScreenState();
 }
 
 class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
-  final LatLng _itemLocation = const LatLng(-6.9791, 110.4208);
+  final AuthSessionService _authSessionService = const AuthSessionService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
+
+  LatLng _itemLocation = const LatLng(-6.9791, 110.4208);
+  String _itemAddressLabel = 'Lokasi tidak diketahui';
+
+  DateTime? _startDate;
+  TimeOfDay? _startTime;
+  DateTime? _endDate;
+  TimeOfDay? _endTime;
+
+  bool _isSubmitting = false;
+  final TextEditingController _notesController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Default: Start tomorrow, end in 3 days, both at 19:00
+    final now = DateTime.now();
+    _startDate = now.add(const Duration(days: 1));
+    _startTime = const TimeOfDay(hour: 19, minute: 0);
+    _endDate = now.add(const Duration(days: 3));
+    _endTime = const TimeOfDay(hour: 19, minute: 0);
+
+    // Initialize location from itemData
+    if (widget.itemData != null) {
+      final address = widget.itemData!['address'] as Map<String, dynamic>?;
+      _itemAddressLabel = address?['label']?.toString() ?? address?['fullAddress']?.toString() ?? 'Lokasi pemilik barang';
+      final coordinat = address?['coordinat'] as Map<String, dynamic>?;
+      if (coordinat != null) {
+        final lat = (coordinat['latitude'] as num?)?.toDouble();
+        final lng = (coordinat['longitude'] as num?)?.toDouble();
+        if (lat != null && lng != null) {
+          _itemLocation = LatLng(lat, lng);
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  int get _totalHours {
+    if (_startDate == null || _startTime == null || _endDate == null || _endTime == null) {
+      return 0;
+    }
+    final startDateTime = DateTime(
+      _startDate!.year,
+      _startDate!.month,
+      _startDate!.day,
+      _startTime!.hour,
+      _startTime!.minute,
+    );
+    final endDateTime = DateTime(
+      _endDate!.year,
+      _endDate!.month,
+      _endDate!.day,
+      _endTime!.hour,
+      _endTime!.minute,
+    );
+    if (endDateTime.isBefore(startDateTime)) {
+      return 0;
+    }
+    return endDateTime.difference(startDateTime).inHours;
+  }
+
+  int get _totalDays {
+    final hours = _totalHours;
+    if (hours <= 0) return 0;
+    return (hours / 24).ceil();
+  }
+
+  double get _totalPrice {
+    final priceRaw = widget.itemData?['pricePerHour'] ?? 15000.0;
+    final priceVal = (priceRaw as num).toDouble();
+    return _totalHours * priceVal;
+  }
+
+  String _formatCurrency(double val) {
+    return val.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return '-';
+    final months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatTime(TimeOfDay? time) {
+    if (time == null) return '-';
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+
+  Future<void> _selectStartDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        // Adjust end date if it becomes before start date
+        if (_endDate != null && _endDate!.isBefore(_startDate!)) {
+          _endDate = _startDate!.add(const Duration(days: 2));
+        }
+      });
+    }
+  }
+
+  Future<void> _selectEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? (_startDate ?? DateTime.now()).add(const Duration(days: 2)),
+      firstDate: _startDate ?? DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null) {
+      setState(() => _endDate = picked);
+    }
+  }
+
+  Future<void> _selectStartTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _startTime ?? const TimeOfDay(hour: 19, minute: 0),
+    );
+    if (picked != null) {
+      setState(() => _startTime = picked);
+    }
+  }
+
+  Future<void> _selectEndTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _endTime ?? const TimeOfDay(hour: 19, minute: 0),
+    );
+    if (picked != null) {
+      setState(() => _endTime = picked);
+    }
+  }
+
+  Future<void> _submitRequest() async {
+    if (_isSubmitting) return;
+    final hours = _totalHours;
+    if (hours <= 0) {
+      showAppErrorSnack(context, 'Durasi sewa tidak valid (harus lebih dari 0 jam).');
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      final token = await _authSessionService.getValidIdToken();
+      final itemId = widget.itemData?['id']?.toString() ?? '';
+      
+      final startDateTime = DateTime(
+        _startDate!.year,
+        _startDate!.month,
+        _startDate!.day,
+        _startTime!.hour,
+        _startTime!.minute,
+      );
+      final endDateTime = DateTime(
+        _endDate!.year,
+        _endDate!.month,
+        _endDate!.day,
+        _endTime!.hour,
+        _endTime!.minute,
+      );
+
+      final body = {
+        'items': [
+          {
+            'itemId': itemId,
+            'startDate': startDateTime.toUtc().toIso8601String(),
+            'endDate': endDateTime.toUtc().toIso8601String(),
+          }
+        ]
+      };
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/transactions'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+
+      final respData = jsonDecode(response.body);
+      if (response.statusCode == 200 && respData['success'] == true) {
+        if (!mounted) return;
+        SuccessRentalModal.show(context);
+      } else {
+        final errMsg = respData['error']?['message']?.toString() ?? 'Gagal mengajukan sewa';
+        if (!mounted) return;
+        showAppErrorSnack(context, errMsg);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showAppErrorSnack(context, 'Terjadi kesalahan koneksi.');
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,44 +251,42 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
-        titleSpacing: 24,
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
-            children: [
-              // Back Button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF012D1D), // Circle Background: #012D1D
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 18,
-                      color: Color(0xFFFDF9F4),
-                    ),
-                  ),
-                ),
-              ),
-              const Spacer(),
-              // Title: "Ajukan"
-              const Text(
-                "Ajukan",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600, // SemiBold
+        centerTitle: true,
+        leadingWidth: 90,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 24, top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
                   color: Color(0xFF012D1D),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 18,
+                    color: Color(0xFFFDF9F4),
+                  ),
                 ),
               ),
-              const Spacer(),
-              const SizedBox(width: 42),
-            ],
+            ),
+          ),
+        ),
+        title: const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text(
+            "Ajukan",
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
         bottom: PreferredSize(
@@ -181,10 +404,10 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             child: ReusableMapCard(
               center: _itemLocation,
               zoom: 14,
-              interactive: false,
+              interactive: true,
               showCenterPin: false,
               markers: [MapMarkerData(point: _itemLocation, highlighted: true)],
-              overlayLabel: 'Lokasi pemilik barang',
+              overlayLabel: _itemAddressLabel,
             ),
           ),
         ),
@@ -194,6 +417,12 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
   // --- SECTION 3: ITEM SUMMARY CARD ---
   Widget _buildItemSummaryCard() {
+    final category = widget.itemData?['categoryName']?.toString() ?? 'Camera';
+    final name = widget.itemData?['name']?.toString() ?? 'Sony a6000 Body Only';
+    final priceRaw = widget.itemData?['pricePerHour'] ?? 15000.0;
+    final priceVal = (priceRaw as num).toDouble();
+    final photos = widget.itemData?['photos'] as List<dynamic>? ?? [];
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -218,8 +447,10 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             height: 100,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              image: const DecorationImage(
-                image: AssetImage('assets/images/Iklan.jpg'),
+              image: DecorationImage(
+                image: photos.isEmpty
+                    ? const AssetImage('assets/images/Iklan.jpg')
+                    : _imageUploadService.buildImageProvider(photos.first.toString()),
                 fit: BoxFit.cover,
               ),
             ),
@@ -230,11 +461,11 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 // Category
                 Text(
-                  "Camera",
-                  style: TextStyle(
+                  category,
+                  style: const TextStyle(
                     fontFamily: 'Manrope',
                     fontWeight: FontWeight.w800, // ExtraBold/Bold
                     fontSize: 11,
@@ -242,13 +473,13 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                     letterSpacing: 0.5,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 // Title
                 Text(
-                  "Sony a6000 Body Only",
+                  name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w700, // Bold
                     fontSize: 18,
@@ -256,11 +487,11 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                     color: Color(0xFF012D1D),
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 // Price
                 Text(
-                  "Rp. 15.000,00/jam",
-                  style: TextStyle(
+                  "Rp. ${_formatCurrency(priceVal)},00/jam",
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w500, // Medium
                     fontSize: 14,
@@ -305,11 +536,17 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildInputBox(label: "Mulai", value: "15 April 2026"),
+              child: GestureDetector(
+                onTap: _selectStartDate,
+                child: _buildInputBox(label: "Mulai", value: _formatDate(_startDate)),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildInputBox(label: "Selesai", value: "17 April 2026"),
+              child: GestureDetector(
+                onTap: _selectEndDate,
+                child: _buildInputBox(label: "Selesai", value: _formatDate(_endDate)),
+              ),
             ),
           ],
         ),
@@ -317,11 +554,17 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildInputBox(label: "Jam ambil", value: "19:00"),
+              child: GestureDetector(
+                onTap: _selectStartTime,
+                child: _buildInputBox(label: "Jam ambil", value: _formatTime(_startTime)),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _buildInputBox(label: "Jam kembali", value: "19:00"),
+              child: GestureDetector(
+                onTap: _selectEndTime,
+                child: _buildInputBox(label: "Jam kembali", value: _formatTime(_endTime)),
+              ),
             ),
           ],
         ),
@@ -383,6 +626,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
   // --- SECTION 4: TOTAL DURASI INDICATOR ---
   Widget _buildTotalDurationIndicator() {
+    final days = _totalDays;
+    final hours = _totalHours;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -400,10 +645,10 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
               color: Color(0xFF012D1D), // Deep Forest
               shape: BoxShape.circle,
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                "3",
-                style: TextStyle(
+                "$days",
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
@@ -423,9 +668,9 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             ),
           ),
           const Spacer(),
-          const Text(
-            "3 Hari",
-            style: TextStyle(
+          Text(
+            "$days Hari ($hours Jam)",
+            style: const TextStyle(
               fontFamily: 'Plus Jakarta Sans',
               fontWeight: FontWeight.w700, // Bold
               fontSize: 15,
@@ -471,10 +716,10 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           // Price Row 1
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
-                "Biaya Sewa (3 days)",
-                style: TextStyle(
+                "Biaya Sewa ($_totalDays Hari / $_totalHours Jam)",
+                style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w500,
                   fontSize: 14,
@@ -482,8 +727,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                 ),
               ),
               Text(
-                "Rp. 1.080.000",
-                style: TextStyle(
+                "Rp. ${_formatCurrency(_totalPrice)}",
+                style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
@@ -506,8 +751,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           // Total Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 "Total Harga",
                 style: TextStyle(
                   fontFamily: 'Manrope',
@@ -517,8 +762,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                 ),
               ),
               Text(
-                "Rp. 1.080.000",
-                style: TextStyle(
+                "Rp. ${_formatCurrency(_totalPrice)}",
+                style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontWeight: FontWeight.w700, // SemiBold/Bold
                   fontSize: 18,
@@ -554,14 +799,15 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: const TextField(
+          child: TextField(
+            controller: _notesController,
             maxLines: null, // multi line
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 13,
               color: Color(0xFF012D1D),
             ),
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               hintText: "Contoh: 'Tolong tambahkan charger baterai'",
               hintStyle: TextStyle(
                 fontFamily: 'Poppins',
@@ -602,8 +848,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     "TOTAL",
                     style: TextStyle(
                       fontFamily: 'Poppins',
@@ -613,10 +859,10 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                       color: Color(0xFF414844),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    "Rp. 1.080.000",
-                    style: TextStyle(
+                    "Rp. ${_formatCurrency(_totalPrice)}",
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700, // Bold
                       fontSize: 18,
@@ -628,7 +874,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             ),
             // Right Checkout Action Button
             GestureDetector(
-              onTap: () => SuccessRentalModal.show(context),
+              onTap: _isSubmitting ? null : _submitRequest,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 decoration: BoxDecoration(
@@ -642,27 +888,37 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
                     ),
                   ],
                 ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text(
-                    "Kirim Request",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isSubmitting)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                    else
+                      const Text(
+                        "Kirim Request",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    const SizedBox(width: 10),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
                       color: Colors.white,
                     ),
-                  ),
-                  SizedBox(width: 10),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             ),
           ],
         ),
