@@ -16,7 +16,7 @@ import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
 import 'default_address_setup_screen.dart';
-import 'settings_screen.dart';
+import 'profile_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueChanged<bool>? onSearchActiveChanged;
@@ -146,10 +146,14 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _openSettings() {
+    if (widget.onProfileRequested != null) {
+      widget.onProfileRequested!();
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const SettingsScreen(),
+        builder: (_) => const ProfileSettingsScreen(),
       ),
     ).then((_) {
       _loadDefaultLocationLabel();

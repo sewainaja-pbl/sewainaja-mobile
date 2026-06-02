@@ -91,17 +91,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   Future<void> _loadUserStats() async {
     if (!mounted) return;
     setState(() => _isLoadingStats = true);
+
+    // 1. Fetch Listings & Rating dari Firestore
     try {
       final currentUserId = FirebaseAuth.instance.currentUser?.uid;
       if (currentUserId != null) {
-        // Query listing count dari Firestore
         final itemsSnap = await FirebaseFirestore.instance
             .collection('items')
             .where('ownerId', isEqualTo: currentUserId)
             .get();
         final listings = itemsSnap.docs;
 
-        // Calculate average rating
         double totalRating = 0.0;
         int ratedCount = 0;
         for (var doc in listings) {
@@ -119,17 +119,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           });
         }
       }
+    } catch (e) {
+      debugPrint("Error loading Firestore stats: $e");
+    }
 
-      // Query total transactions count dari REST API
+    // 2. Fetch Total Sewa dari REST API
+    try {
       final token = await const AuthSessionService().getValidIdToken();
       if (token != null && token.isNotEmpty) {
-        final response = await http.get(
-          Uri.parse('${ApiConfig.baseUrl}/transactions'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
+        final response = await http
+            .get(
+              Uri.parse('${ApiConfig.baseUrl}/transactions'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+            )
+            .timeout(const Duration(seconds: 4));
+
         if (response.statusCode == 200) {
           final body = jsonDecode(response.body);
           if (body['success'] == true && body['data'] is List) {
@@ -141,8 +148,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           }
         }
       }
-    } catch (_) {
-      // Tetap menggunakan default/fallback jika error
+    } catch (e) {
+      debugPrint("Error loading transactions REST stats: $e");
     } finally {
       if (mounted) {
         setState(() => _isLoadingStats = false);
@@ -159,17 +166,43 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 70,
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
+        toolbarHeight: 80,
+        centerTitle: true,
+        leadingWidth: 76,
+        leading: (widget.onBack != null || Navigator.canPop(context))
+            ? Padding(
+                padding: const EdgeInsets.only(left: 24, top: 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (widget.onBack != null) {
+                        widget.onBack!();
+                      } else {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Color(0xFF012D1D),
+                      size: 28,
+                    ),
+                  ),
+                ),
+              )
+            : null,
+        title: const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text(
+            'Profil',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),

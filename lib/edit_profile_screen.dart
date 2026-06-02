@@ -380,7 +380,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         title: const Padding(
           padding: EdgeInsets.only(top: 10),
           child: Text(
-            "Edit Profile",
+            "Edit Profil",
             style: TextStyle(
               fontFamily: 'Poppins',
               fontSize: 22,
