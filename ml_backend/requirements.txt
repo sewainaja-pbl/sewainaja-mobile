@@ -1,0 +1,16 @@
+# FastAPI & ML dependencies
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# Data & ML
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.5.0
+# scikit-surprise==1.1.3 (Dinatikan sementara karena butuh C++ Build Tools)
+
+# Firebase (untuk export data Firestore jika diperlukan)
+firebase-admin==6.5.0
+
+# Utilities
+python-dotenv==1.0.1
