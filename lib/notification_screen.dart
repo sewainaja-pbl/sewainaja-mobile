@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'notification_service.dart';
+import 'rental_request_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -41,7 +42,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Consumer<NotificationService>(
       builder: (context, notificationService, _) {
-        final allItems = [_pinnedDummyNotification, ...notificationService.notifications];
+        final allItems = [
+          _pinnedDummyNotification,
+          ...notificationService.notifications,
+        ];
         final unreadItems = allItems
             .where((item) => item.isDummy || !item.isRead)
             .toList();
@@ -161,6 +165,14 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return;
     }
 
+    if (item.type == 'request') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RentalRequestScreen()),
+      );
+      return;
+    }
+
     if (item.isDummy) {
       _showDummyDetail(context, item);
       return;
@@ -256,7 +268,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     SizedBox(height: 10),
                     _DetailRow(
                       label: 'Tujuan',
-                      value: 'Slot placeholder untuk flow lanjutan yang nanti disambung temanmu.',
+                      value:
+                          'Slot placeholder untuk flow lanjutan yang nanti disambung temanmu.',
                     ),
                     SizedBox(height: 10),
                     _DetailRow(
@@ -422,9 +435,7 @@ class _NotificationList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (isLoading && items.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(
-          color: Color(0xFF012D1D),
-        ),
+        child: CircularProgressIndicator(color: Color(0xFF012D1D)),
       );
     }
 
@@ -464,10 +475,7 @@ class _NotificationList extends StatelessWidget {
             ...items.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _NotificationCard(
-                  item: item,
-                  onTap: () => onTap(item),
-                ),
+                child: _NotificationCard(item: item, onTap: () => onTap(item)),
               ),
             ),
         ],
@@ -480,10 +488,7 @@ class _NotificationCard extends StatelessWidget {
   final AppNotification item;
   final VoidCallback onTap;
 
-  const _NotificationCard({
-    required this.item,
-    required this.onTap,
-  });
+  const _NotificationCard({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -527,8 +532,9 @@ class _NotificationCard extends StatelessWidget {
                   fontFamily: 'Poppins',
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color:
-                      item.highlight ? Colors.white : const Color(0xFF012D1D),
+                  color: item.highlight
+                      ? Colors.white
+                      : const Color(0xFF012D1D),
                 ),
               ),
             ),
@@ -577,19 +583,20 @@ class _NotificationCard extends StatelessWidget {
                         child: Image.network(
                           item.imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: const Color(0xFFF4F1EB),
-                            alignment: Alignment.center,
-                            child: const Text(
-                              'Gambar tidak tersedia',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF717973),
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: const Color(0xFFF4F1EB),
+                                alignment: Alignment.center,
+                                child: const Text(
+                                  'Gambar tidak tersedia',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF717973),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
                         ),
                       ),
                     ),
