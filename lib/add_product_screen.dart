@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'map_common_widgets.dart';
@@ -11,10 +12,14 @@ import 'auth_session_service.dart';
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
 import 'widgets/add_item_success_modal.dart';
+import 'data/models/item_model.dart';
+import 'profile_sync_service.dart';
+import 'ktp_upload_screen.dart';
 
 class AddProductScreen extends StatefulWidget {
   final VoidCallback? onBack;
-  const AddProductScreen({super.key, this.onBack});
+  final ItemModel? editItem;
+  const AddProductScreen({super.key, this.onBack, this.editItem});
 
   @override
   State<AddProductScreen> createState() => _AddProductScreenState();
@@ -33,6 +38,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   bool _useSavedAddress = true;
+  String _customAddressLabel = 'Geser map untuk set titik barang';
+  Timer? _debounceTimer;
+  bool _isScrollEnabled = true;
   bool _isBootstrapping = true;
   bool _isSubmitting = false;
   List<Map<String, dynamic>> _categories = const [];
@@ -41,6 +49,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final AuthSessionService _authSessionService = const AuthSessionService();
   final ImageUploadService _imageUploadService = ImageUploadService();
   final List<ProcessedImageFile> _productPhotos = [];
+  List<String> _existingPhotos = [];
+  String _userStatus = 'unverified';
+
+  bool get isEditMode => widget.editItem != null;
 
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
@@ -62,6 +74,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Future<void> _bootstrapFormData() async {
     try {
+      // Check user verification status
+      try {
+        final cached = await const ProfileSyncService().readCachedProfile();
+        if (mounted) {
+          setState(() {
+            _userStatus = cached.status.toLowerCase();
+          });
+        }
+        
+        final synced = await const ProfileSyncService().syncProfileFromApi(forceRefreshToken: false);
+        if (synced != null && mounted) {
+          setState(() {
+            _userStatus = synced.status.toLowerCase();
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching verification status: $e');
+      }
+
       final token = await _authSessionService.getValidIdToken();
       if (token == null || token.isEmpty) {
         if (mounted) {
@@ -105,6 +136,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
           .whereType<Map<String, dynamic>>()
           .toList();
 
+      Map<String, dynamic>? fullEditData;
+      if (isEditMode) {
+        final itemId = widget.editItem!.id;
+        final detailsResp = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/items/$itemId'),
+          headers: headers,
+        );
+        if (detailsResp.statusCode == 200) {
+          final body = jsonDecode(detailsResp.body) as Map<String, dynamic>;
+          if (body['success'] == true && body['data'] != null) {
+            fullEditData = body['data'] as Map<String, dynamic>;
+          }
+        }
+      }
+
       if (!mounted) return;
       setState(() {
         _categories = categories;
@@ -122,12 +168,50 @@ class _AddProductScreenState extends State<AddProductScreen> {
         } else {
           _useSavedAddress = false;
         }
+
+        if (isEditMode && fullEditData != null) {
+          _nameController.text = fullEditData['name']?.toString() ?? '';
+          _descriptionController.text = fullEditData['description']?.toString() ?? '';
+          _priceController.text = (fullEditData['pricePerHour'] as num?)?.toStringAsFixed(0) ?? '';
+          selectedCategoryId = fullEditData['categoryId']?.toString();
+          selectedKondisi = _mapConditionFromApi(fullEditData['condition']?.toString() ?? 'fair');
+          _existingPhotos = List<String>.from(fullEditData['photos'] ?? []);
+          
+          final address = fullEditData['address'] as Map<String, dynamic>?;
+          final addressId = fullEditData['addressId'] ?? address?['id'];
+          if (addressId != null) {
+            _selectedAddressId = addressId.toString();
+            _useSavedAddress = true;
+          }
+          final coords = _extractLatLng(address?['coordinat']);
+          if (coords != null) {
+            _itemLocation = coords;
+          }
+          if (address != null && address['fullAddress'] != null) {
+            _customAddressLabel = address['fullAddress'].toString();
+          }
+        }
         _isBootstrapping = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _isBootstrapping = false);
       _showSnack('Gagal mengambil data awal form.', true);
+    }
+  }
+
+  String _mapConditionFromApi(String apiCond) {
+    switch (apiCond.toLowerCase()) {
+      case 'new':
+        return 'Baru';
+      case 'like-new':
+        return 'Sangat Baik';
+      case 'fair':
+        return 'Baik';
+      case 'poor':
+        return 'Cukup';
+      default:
+        return 'Sangat Baik';
     }
   }
 
@@ -144,6 +228,55 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return null;
   }
 
+  void _onMapCameraMove(LatLng newCenter) {
+    if (_useSavedAddress) return;
+    setState(() {
+      _itemLocation = newCenter;
+    });
+    
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      _reverseGeocode();
+    });
+  }
+
+  Future<void> _reverseGeocode() async {
+    try {
+      final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse').replace(
+        queryParameters: {
+          'lat': _itemLocation.latitude.toString(),
+          'lon': _itemLocation.longitude.toString(),
+          'format': 'jsonv2',
+          'zoom': '16',
+        },
+      );
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': 'sewainaja-mobile/1.0 (add-product)'},
+      );
+      if (response.statusCode != 200) return;
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final raw = (body['display_name'] ?? '').toString().trim();
+      if (raw.isEmpty) return;
+      if (!mounted) return;
+      setState(() {
+        _customAddressLabel = _shortAddress(raw);
+      });
+    } catch (_) {}
+  }
+
+  String _shortAddress(String raw) {
+    final parts = raw
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    if (parts.length >= 3) {
+      return '${parts[0]}, ${parts[1]}, ${parts[2]}';
+    }
+    return parts.isNotEmpty ? parts.join(', ') : 'Semarang, Jawa Tengah';
+  }
+
   String _addressLabel(Map<String, dynamic> address) {
     final label = (address['label'] ?? '').toString().trim();
     final full = (address['fullAddress'] ?? '').toString().trim();
@@ -154,6 +287,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _nameController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
@@ -162,6 +296,290 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isBootstrapping) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFDF9F4),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+        ),
+      );
+    }
+
+    if (_userStatus != 'verified') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFF8EF),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFFF8EF),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          toolbarHeight: 80,
+          centerTitle: true,
+          leadingWidth: 90,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 24, top: 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: _handleBack,
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF012D1D),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      size: 22,
+                      color: Color(0xFFFFF8EF),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          title: Padding(
+            padding: const EdgeInsets.only(top: 10),
+            child: Text(
+              isEditMode ? "Edit Barang" : "Tambah Barang",
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+          ),
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_userStatus == 'pending') ...[
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF4DB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.schedule_rounded,
+                      color: Color(0xFF9A6700),
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Verifikasi Sedang Diproses',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Dokumen identitas Anda sedang ditinjau oleh Admin. Harap tunggu hingga akun Anda disetujui untuk dapat menambahkan barang ke marketplace.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: Color(0xFF5C635E),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Developer Demo Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDECEC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFF5B7B1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.bug_report_outlined, color: Color(0xFFB42318), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'DEVELOPMENT TOOLS',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFB42318),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Tekan tombol di bawah untuk mensimulasikan persetujuan instan dari admin dan melanjutkan.',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: Color(0xFF7B241C),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        GestureDetector(
+                          onTap: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('user_status', 'verified');
+                            final cached = await const ProfileSyncService().readCachedProfile();
+                            final updated = CachedUserProfile(
+                              name: cached.name,
+                              email: cached.email,
+                              phone: cached.phone,
+                              profilePhotoUrl: cached.profilePhotoUrl,
+                              status: 'verified',
+                            );
+                            await const ProfileSyncService().saveProfileToCache(updated, notify: true);
+                            if (!context.mounted) return;
+                            setState(() {
+                              _userStatus = 'verified';
+                            });
+                            showAppSuccessSnack(context, 'Simulasi: Akun berhasil diverifikasi!');
+                          },
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB42318),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Simulasikan Approve Admin (Dev)',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF4DB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.gpp_maybe_rounded,
+                      color: Color(0xFF9A6700),
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Verifikasi KTP Diperlukan',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Untuk alasan keamanan, Anda harus melakukan verifikasi KTP terlebih dahulu sebelum dapat menambahkan barang ke marketplace.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: Color(0xFF5C635E),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => KtpUploadScreen(
+                            onVerificationCompleted: () {
+                              if (mounted) {
+                                setState(() {
+                                  _userStatus = 'verified';
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                      _bootstrapFormData();
+                    },
+                    child: Container(
+                      height: 56,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF012D1D),
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Verifikasi Sekarang',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: _handleBack,
+                  child: Container(
+                    height: 56,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFF012D1D)),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Kembali',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(
         0xFFFDF9F4,
@@ -172,45 +590,42 @@ class _AddProductScreenState extends State<AddProductScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
-        titleSpacing: 24,
+        centerTitle: true,
+        leadingWidth: 90,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 24, top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: _handleBack,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF012D1D),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    size: 22,
+                    color: Color(0xFFFDF9F4),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
-          child: Row(
-            children: [
-              // Back Button
-              GestureDetector(
-                onTap: _handleBack,
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF012D1D), // Circle Background: #012D1D
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.arrow_back_rounded,
-                      size: 22,
-                      color: Color(0xFFFDF9F4),
-                    ),
-                  ),
-                ),
-              ),
-              const Spacer(),
-              // Title: "Add Product"
-              const Text(
-                "Add Product",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700, // SemiBold / Bold in screen spec
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const Spacer(),
-              // Hidden dummy to keep title perfectly centered
-              const SizedBox(width: 42),
-            ],
+          child: Text(
+            isEditMode ? "Edit Product" : "Add Product",
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
         bottom: PreferredSize(
@@ -239,7 +654,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
             )
           : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: _isScrollEnabled ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,7 +751,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget _buildPhotoSlot({required int index, required bool isLarge}) {
-    final photo = index < _productPhotos.length ? _productPhotos[index] : null;
+    final hasExisting = index < _existingPhotos.length;
+    final hasNew = !hasExisting && (index - _existingPhotos.length) < _productPhotos.length;
+    
+    final existingUrl = hasExisting ? _existingPhotos[index] : null;
+    final photo = hasNew ? _productPhotos[index - _existingPhotos.length] : null;
+    
     final radius = BorderRadius.circular(40);
     final height = isLarge ? 180.0 : 55.0;
 
@@ -355,17 +775,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
             ),
           ],
         ),
-        child: photo == null
-            ? _buildEmptyPhotoSlot(isLarge)
-            : Stack(
+        child: existingUrl != null
+            ? Stack(
                 fit: StackFit.expand,
                 children: [
                   ClipRRect(
                     borderRadius: radius,
                     child: Image(
-                      image: _imageUploadService.buildProcessedImageProvider(photo),
+                      image: _imageUploadService.buildImageProvider(existingUrl),
                       fit: BoxFit.cover,
-                      filterQuality: FilterQuality.medium,
                     ),
                   ),
                   Positioned(
@@ -374,7 +792,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     child: GestureDetector(
                       onTap: _isSubmitting
                           ? null
-                          : () => _removeProductPhoto(index),
+                          : () {
+                              setState(() {
+                                _existingPhotos.removeAt(index);
+                              });
+                            },
                       child: Container(
                         width: 28,
                         height: 28,
@@ -391,7 +813,44 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                 ],
-              ),
+              )
+            : photo == null
+                ? _buildEmptyPhotoSlot(isLarge)
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      ClipRRect(
+                        borderRadius: radius,
+                        child: Image(
+                          image: _imageUploadService.buildProcessedImageProvider(photo),
+                          fit: BoxFit.cover,
+                          filterQuality: FilterQuality.medium,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _isSubmitting
+                              ? null
+                              : () => _removeProductPhoto(index - _existingPhotos.length),
+                          child: Container(
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
@@ -455,7 +914,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   Future<void> _pickProductImages() async {
     final remainingSlots =
-        UploadImagePolicy.product.maxImages - _productPhotos.length;
+        UploadImagePolicy.product.maxImages - (_existingPhotos.length + _productPhotos.length);
     if (remainingSlots <= 0) {
       _showSnack('Maksimal 5 foto barang.', true);
       return;
@@ -926,20 +1385,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
             borderRadius: BorderRadius.circular(
               25,
             ), // ID: '268:3648' -> BorderRadius: 25px
-            child: ReusableMapCard(
-              center: _itemLocation,
-              zoom: 14,
-              interactive: !_useSavedAddress,
-              showCenterPin: true,
-              overlayLabel: _useSavedAddress
-                  ? 'Lokasi mengikuti alamat tersimpan'
-                  : 'Geser map untuk set titik barang',
-              onCenterChanged: (center) {
-                if (_useSavedAddress) return;
-                setState(() {
-                  _itemLocation = center;
-                });
+            child: Listener(
+              onPointerDown: (_) {
+                if (!_useSavedAddress) {
+                  setState(() => _isScrollEnabled = false);
+                }
               },
+              onPointerUp: (_) => setState(() => _isScrollEnabled = true),
+              onPointerCancel: (_) => setState(() => _isScrollEnabled = true),
+              child: ReusableMapCard(
+                center: _itemLocation,
+                zoom: 14,
+                interactive: !_useSavedAddress,
+                showCenterPin: true,
+                overlayLabel: _useSavedAddress
+                    ? 'Lokasi mengikuti alamat tersimpan'
+                    : _customAddressLabel,
+                onCenterChanged: _onMapCameraMove,
+              ),
             ),
           ),
         ),
@@ -975,9 +1438,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     color: Colors.white,
                   ),
                 )
-              : const Text(
-                  "Tambah ke Marketplace", // ID: '268:3652'
-                  style: TextStyle(
+              : Text(
+                  isEditMode ? "Simpan Perubahan" : "Tambah ke Marketplace", // ID: '268:3652'
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w700, // Bold
@@ -999,7 +1462,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       _showSnack('Lengkapi nama, deskripsi, dan harga dulu.', true);
       return;
     }
-    if (_productPhotos.isEmpty) {
+    if (_existingPhotos.isEmpty && _productPhotos.isEmpty) {
       _showSnack('Tambahkan minimal 1 foto barang.', true);
       return;
     }
@@ -1052,8 +1515,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       // Resolve addressId: reuse saved or create a new one.
       String addressId = (_selectedAddressId ?? '').trim();
       if (!_useSavedAddress) {
-        final fullAddress =
-            'Pinned: ${_itemLocation.latitude.toStringAsFixed(6)}, ${_itemLocation.longitude.toStringAsFixed(6)}';
+        final fullAddress = (_customAddressLabel == 'Geser map untuk set titik barang' || _customAddressLabel.isEmpty)
+            ? 'Pinned: ${_itemLocation.latitude.toStringAsFixed(6)}, ${_itemLocation.longitude.toStringAsFixed(6)}'
+            : _customAddressLabel;
         final addressResp = await http.post(
           Uri.parse('${ApiConfig.baseUrl}/addresses'),
           headers: headers,
@@ -1081,6 +1545,62 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
       if (addressId.isEmpty) {
         _showSnack('Address ID tidak ditemukan.', true);
+        return;
+      }
+
+      if (isEditMode) {
+        final itemId = widget.editItem!.id;
+        final itemResp = await http.patch(
+          Uri.parse('${ApiConfig.baseUrl}/items/$itemId'),
+          headers: headers,
+          body: jsonEncode({
+            'categoryId': categoryId,
+            'name': name,
+            'description': description,
+            'pricePerHour': price,
+            'estimatedValue': price * 24,
+            'condition': _mapConditionToApi(selectedKondisi),
+            'addressId': addressId,
+            'photos': _existingPhotos,
+          }),
+        );
+        final itemBody = jsonDecode(itemResp.body) as Map<String, dynamic>;
+        if (itemResp.statusCode != 200 || itemBody['success'] != true) {
+          _showSnack(
+            normalizeAuthError(
+              itemBody['error']?['message']?.toString() ?? 'Gagal menyimpan perubahan.',
+            ),
+            true,
+          );
+          return;
+        }
+
+        // Upload any new photos
+        for (var i = 0; i < _productPhotos.length; i++) {
+          final photo = _productPhotos[i];
+          final photoUrl = await _imageUploadService.uploadProcessedImage(
+            processed: photo,
+            storagePath: _imageUploadService.buildItemPhotoStoragePath(
+              itemId: itemId,
+              index: _existingPhotos.length + i + 1,
+            ),
+          );
+
+          final photoResp = await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/items/$itemId/photos'),
+            headers: headers,
+            body: jsonEncode({'photoUrl': photoUrl}),
+          );
+          final photoBody = jsonDecode(photoResp.body) as Map<String, dynamic>;
+          if (photoResp.statusCode != 200 || photoBody['success'] != true) {
+            _showSnack('Perubahan disimpan, tapi upload foto baru gagal.', true);
+            return;
+          }
+        }
+
+        if (!mounted) return;
+        showAppSuccessSnack(context, 'Barang berhasil diperbarui!');
+        Navigator.pop(context, true);
         return;
       }
 

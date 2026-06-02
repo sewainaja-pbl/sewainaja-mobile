@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -40,28 +41,72 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
   final AddressService _addressService = const AddressService();
 
   LatLng _center = _fallback;
-  String _addressLabel = 'Semarang, Jawa Tengah';
+  String _addressLabel = '';
   bool _isLoadingLocation = true;
   bool _isSubmitting = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialCenter != null) {
       _center = widget.initialCenter!;
+      _isLoadingLocation = false;
     }
     if (widget.initialLabel != null && widget.initialLabel!.trim().isNotEmpty) {
       _addressLabel = widget.initialLabel!.trim();
     }
-    _initLocation();
+    
+    if (widget.initialCenter == null) {
+      _initLocation();
+    }
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onMapCameraMove(LatLng newCenter) {
+    setState(() {
+      _center = newCenter;
+    });
+    
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 600), () {
+      _reverseGeocode();
+    });
   }
 
   Future<void> _initLocation() async {
     setState(() => _isLoadingLocation = true);
+    
+    LatLng? savedCenter;
+    String? savedLabel;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lat = prefs.getDouble('user_default_lat');
+      final lng = prefs.getDouble('user_default_lng');
+      final label = prefs.getString('user_default_location');
+      if (lat != null && lng != null) {
+        savedCenter = LatLng(lat, lng);
+      }
+      if (label != null && label.trim().isNotEmpty) {
+        savedLabel = label.trim();
+      }
+    } catch (_) {}
+
+    if (savedCenter != null) {
+      _center = savedCenter;
+      if (savedLabel != null) {
+        _addressLabel = savedLabel;
+      }
+    }
+
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        setState(() => _isLoadingLocation = false);
         return;
       }
 
@@ -71,7 +116,6 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        setState(() => _isLoadingLocation = false);
         return;
       }
 
@@ -184,12 +228,14 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFFF8EF),
         elevation: 0,
+        centerTitle: true,
         iconTheme: const IconThemeData(color: Color(0xFF012D1D)),
         title: const Text(
           'Set Alamat Utama',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontWeight: FontWeight.w700,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
             color: Color(0xFF012D1D),
           ),
         ),
@@ -220,8 +266,9 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
               child: ReusableMapCard(
                 center: _center,
                 zoom: 14,
-                interactive: false,
+                interactive: true,
                 showCenterPin: true,
+                onCenterChanged: _onMapCameraMove,
                 overlayLabel: _addressLabel,
                 height: 210,
                 borderRadius: BorderRadius.circular(18),

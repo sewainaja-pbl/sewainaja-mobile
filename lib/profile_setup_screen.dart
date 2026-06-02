@@ -147,7 +147,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: [
               const SizedBox(height: 48),
               const Text(
-                'Set photo profile',
+                'Atur Foto Profil',
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 28,
@@ -223,7 +223,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               ),
               const SizedBox(height: 18),
               const Text(
-                'Opsional sekarang, bisa diganti lagi nanti di Edit Profile.',
+                'Opsional sekarang, bisa diganti lagi nanti di Edit Profil.',
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 12,

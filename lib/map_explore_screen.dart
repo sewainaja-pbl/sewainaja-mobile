@@ -7,6 +7,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_feedback.dart';
 import 'item_detail_screen.dart';
@@ -88,11 +89,31 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   }
 
   Future<void> _resolveInitialCenter() async {
+    LatLng? savedCenter;
+    String? savedLabel;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lat = prefs.getDouble('user_default_lat');
+      final lng = prefs.getDouble('user_default_lng');
+      final label = prefs.getString('user_default_location');
+      if (lat != null && lng != null) {
+        savedCenter = LatLng(lat, lng);
+      }
+      if (label != null && label.trim().isNotEmpty) {
+        savedLabel = label.trim();
+      }
+    } catch (_) {}
+
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        _center = _fallbackCenter;
-        _centerAddressLabel = 'Semarang (lokasi default)';
+        if (savedCenter != null) {
+          _center = savedCenter;
+          _centerAddressLabel = savedLabel ?? 'Lokasi Utama';
+        } else {
+          _center = _fallbackCenter;
+          _centerAddressLabel = 'Lokasi Utama';
+        }
         return;
       }
 
@@ -102,8 +123,13 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        _center = _fallbackCenter;
-        _centerAddressLabel = 'Semarang (izin lokasi ditolak)';
+        if (savedCenter != null) {
+          _center = savedCenter;
+          _centerAddressLabel = savedLabel ?? 'Lokasi Utama';
+        } else {
+          _center = _fallbackCenter;
+          _centerAddressLabel = 'Lokasi Utama';
+        }
         return;
       }
 
@@ -112,8 +138,13 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
       );
       _center = LatLng(position.latitude, position.longitude);
     } catch (_) {
-      _center = _fallbackCenter;
-      _centerAddressLabel = 'Semarang (lokasi default)';
+      if (savedCenter != null) {
+        _center = savedCenter;
+        _centerAddressLabel = savedLabel ?? 'Lokasi Utama';
+      } else {
+        _center = _fallbackCenter;
+        _centerAddressLabel = 'Lokasi Utama';
+      }
     }
   }
 
@@ -1021,6 +1052,7 @@ class _SelectedItemCard extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (_) => ItemDetailScreen(
+                    itemId: item.id,
                     itemName: item.name,
                     pricePerHour: item.pricePerHour,
                   ),

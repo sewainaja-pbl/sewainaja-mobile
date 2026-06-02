@@ -42,9 +42,9 @@ class CachedUserProfile {
     );
   }
 
-  String get displayName => name.isNotEmpty ? name : 'Han Soo Hee';
-  String get displayEmail => email.isNotEmpty ? email : 'hansoohee@gmail.com';
-  String get displayPhone => phone.isNotEmpty ? phone : '+62081234567890';
+  String get displayName => name;
+  String get displayEmail => email;
+  String get displayPhone => phone;
   bool get isVerified => status.toLowerCase() == 'verified';
   bool get isPendingVerification => status.toLowerCase() == 'pending';
 }

@@ -1,5 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
 import 'edit_profile_screen.dart';
 import 'handover_show_qr_screen.dart';
 import 'image_upload_service.dart';
@@ -11,6 +17,7 @@ import 'settings_screen.dart';
 import 'my_items_screen.dart';
 import 'favorites_screen.dart';
 import 'transaction_history_screen.dart';
+import 'ktp_upload_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -21,17 +28,23 @@ class ProfileSettingsScreen extends StatefulWidget {
 }
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
-  String _name = 'Han Soo Hee';
-  String _defaultLocation = 'Tembalang, Semarang';
+  String _name = '';
+  String _defaultLocation = '';
   String _profilePhotoUrl = '';
   String _userStatus = '';
   final ImageUploadService _imageUploadService = ImageUploadService();
   final ProfileSyncService _profileSyncService = const ProfileSyncService();
 
+  int _totalSewaCount = 0;
+  int _listingCount = 0;
+  double _userRating = 0.0;
+  bool _isLoadingStats = true;
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadUserStats();
     ProfileSyncService.profileRevision.addListener(
       _handleProfileRevisionChanged,
     );
@@ -47,6 +60,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   void _handleProfileRevisionChanged() {
     _loadUserData();
+    _loadUserStats();
   }
 
   Future<void> _loadUserData() async {
@@ -75,6 +89,75 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadUserStats() async {
+    if (!mounted) return;
+    setState(() => _isLoadingStats = true);
+
+    // 1. Fetch Listings & Rating dari Firestore
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId != null) {
+        final itemsSnap = await FirebaseFirestore.instance
+            .collection('items')
+            .where('ownerId', isEqualTo: currentUserId)
+            .get();
+        final listings = itemsSnap.docs;
+
+        double totalRating = 0.0;
+        int ratedCount = 0;
+        for (var doc in listings) {
+          final rating = (doc.data()['ownerRating'] as num?)?.toDouble() ?? 0.0;
+          if (rating > 0.0) {
+            totalRating += rating;
+            ratedCount++;
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _listingCount = listings.length;
+            _userRating = ratedCount > 0 ? (totalRating / ratedCount) : 0.0;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading Firestore stats: $e");
+    }
+
+    // 2. Fetch Total Sewa dari REST API
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      if (token != null && token.isNotEmpty) {
+        final response = await http
+            .get(
+              Uri.parse('${ApiConfig.baseUrl}/transactions'),
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer $token',
+              },
+            )
+            .timeout(const Duration(seconds: 4));
+
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body['success'] == true && body['data'] is List) {
+            if (mounted) {
+              setState(() {
+                _totalSewaCount = (body['data'] as List).length;
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error loading transactions REST stats: $e");
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -84,17 +167,43 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         backgroundColor: const Color(0xFFFDF9F4),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 70,
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
+        toolbarHeight: 80,
+        centerTitle: true,
+        leadingWidth: 76,
+        leading: (widget.onBack != null || Navigator.canPop(context))
+            ? Padding(
+                padding: const EdgeInsets.only(left: 24, top: 10),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: GestureDetector(
+                    onTap: () {
+                      if (widget.onBack != null) {
+                        widget.onBack!();
+                      } else {
+                        Navigator.of(context).maybePop();
+                      }
+                    },
+                    child: const Icon(
+                      Icons.arrow_back_rounded,
+                      color: Color(0xFF012D1D),
+                      size: 28,
+                    ),
+                  ),
+                ),
+              )
+            : null,
+        title: const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text(
+            'Profil',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
-        centerTitle: true,
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -232,22 +341,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     if (_userStatus.trim().isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _statusBackgroundColor(),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          _statusLabel(),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _statusTextColor(),
+                      GestureDetector(
+                        onTap: () async {
+                          if (_userStatus.trim().toLowerCase() != 'verified') {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const KtpUploadScreen()),
+                            );
+                            _loadUserData();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _statusBackgroundColor(),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _statusLabel(),
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _statusTextColor(),
+                            ),
                           ),
                         ),
                       )
@@ -263,9 +383,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '4.9 (123)',
-                            style: TextStyle(
+                          Text(
+                            _isLoadingStats
+                                ? '...'
+                                : '${_userRating > 0.0 ? _userRating.toStringAsFixed(1) : '4.9'} ($_totalSewaCount)',
+                            style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -292,11 +414,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             child: IntrinsicHeight(
               child: Row(
                 children: [
-                  _buildStatColumn('TOTAL SEWA', '45'),
+                  _buildStatColumn(
+                    'TOTAL SEWA',
+                    _isLoadingStats ? '...' : '$_totalSewaCount',
+                  ),
                   _buildVerticalDivider(),
-                  _buildStatColumn('LISTING', '20'),
+                  _buildStatColumn(
+                    'LISTING',
+                    _isLoadingStats ? '...' : '$_listingCount',
+                  ),
                   _buildVerticalDivider(),
-                  _buildStatColumn('RATING', '4.9'),
+                  _buildStatColumn(
+                    'RATING',
+                    _isLoadingStats
+                        ? '...'
+                        : (_userRating > 0.0
+                              ? _userRating.toStringAsFixed(1)
+                              : '4.9'),
+                  ),
                 ],
               ),
             ),
@@ -349,7 +484,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       'title': 'Canon EOS 5D Mark IV',
       'owner': 'Penyewa: Andini Larasati',
       'date': '8 Jan - 10 Jan 2025',
-      'status': 'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
+      'status':
+          'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
     },
     {
       'image': 'assets/images/camera_sony.jpg',
@@ -555,8 +691,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           color: isActive
                               ? const Color(0xFFF87400)
                               : item['status'] == 'Selesai'
-                                  ? const Color(0xFFC1ECD4)
-                                  : const Color(0xFFE0E0E0),
+                              ? const Color(0xFFC1ECD4)
+                              : const Color(0xFFE0E0E0),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -565,8 +701,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             fontFamily: 'Poppins',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: item['status'] == 'Selesai' 
-                                ? const Color(0xFF1B4332) 
+                            color: item['status'] == 'Selesai'
+                                ? const Color(0xFF1B4332)
                                 : const Color(0xFF000000),
                           ),
                         ),
@@ -598,6 +734,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           _loadUserData();
         },
       ),
+      if (_userStatus.trim().toLowerCase() != 'verified')
+        _MenuItem(
+          title: _userStatus.trim().toLowerCase() == 'pending'
+              ? 'Status Verifikasi (Pending)'
+              : 'Verifikasi Identitas (KTP)',
+          icon: Icons.gpp_maybe_outlined,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const KtpUploadScreen()),
+            );
+            _loadUserData();
+          },
+        ),
       _MenuItem(
         title: 'Barang Saya',
         icon: Icons.inventory_2_outlined,
