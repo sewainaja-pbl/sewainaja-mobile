@@ -1,5 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
 import 'edit_profile_screen.dart';
 import 'handover_show_qr_screen.dart';
 import 'image_upload_service.dart';
@@ -28,10 +34,16 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   final ImageUploadService _imageUploadService = ImageUploadService();
   final ProfileSyncService _profileSyncService = const ProfileSyncService();
 
+  int _totalSewaCount = 0;
+  int _listingCount = 0;
+  double _userRating = 0.0;
+  bool _isLoadingStats = true;
+
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadUserStats();
     ProfileSyncService.profileRevision.addListener(
       _handleProfileRevisionChanged,
     );
@@ -47,6 +59,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   void _handleProfileRevisionChanged() {
     _loadUserData();
+    _loadUserStats();
   }
 
   Future<void> _loadUserData() async {
@@ -73,6 +86,68 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _userStatus = synced.status;
       });
     } catch (_) {}
+  }
+
+  Future<void> _loadUserStats() async {
+    if (!mounted) return;
+    setState(() => _isLoadingStats = true);
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      if (currentUserId != null) {
+        // Query listing count dari Firestore
+        final itemsSnap = await FirebaseFirestore.instance
+            .collection('items')
+            .where('ownerId', isEqualTo: currentUserId)
+            .get();
+        final listings = itemsSnap.docs;
+
+        // Calculate average rating
+        double totalRating = 0.0;
+        int ratedCount = 0;
+        for (var doc in listings) {
+          final rating = (doc.data()['ownerRating'] as num?)?.toDouble() ?? 0.0;
+          if (rating > 0.0) {
+            totalRating += rating;
+            ratedCount++;
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _listingCount = listings.length;
+            _userRating = ratedCount > 0 ? (totalRating / ratedCount) : 0.0;
+          });
+        }
+      }
+
+      // Query total transactions count dari REST API
+      final token = await const AuthSessionService().getValidIdToken();
+      if (token != null && token.isNotEmpty) {
+        final response = await http.get(
+          Uri.parse('${ApiConfig.baseUrl}/transactions'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          if (body['success'] == true && body['data'] is List) {
+            if (mounted) {
+              setState(() {
+                _totalSewaCount = (body['data'] as List).length;
+              });
+            }
+          }
+        }
+      }
+    } catch (_) {
+      // Tetap menggunakan default/fallback jika error
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingStats = false);
+      }
+    }
   }
 
   @override
@@ -263,9 +338,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '4.9 (123)',
-                            style: TextStyle(
+                          Text(
+                            _isLoadingStats
+                                ? '...'
+                                : '${_userRating > 0.0 ? _userRating.toStringAsFixed(1) : '4.9'} ($_totalSewaCount)',
+                            style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
@@ -292,11 +369,24 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             child: IntrinsicHeight(
               child: Row(
                 children: [
-                  _buildStatColumn('TOTAL SEWA', '45'),
+                  _buildStatColumn(
+                    'TOTAL SEWA',
+                    _isLoadingStats ? '...' : '$_totalSewaCount',
+                  ),
                   _buildVerticalDivider(),
-                  _buildStatColumn('LISTING', '20'),
+                  _buildStatColumn(
+                    'LISTING',
+                    _isLoadingStats ? '...' : '$_listingCount',
+                  ),
                   _buildVerticalDivider(),
-                  _buildStatColumn('RATING', '4.9'),
+                  _buildStatColumn(
+                    'RATING',
+                    _isLoadingStats
+                        ? '...'
+                        : (_userRating > 0.0
+                              ? _userRating.toStringAsFixed(1)
+                              : '4.9'),
+                  ),
                 ],
               ),
             ),
@@ -349,7 +439,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       'title': 'Canon EOS 5D Mark IV',
       'owner': 'Penyewa: Andini Larasati',
       'date': '8 Jan - 10 Jan 2025',
-      'status': 'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
+      'status':
+          'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
     },
     {
       'image': 'assets/images/camera_sony.jpg',
@@ -555,8 +646,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           color: isActive
                               ? const Color(0xFFF87400)
                               : item['status'] == 'Selesai'
-                                  ? const Color(0xFFC1ECD4)
-                                  : const Color(0xFFE0E0E0),
+                              ? const Color(0xFFC1ECD4)
+                              : const Color(0xFFE0E0E0),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -565,8 +656,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             fontFamily: 'Poppins',
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: item['status'] == 'Selesai' 
-                                ? const Color(0xFF1B4332) 
+                            color: item['status'] == 'Selesai'
+                                ? const Color(0xFF1B4332)
                                 : const Color(0xFF000000),
                           ),
                         ),

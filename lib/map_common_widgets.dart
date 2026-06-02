@@ -8,7 +8,7 @@ class MapMarkerData {
   const MapMarkerData({required this.point, this.highlighted = false});
 }
 
-class ReusableMapCard extends StatelessWidget {
+class ReusableMapCard extends StatefulWidget {
   final LatLng center;
   final double zoom;
   final double? radiusKm;
@@ -35,25 +35,55 @@ class ReusableMapCard extends StatelessWidget {
   });
 
   @override
+  State<ReusableMapCard> createState() => _ReusableMapCardState();
+}
+
+class _ReusableMapCardState extends State<ReusableMapCard> {
+  final MapController _mapController = MapController();
+  LatLng _currentCenter = const LatLng(0, 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCenter = widget.center;
+  }
+
+  @override
+  void didUpdateWidget(covariant ReusableMapCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // When the parent updates the center prop, move the map to match
+    if (oldWidget.center != widget.center) {
+      _currentCenter = widget.center;
+      try {
+        _mapController.move(widget.center, _mapController.camera.zoom);
+      } catch (_) {
+        // MapController might not be ready yet on first frame
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final radius = borderRadius ?? BorderRadius.circular(20);
+    final radius = widget.borderRadius ?? BorderRadius.circular(20);
     return ClipRRect(
       borderRadius: radius,
       child: SizedBox(
-        height: height,
+        height: widget.height,
         width: double.infinity,
         child: Stack(
           children: [
             FlutterMap(
+              mapController: _mapController,
               options: MapOptions(
-                initialCenter: center,
-                initialZoom: zoom,
+                initialCenter: widget.center,
+                initialZoom: widget.zoom,
                 interactionOptions: InteractionOptions(
-                  flags: interactive ? InteractiveFlag.all : InteractiveFlag.none,
+                  flags: widget.interactive ? InteractiveFlag.all : InteractiveFlag.none,
                 ),
                 onPositionChanged: (camera, hasGesture) {
-                  if (interactive && hasGesture && onCenterChanged != null) {
-                    onCenterChanged!(camera.center);
+                  if (widget.interactive && hasGesture && widget.onCenterChanged != null) {
+                    _currentCenter = camera.center;
+                    widget.onCenterChanged!(camera.center);
                   }
                 },
               ),
@@ -62,12 +92,12 @@ class ReusableMapCard extends StatelessWidget {
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'com.example.sewainaja',
                 ),
-                if (radiusKm != null)
+                if (widget.radiusKm != null)
                   CircleLayer(
                     circles: [
                       CircleMarker(
-                        point: center,
-                        radius: radiusKm! * 1000,
+                        point: _currentCenter,
+                        radius: widget.radiusKm! * 1000,
                         useRadiusInMeter: true,
                         color: const Color(0xFF2F6743).withValues(alpha: 0.18),
                         borderColor: const Color(0xFF012D1D),
@@ -76,7 +106,7 @@ class ReusableMapCard extends StatelessWidget {
                     ],
                   ),
                 MarkerLayer(
-                  markers: markers
+                  markers: widget.markers
                       .map(
                         (e) => Marker(
                           point: e.point,
@@ -95,7 +125,7 @@ class ReusableMapCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (showCenterPin)
+            if (widget.showCenterPin)
               const Center(
                 child: Icon(
                   Icons.place_rounded,
@@ -103,7 +133,7 @@ class ReusableMapCard extends StatelessWidget {
                   color: Color(0xFF012D1D),
                 ),
               ),
-            if (overlayLabel != null)
+            if (widget.overlayLabel != null && widget.overlayLabel!.isNotEmpty)
               Positioned(
                 left: 10,
                 right: 10,
@@ -115,7 +145,7 @@ class ReusableMapCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    overlayLabel!,
+                    widget.overlayLabel!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
