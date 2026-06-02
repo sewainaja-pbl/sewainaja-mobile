@@ -1053,6 +1053,7 @@ class _HomeScreenState extends State<HomeScreen>
                         item: item,
                         itemName: item.name,
                         pricePerHour: item.pricePerHour,
+                        imagePath: item.primaryPhoto,
                       ),
                     ),
                   ),
@@ -1197,6 +1198,7 @@ class _HomeScreenState extends State<HomeScreen>
                             item: item,
                             itemName: item.name,
                             pricePerHour: item.pricePerHour,
+                            imagePath: item.primaryPhoto,
                           ),
                         ),
                       );

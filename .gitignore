@@ -58,3 +58,7 @@ lib/firebase_options.dart
 # Environments
 .env
 .env.local
+
+# ML Backend Credentials
+ml_backend/firebase-credentials.json
+ml_backend/models/*.pkl

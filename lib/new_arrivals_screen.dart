@@ -129,6 +129,7 @@ class NewArrivalsScreen extends StatelessWidget {
                       item: item,
                       itemName: item.name,
                       pricePerHour: item.pricePerHour,
+                      imagePath: item.primaryPhoto,
                     ),
                   ),
                 ),

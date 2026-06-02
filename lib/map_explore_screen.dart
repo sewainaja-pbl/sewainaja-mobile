@@ -1055,6 +1055,7 @@ class _SelectedItemCard extends StatelessWidget {
                     itemId: item.id,
                     itemName: item.name,
                     pricePerHour: item.pricePerHour,
+                    imagePath: item.photoUrl,
                   ),
                 ),
               );

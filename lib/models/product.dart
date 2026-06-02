@@ -4,6 +4,7 @@ class ProductData {
   final String price;
   final dynamic rating;
   final String image;
+  final bool isLocalAsset;
 
   ProductData({
     this.id,
@@ -11,5 +12,6 @@ class ProductData {
     required this.price,
     required this.rating,
     required this.image,
+    this.isLocalAsset = false,
   });
 }

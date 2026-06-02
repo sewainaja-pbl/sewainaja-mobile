@@ -182,6 +182,7 @@ class SearchSheetState extends State<SearchSheet>
           itemId: product.id,
           itemName: product.name,
           pricePerHour: pricePerHour,
+          imagePath: product.image,
         ),
       ),
     );
