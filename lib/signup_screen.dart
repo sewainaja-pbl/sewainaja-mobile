@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'presentation/controllers/auth_controller.dart';
+import 'main_navigation_screen.dart';
+import 'app_feedback.dart';
+import 'notification_service.dart';
 import 'otp_verification_screen.dart';
 import 'api_config.dart';
 
@@ -53,35 +58,134 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   // Custom SnackBar Premium Style
   void _showSnackBar(String message, {bool isError = true}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(
-              isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
+    if (isError) {
+      showAppErrorSnack(context, message);
+      return;
+    }
+    showAppSuccessSnack(context, message);
+  }
+
+  Future<void> _saveUserDataAndNavigate(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = (data['tokens']?['idToken'] ?? '').toString();
+    final user = data['user'] as Map<String, dynamic>? ?? const {};
+    if (token.isNotEmpty) {
+      await prefs.setString('token', token);
+    }
+    await prefs.setBool('onboarding_seen', true);
+    await prefs.setString('user_id', (user['id'] ?? '').toString());
+    await prefs.setString('user_name', (user['name'] ?? '').toString());
+    await prefs.setString('user_email', (user['email'] ?? '').toString());
+    await prefs.setString('user_phone', (user['phone'] ?? '').toString());
+    await prefs.setString(
+      'user_profile_photo_url',
+      (user['profilePhotoUrl'] ?? '').toString(),
+    );
+    await prefs.setString('user_status', (user['status'] ?? '').toString());
+    await NotificationService.instance.syncAfterLogin();
+    if (!mounted) return;
+    _showSnackBar('Login berhasil!', isError: false);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MainNavigationScreen(),
+      ),
+    );
+  }
+
+  void _showGoogleLoginDebugDialog(AuthController authController) {
+    final errorMessage =
+        authController.errorMessage ?? 'Gagal login dengan Google.';
+    final errorCode = authController.errorCode ?? 'UNKNOWN';
+    final errorStage = authController.errorStage ?? 'unknown';
+    final rawDetail = authController.errorRawDetail?.trim();
+
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFFFFF8EF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: const Text(
+            'Google Login Gagal',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF012D1D),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildGoogleErrorRow('Pesan', errorMessage),
+                const SizedBox(height: 12),
+                _buildGoogleErrorRow('Kode', errorCode),
+                const SizedBox(height: 12),
+                _buildGoogleErrorRow('Tahap', errorStage),
+                if (rawDetail != null && rawDetail.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildGoogleErrorRow('Detail', rawDetail),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Tutup',
+                style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF717973),
                 ),
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _buildGoogleErrorRow(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF012D1D),
+          ),
         ),
-        backgroundColor: isError ? const Color(0xFFD32F2F) : const Color(0xFF2F6743),
-        behavior: SnackBarBehavior.floating,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.all(20),
-        duration: const Duration(seconds: 3),
-      ),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE1DDD6)),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              height: 1.45,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF414844),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -166,6 +270,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     Widget? prefixIcon,
     Widget? rightLabel,
     TextInputType? keyboardType,
+    bool enabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,7 +295,7 @@ class _SignUpScreenState extends State<SignUpScreen>
           controller: controller,
           obscureText: isPassword,
           keyboardType: keyboardType,
-          enabled: !_isLoading,
+          enabled: enabled,
           style: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 12,
@@ -223,6 +328,10 @@ class _SignUpScreenState extends State<SignUpScreen>
 
   @override
   Widget build(BuildContext context) {
+    final authController = context.watch<AuthController>();
+    final isGoogleLoading = authController.status == AuthStatus.loading;
+    final isAnyLoading = _isLoading || isGoogleLoading;
+
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
@@ -258,12 +367,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: GestureDetector(
-                          onTap: () {
+                          onTap: isAnyLoading ? null : () {
                             Navigator.pop(context);
                           },
-                          child: const Icon(
+                          child: Icon(
                             Icons.arrow_back,
-                            color: Color(0xFF012D1D),
+                            color: isAnyLoading
+                                ? const Color(0xFF012D1D).withValues(alpha: 0.5)
+                                : const Color(0xFF012D1D),
                             size: 24,
                           ),
                         ),
@@ -300,6 +411,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                         hint: "Nama Lengkap",
                         controller: _nameController,
                         keyboardType: TextInputType.name,
+                        enabled: !isAnyLoading,
                       ),
                       const SizedBox(height: 24),
                       _buildInputField(
@@ -307,6 +419,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                         hint: "8xx xxxx xxxx",
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
+                        enabled: !isAnyLoading,
                         prefixIcon: Padding(
                           padding: const EdgeInsets.only(
                             left: 16,
@@ -333,6 +446,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                         hint: "nama@email.com",
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        enabled: !isAnyLoading,
                       ),
                       const SizedBox(height: 24),
                       _buildInputField(
@@ -340,18 +454,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                         hint: "Masukkan password",
                         controller: _passwordController,
                         isPassword: true,
-                        rightLabel: GestureDetector(
-                          onTap: () {},
-                          child: const Text(
-                            "Forgot password?",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF7B5804),
-                            ),
-                          ),
-                        ),
+                        enabled: !isAnyLoading,
                       ),
                       const SizedBox(height: 32),
 
@@ -359,7 +462,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleSignUp,
+                          onPressed: isAnyLoading ? null : _handleSignUp,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF7B5804),
                             foregroundColor: Colors.white,
@@ -401,14 +504,14 @@ class _SignUpScreenState extends State<SignUpScreen>
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: const Text(
-                              "ATAU LANJUT DENGAN",
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF717973),
+                                "ATAU LANJUT DENGAN",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF717973),
+                                ),
                               ),
-                            ),
                           ),
                           const Expanded(
                             child: Divider(color: Color(0xFF717973)),
@@ -417,18 +520,28 @@ class _SignUpScreenState extends State<SignUpScreen>
                       ),
                       const SizedBox(height: 24),
 
-                      // Social Login (Google Only - Full Width)
+                      // Social Login (Google)
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const OtpVerificationScreen(),
-                              ),
-                            );
+                          onPressed: isAnyLoading ? null : () async {
+                            await authController.signInWithGoogle();
+                            if (!mounted) return;
+                            if (authController.status == AuthStatus.authenticated && authController.userData != null) {
+                               await _saveUserDataAndNavigate(authController.userData!);
+                            } else if (authController.status == AuthStatus.error) {
+                               final message = authController.errorMessage ?? 'Gagal login dengan Google';
+                               final code = authController.errorCode;
+                               _showSnackBar(
+                                 code != null && code.isNotEmpty
+                                     ? '$message [Code: $code]'
+                                     : message,
+                               );
+                               debugPrint(
+                                 'Google login failed | code=${authController.errorCode} | stage=${authController.errorStage} | detail=${authController.errorRawDetail}',
+                               );
+                               _showGoogleLoginDebugDialog(authController);
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: Colors.white,
@@ -438,26 +551,32 @@ class _SignUpScreenState extends State<SignUpScreen>
                               borderRadius: BorderRadius.circular(9999),
                             ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Image.asset(
-                                'assets/images/google.png',
-                                width: 14,
-                                height: 14,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Google",
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF012D1D),
+                          child: isGoogleLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/google.png',
+                                      width: 14,
+                                      height: 14,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      "Google",
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF012D1D),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
 
