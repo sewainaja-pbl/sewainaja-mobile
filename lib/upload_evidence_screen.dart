@@ -64,6 +64,8 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
   }
 
   void _submit() {
+    // For prototyping, bypass empty photo validation
+    /*
     if (_photos.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -73,6 +75,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
       );
       return;
     }
+    */
 
     // Tampilkan snackbar sukses
     ScaffoldMessenger.of(context).showSnackBar(
