@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'return_item_scan_screen.dart';
+import 'adendum_screen.dart';
 
 class RentalDeadlineScreen extends StatelessWidget {
   const RentalDeadlineScreen({super.key});
@@ -388,7 +389,15 @@ class RentalDeadlineScreen extends StatelessWidget {
           },
         ),
         const SizedBox(height: 12),
-        _buildActionButton('Request Perpanjangan'),
+        _buildActionButton(
+          'Request Perpanjangan',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AdendumScreen()),
+            );
+          },
+        ),
       ],
     );
   }

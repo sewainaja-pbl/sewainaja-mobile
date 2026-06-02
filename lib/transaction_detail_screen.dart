@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'scan_qr_renter_screen.dart';
 
 class TransactionDetailScreen extends StatelessWidget {
   const TransactionDetailScreen({super.key});
@@ -224,7 +225,21 @@ class TransactionDetailScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: ElevatedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ScanQRRenterScreen(
+                    itemData: {
+                      'title': 'Sony ɑ6000 Body Only',
+                      'owner': 'Pemilik: Han So Hee',
+                      'date': '17 April - 18 April 2024',
+                      'image': 'assets/images/placeholder.png',
+                    },
+                  ),
+                ),
+              );
+            },
             icon: const Icon(Icons.handshake, color: Colors.white),
             label: const Text(
               'Mulai Serah Terima',
