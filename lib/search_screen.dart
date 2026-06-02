@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
@@ -91,6 +94,7 @@ class SearchSheetState extends State<SearchSheet>
 
   String _query = '';
   List<ProductData> _results = [];
+  List<ProductData> _dbProducts = [];
 
   @override
   void initState() {
@@ -110,6 +114,36 @@ class SearchSheetState extends State<SearchSheet>
 
     // Listen to the shared controller for query changes
     widget.controller.addListener(_onQueryChanged);
+    _loadDbProducts();
+  }
+
+  Future<void> _loadDbProducts() async {
+    try {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .where('status', isEqualTo: 'available')
+          .get();
+      final items = snapshot.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+      if (currentUserId != null) {
+        items.removeWhere((item) => item.ownerId == currentUserId);
+      }
+      final mapped = items.map((item) {
+        return ProductData(
+          id: item.id,
+          name: item.name,
+          price: item.formattedPricePerDay,
+          rating: item.ownerRating > 0 ? item.ownerRating.toStringAsFixed(1) : '—',
+          image: item.primaryPhoto,
+        );
+      }).toList();
+      if (mounted) {
+        setState(() {
+          _dbProducts = mapped;
+          _onQueryChanged();
+        });
+      }
+    } catch (_) {}
   }
 
   @override
@@ -123,9 +157,13 @@ class SearchSheetState extends State<SearchSheet>
     final q = widget.controller.text.trim().toLowerCase();
     setState(() {
       _query = q;
-      _results = q.isEmpty
-          ? []
-          : _allProducts.where((p) => p.name.toLowerCase().contains(q)).toList();
+      if (q.isEmpty) {
+        _results = [];
+      } else {
+        final localResults = _allProducts.where((p) => p.name.toLowerCase().contains(q)).toList();
+        final dbResults = _dbProducts.where((p) => p.name.toLowerCase().contains(q)).toList();
+        _results = [...dbResults, ...localResults];
+      }
     });
   }
 
@@ -141,6 +179,7 @@ class SearchSheetState extends State<SearchSheet>
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailScreen(
+          itemId: product.id,
           itemName: product.name,
           pricePerHour: pricePerHour,
           imagePath: product.image,

@@ -125,6 +125,8 @@ class NewArrivalsScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => ItemDetailScreen(
+                      itemId: item.id,
+                      item: item,
                       itemName: item.name,
                       pricePerHour: item.pricePerHour,
                       imagePath: item.primaryPhoto,

@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import '../main_navigation_screen.dart';
 
 class AddItemSuccessModal extends StatelessWidget {
   const AddItemSuccessModal({super.key});
@@ -77,8 +78,11 @@ class AddItemSuccessModal extends StatelessWidget {
               // Action Button
               GestureDetector(
                 onTap: () {
-                  // Navigate back to Home
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+                    (route) => false,
+                  );
                 },
                 behavior: HitTestBehavior.opaque,
                 child: Padding(

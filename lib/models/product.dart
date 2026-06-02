@@ -1,4 +1,5 @@
 class ProductData {
+  final String? id;
   final String name;
   final String price;
   final dynamic rating;
@@ -6,6 +7,7 @@ class ProductData {
   final bool isLocalAsset;
 
   ProductData({
+    this.id,
     required this.name,
     required this.price,
     required this.rating,

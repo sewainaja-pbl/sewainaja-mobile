@@ -15,6 +15,8 @@ import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
+import 'default_address_setup_screen.dart';
+import 'profile_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueChanged<bool>? onSearchActiveChanged;
@@ -37,8 +39,8 @@ class _HomeScreenState extends State<HomeScreen>
   final ItemRepository _itemRepo = ItemRepository();
 
   String selectedCategory = 'All';
-  String _defaultLocationLabel = 'Tembalang, Semarang';
-  String _userName = 'Han Soo Hee';
+  String _defaultLocationLabel = '';
+  String _userName = '';
   String _profilePhotoUrl = '';
   LatLng _mapCenter = _fallbackCenter;
 
@@ -55,6 +57,8 @@ class _HomeScreenState extends State<HomeScreen>
   // Animation for home sheet sliding down when search opens
   late final AnimationController _homeSheetAnim;
   late final Animation<Offset> _homeSheetSlide;
+  ScrollController? _activeScrollController;
+  final GlobalKey _trustedSectionKey = GlobalKey();
   bool _isMapCardPressed = false;
 
   /// Kategori yang ditampilkan di filter chip: "All" + kategori dari Firestore.
@@ -139,6 +143,65 @@ class _HomeScreenState extends State<HomeScreen>
         }
       });
     });
+  }
+
+  void _openSettings() {
+    if (widget.onProfileRequested != null) {
+      widget.onProfileRequested!();
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ProfileSettingsScreen(),
+      ),
+    ).then((_) {
+      _loadDefaultLocationLabel();
+    });
+  }
+
+  Future<void> _openDefaultLocation() async {
+    final result = await Navigator.push<DefaultAddressResult>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const DefaultAddressSetupScreen(returnSelectionOnSave: true),
+      ),
+    );
+
+    if (!mounted || result == null) return;
+    setState(() {
+      _defaultLocationLabel = result.label;
+      _mapCenter = result.center;
+    });
+  }
+
+  void _scrollToProducts() {
+    setState(() {
+      selectedCategory = 'All';
+    });
+    if (_activeScrollController == null) return;
+    try {
+      final context = _trustedSectionKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _activeScrollController!.animateTo(
+          380,
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.easeInOut,
+        );
+      }
+    } catch (_) {
+      _activeScrollController!.animateTo(
+        380,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Future<void> _loadDefaultLocationLabel() async {
@@ -241,6 +304,7 @@ class _HomeScreenState extends State<HomeScreen>
               maxChildSize: 1.0,
               snap: true,
               builder: (context, scrollController) {
+                _activeScrollController = scrollController;
                 return Container(
                   decoration: const BoxDecoration(
                     color: Color(0xFFFFF8EF),
@@ -292,6 +356,7 @@ class _HomeScreenState extends State<HomeScreen>
                       SliverToBoxAdapter(child: _buildNewArrivals()),
                       const SliverToBoxAdapter(child: SizedBox(height: 28)),
                       SliverToBoxAdapter(
+                        key: _trustedSectionKey,
                         child: _buildSectionHeader(
                           "Most Trusted Nearby",
                           showSeeMore: false,
@@ -333,17 +398,21 @@ class _HomeScreenState extends State<HomeScreen>
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
-              image: DecorationImage(
-                image: _profilePhotoUrl.trim().isEmpty
-                    ? const AssetImage('assets/images/profile_user.png')
-                    : _imageUploadService.buildImageProvider(_profilePhotoUrl),
-                fit: BoxFit.cover,
+          GestureDetector(
+            onTap: _openSettings,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 45,
+              height: 45,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+                image: DecorationImage(
+                  image: _profilePhotoUrl.trim().isEmpty
+                      ? const AssetImage('assets/images/profile_user.png')
+                      : _imageUploadService.buildImageProvider(_profilePhotoUrl),
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           ),
@@ -352,37 +421,45 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _userName,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFFFDF9F4),
+                GestureDetector(
+                  onTap: _openSettings,
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(
+                    _userName,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFFFDF9F4),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 2),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.location_on_rounded,
-                      size: 12,
-                      color: Color(0xFFFDF9F4),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _defaultLocationLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          color: Color(0xFFFDF9F4),
+                GestureDetector(
+                  onTap: _openDefaultLocation,
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 12,
+                        color: Color(0xFFFDF9F4),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _defaultLocationLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: Color(0xFFFDF9F4),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -549,42 +626,49 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF4F1),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _openDefaultLocation,
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: const Color(0xFF012D1D).withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.place_rounded,
-                      size: 14,
-                      color: Color(0xFF012D1D),
+                  child: Ink(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    const SizedBox(width: 5),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Text(
-                        _defaultLocationLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF012D1D),
-                        ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF4F1),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.08),
                       ),
                     ),
-                  ],
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.place_rounded,
+                          size: 14,
+                          color: Color(0xFF012D1D),
+                        ),
+                        const SizedBox(width: 5),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 120),
+                          child: Text(
+                            _defaultLocationLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF012D1D),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -855,14 +939,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ItemDetailScreen(),
-                  ),
-                );
-              },
+              onPressed: _scrollToProducts,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFDF9F4),
                 foregroundColor: const Color(0xFF012D1D),
@@ -972,6 +1049,8 @@ class _HomeScreenState extends State<HomeScreen>
                     context,
                     MaterialPageRoute(
                       builder: (context) => ItemDetailScreen(
+                        itemId: item.id,
+                        item: item,
                         itemName: item.name,
                         pricePerHour: item.pricePerHour,
                         imagePath: item.primaryPhoto,
@@ -1115,6 +1194,8 @@ class _HomeScreenState extends State<HomeScreen>
                         context,
                         MaterialPageRoute(
                           builder: (context) => ItemDetailScreen(
+                            itemId: item.id,
+                            item: item,
                             itemName: item.name,
                             pricePerHour: item.pricePerHour,
                             imagePath: item.primaryPhoto,
