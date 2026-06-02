@@ -9,6 +9,9 @@ import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'app_feedback.dart';
 import 'image_upload_service.dart';
+import 'profile_sync_service.dart';
+import 'ktp_upload_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AjukanSewaScreen extends StatefulWidget {
   final Map<String, dynamic>? itemData;
@@ -32,10 +35,13 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
   bool _isSubmitting = false;
   final TextEditingController _notesController = TextEditingController();
+  bool _isLoadingStatus = true;
+  String _userStatus = 'unverified';
 
   @override
   void initState() {
     super.initState();
+    _loadUserStatus();
     // Default: Start tomorrow, end in 3 days, both at 19:00
     final now = DateTime.now();
     _startDate = now.add(const Duration(days: 1));
@@ -54,6 +60,28 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         if (lat != null && lng != null) {
           _itemLocation = LatLng(lat, lng);
         }
+      }
+    }
+  }
+
+  Future<void> _loadUserStatus() async {
+    try {
+      final cached = await const ProfileSyncService().readCachedProfile();
+      if (mounted) {
+        setState(() {
+          _userStatus = cached.status.toLowerCase();
+          _isLoadingStatus = false;
+        });
+      }
+      final synced = await const ProfileSyncService().syncProfileFromApi(forceRefreshToken: false);
+      if (synced != null && mounted) {
+        setState(() {
+          _userStatus = synced.status.toLowerCase();
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoadingStatus = false);
       }
     }
   }
@@ -241,6 +269,290 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingStatus) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF8EF),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+        ),
+      );
+    }
+
+    if (_userStatus != 'verified') {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFFF8EF),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFFFFF8EF),
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          toolbarHeight: 80,
+          centerTitle: true,
+          leadingWidth: 90,
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 24, top: 10),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF012D1D),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.arrow_back_rounded,
+                      size: 22,
+                      color: Color(0xFFFFF8EF),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          title: const Padding(
+            padding: EdgeInsets.only(top: 10),
+            child: Text(
+              "Ajukan Sewa",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+          ),
+        ),
+        body: Center(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (_userStatus == 'pending') ...[
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF4DB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.schedule_rounded,
+                      color: Color(0xFF9A6700),
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Verifikasi Sedang Diproses',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Dokumen identitas Anda sedang ditinjau oleh Admin. Harap tunggu hingga akun Anda disetujui untuk dapat mengajukan sewa barang.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: Color(0xFF5C635E),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Developer Demo Box
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDECEC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFF5B7B1)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.bug_report_outlined, color: Color(0xFFB42318), size: 20),
+                            SizedBox(width: 8),
+                            Text(
+                              'DEVELOPMENT TOOLS',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFFB42318),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Tekan tombol di bawah untuk mensimulasikan persetujuan instan dari admin dan melanjutkan.',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 11,
+                            color: Color(0xFF7B241C),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        GestureDetector(
+                          onTap: () async {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.setString('user_status', 'verified');
+                            final cached = await const ProfileSyncService().readCachedProfile();
+                            final updated = CachedUserProfile(
+                              name: cached.name,
+                              email: cached.email,
+                              phone: cached.phone,
+                              profilePhotoUrl: cached.profilePhotoUrl,
+                              status: 'verified',
+                            );
+                            await const ProfileSyncService().saveProfileToCache(updated, notify: true);
+                            if (!context.mounted) return;
+                            setState(() {
+                              _userStatus = 'verified';
+                            });
+                            showAppSuccessSnack(context, 'Simulasi: Akun berhasil diverifikasi!');
+                          },
+                          child: Container(
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB42318),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(
+                              child: Text(
+                                'Simulasikan Approve Admin (Dev)',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF4DB),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.gpp_maybe_rounded,
+                      color: Color(0xFF9A6700),
+                      size: 40,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Verifikasi KTP Diperlukan',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Untuk alasan keamanan, Anda harus melakukan verifikasi KTP terlebih dahulu sebelum dapat menyewa barang di marketplace.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      color: Color(0xFF5C635E),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => KtpUploadScreen(
+                            onVerificationCompleted: () {
+                              if (mounted) {
+                                setState(() {
+                                  _userStatus = 'verified';
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                      _loadUserStatus();
+                    },
+                    child: Container(
+                      height: 56,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF012D1D),
+                        borderRadius: BorderRadius.circular(28),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Verifikasi Sekarang',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    height: 56,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: const Color(0xFF012D1D)),
+                      borderRadius: BorderRadius.circular(28),
+                    ),
+                    child: const Center(
+                      child: Text(
+                        'Kembali',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(
         0xFFFDF9F4,

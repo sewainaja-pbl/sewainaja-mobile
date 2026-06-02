@@ -17,6 +17,7 @@ import 'settings_screen.dart';
 import 'my_items_screen.dart';
 import 'favorites_screen.dart';
 import 'transaction_history_screen.dart';
+import 'ktp_upload_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -340,22 +341,33 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     if (_userStatus.trim().isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _statusBackgroundColor(),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          _statusLabel(),
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: _statusTextColor(),
+                      GestureDetector(
+                        onTap: () async {
+                          if (_userStatus.trim().toLowerCase() != 'verified') {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const KtpUploadScreen()),
+                            );
+                            _loadUserData();
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _statusBackgroundColor(),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            _statusLabel(),
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: _statusTextColor(),
+                            ),
                           ),
                         ),
                       )
@@ -722,6 +734,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           _loadUserData();
         },
       ),
+      if (_userStatus.trim().toLowerCase() != 'verified')
+        _MenuItem(
+          title: _userStatus.trim().toLowerCase() == 'pending'
+              ? 'Status Verifikasi (Pending)'
+              : 'Verifikasi Identitas (KTP)',
+          icon: Icons.gpp_maybe_outlined,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const KtpUploadScreen()),
+            );
+            _loadUserData();
+          },
+        ),
       _MenuItem(
         title: 'Barang Saya',
         icon: Icons.inventory_2_outlined,

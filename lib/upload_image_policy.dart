@@ -1,4 +1,4 @@
-enum UploadImageKind { profile, product }
+enum UploadImageKind { profile, product, kyc }
 
 class UploadImagePolicy {
   final UploadImageKind kind;
@@ -39,12 +39,22 @@ class UploadImagePolicy {
     minimumQuality: 66,
   );
 
+  static const kyc = UploadImagePolicy(
+    kind: UploadImageKind.kyc,
+    storageFolder: 'kyc',
+    maxBytes: 3 * 1024 * 1024,
+    maxImages: 1,
+    targetLongestSide: 1920,
+    initialQuality: 85,
+    minimumQuality: 60,
+  );
+
   String get sizeLabelMb => (maxBytes / (1024 * 1024)).toStringAsFixed(
         maxBytes % (1024 * 1024) == 0 ? 0 : 1,
       );
 
   String get recommendationLabel {
-    if (kind == UploadImageKind.profile) {
+    if (kind == UploadImageKind.profile || kind == UploadImageKind.kyc) {
       return 'JPG sampai $sizeLabelMb MB';
     }
     return 'JPG sampai $sizeLabelMb MB, longest side ${targetLongestSide}px';
