@@ -331,7 +331,7 @@ class RentalDeadlineScreen extends StatelessWidget {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.sewainaja',
+                  userAgentPackageName: 'com.sewainaja.app',
                 ),
                 const MarkerLayer(
                   markers: [
