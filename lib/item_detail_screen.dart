@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
@@ -5,8 +6,16 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'add_product_screen.dart';
 import 'ajukan_sewa_screen.dart';
+import 'api_config.dart';
+import 'app_feedback.dart';
+import 'auth_session_service.dart';
+import 'data/models/item_model.dart';
+import 'data/repositories/item_repository.dart';
+import 'image_upload_service.dart';
 import 'map_common_widgets.dart';
+import 'map_explore_screen.dart';
 import 'profile_view_screen.dart';
 
 
@@ -894,6 +903,42 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       condition: data['condition']?.toString() ?? 'fair',
       photos: List<String>.from(data['photos'] as List? ?? []),
     );
+  }
+
+  String _formatCondition(String? apiCond) {
+    if (apiCond == null) return 'Sangat Baik';
+    switch (apiCond.toLowerCase()) {
+      case 'new':
+        return 'Baru';
+      case 'like-new':
+      case 'like_new':
+        return 'Sangat Baik';
+      case 'fair':
+      case 'good':
+        return 'Baik';
+      case 'poor':
+        return 'Cukup';
+      default:
+        return 'Sangat Baik';
+    }
+  }
+
+  Color _getConditionColor(String? apiCond) {
+    if (apiCond == null) return const Color(0xFF00796B); // default teal
+    switch (apiCond.toLowerCase()) {
+      case 'new':
+        return const Color(0xFF1B4332); // deep green
+      case 'like-new':
+      case 'like_new':
+        return const Color(0xFF00796B); // teal
+      case 'fair':
+      case 'good':
+        return const Color(0xFF7B5804); // gold/accent brown
+      case 'poor':
+        return const Color(0xFFE33629); // danger red
+      default:
+        return const Color(0xFF00796B);
+    }
   }
 
   Future<void> _deleteItem() async {
