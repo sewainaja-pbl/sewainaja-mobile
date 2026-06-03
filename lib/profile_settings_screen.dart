@@ -633,25 +633,45 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                       // Product image
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.asset(
-                          item['image']!,
-                          width: 64,
-                          height: 64,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
+                        child: getSafeImageUrl(item['image']!).startsWith('http')
+                            ? Image.network(
+                                getSafeImageUrl(item['image']!),
                                 width: 64,
                                 height: 64,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE0E0E0),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.image_outlined,
-                                  color: Color(0xFF9E9E9E),
-                                ),
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE0E0E0),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF9E9E9E),
+                                      ),
+                                    ),
+                              )
+                            : Image.asset(
+                                item['image']!,
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      width: 64,
+                                      height: 64,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE0E0E0),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF9E9E9E),
+                                      ),
+                                    ),
                               ),
-                        ),
                       ),
                       const SizedBox(width: 12),
                       // Product details

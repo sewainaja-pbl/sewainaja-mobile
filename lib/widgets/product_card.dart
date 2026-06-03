@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
+import '../image_upload_service.dart';
 
 /// Widget kartu produk yang support baik asset image maupun network image.
 /// Gunakan [ProductCard] dengan [ProductData] untuk data legacy/static,
@@ -23,10 +24,11 @@ class ProductCard extends StatelessWidget {
     if (product.isLocalAsset) {
       return FileImage(File(imagePath));
     }
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return NetworkImage(imagePath);
+    final safeUrl = getSafeImageUrl(imagePath);
+    if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
+      return NetworkImage(safeUrl);
     }
-    return AssetImage(imagePath);
+    return AssetImage(safeUrl);
   }
 
   @override
@@ -140,9 +142,10 @@ class ProductCard extends StatelessWidget {
     }
 
     // Vertical card for grid/slider
+    final safeImage = getSafeImageUrl(product.image);
     final bool isNetworkImage =
-        product.image.startsWith('http://') ||
-        product.image.startsWith('https://');
+        safeImage.startsWith('http://') ||
+        safeImage.startsWith('https://');
 
     return Container(
       width: 160,
@@ -178,7 +181,7 @@ class ProductCard extends StatelessWidget {
                             )
                           : isNetworkImage
                           ? Image.network(
-                              product.image,
+                              safeImage,
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,

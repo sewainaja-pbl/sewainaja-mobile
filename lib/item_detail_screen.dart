@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -18,14 +17,6 @@ import 'image_upload_service.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'profile_view_screen.dart';
-import 'data/models/item_model.dart';
-import 'image_upload_service.dart';
-import 'data/repositories/item_repository.dart';
-import 'api_config.dart';
-import 'map_explore_screen.dart';
-import 'add_product_screen.dart';
-import 'auth_session_service.dart';
-import 'app_feedback.dart';
 
 
 class ItemDetailScreen extends StatefulWidget {
@@ -53,7 +44,6 @@ class ItemDetailScreen extends StatefulWidget {
 }
 
 class _ItemDetailScreenState extends State<ItemDetailScreen> {
-  final ImageUploadService _imageUploadService = ImageUploadService();
   final ItemRepository _itemRepository = ItemRepository();
   bool isDescriptionExpanded = false;
   bool _isLoading = false;
@@ -112,22 +102,34 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   Color _getConditionColor(String? condition) {
-    if (condition == null) return Colors.grey;
+    if (condition == null) return const Color(0xFF00796B);
     final lowerCond = condition.toLowerCase();
-    if (lowerCond.contains('excellent') || lowerCond.contains('sangat baik') || lowerCond.contains('like new')) {
-      return Colors.green;
-    } else if (lowerCond.contains('good') || lowerCond.contains('baik')) {
-      return Colors.blue;
-    } else if (lowerCond.contains('fair') || lowerCond.contains('cukup')) {
-      return Colors.orange;
+    if (lowerCond == 'new' || lowerCond.contains('excellent')) {
+      return const Color(0xFF1B4332); // deep green
+    } else if (lowerCond.contains('like-new') || lowerCond.contains('like_new') || lowerCond.contains('sangat baik')) {
+      return const Color(0xFF00796B); // teal
+    } else if (lowerCond.contains('good') || lowerCond.contains('baik') || lowerCond.contains('fair') || lowerCond.contains('cukup')) {
+      return const Color(0xFF7B5804); // gold/accent brown
     } else if (lowerCond.contains('poor') || lowerCond.contains('buruk')) {
-      return Colors.red;
+      return const Color(0xFFE33629); // danger red
     }
-    return Colors.grey;
+    return const Color(0xFF00796B);
   }
 
   String _formatCondition(String? condition) {
-    if (condition == null || condition.trim().isEmpty) return 'Unknown';
+    if (condition == null || condition.trim().isEmpty) return 'Sangat Baik';
+    final lowerCond = condition.toLowerCase();
+    if (lowerCond == 'new') {
+      return 'Baru';
+    } else if (lowerCond.contains('like-new') || lowerCond.contains('like_new') || lowerCond.contains('sangat baik')) {
+      return 'Sangat Baik';
+    } else if (lowerCond.contains('good') || lowerCond.contains('baik')) {
+      return 'Baik';
+    } else if (lowerCond.contains('fair') || lowerCond.contains('cukup')) {
+      return 'Cukup';
+    } else if (lowerCond.contains('poor') || lowerCond.contains('buruk')) {
+      return 'Kurang Baik';
+    }
     return condition[0].toUpperCase() + condition.substring(1);
   }
 
@@ -318,27 +320,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           color: const Color(0xFFFDF9F4), // Icon Color: #FDF9F4
         ),
       ),
-    );
-  }
-
-  Widget _buildItemPhotos() {
-    final photos = _itemData?['photos'] as List<dynamic>? ?? [];
-    if (photos.isEmpty) {
-      return Image.asset(
-        'assets/images/Iklan.jpg',
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-      );
-    }
-    return PageView.builder(
-      itemCount: photos.length,
-      itemBuilder: (context, index) {
-        return Image(
-          image: _imageUploadService.buildImageProvider(photos[index].toString()),
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-        );
-      },
     );
   }
 
@@ -932,42 +913,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       condition: data['condition']?.toString() ?? 'fair',
       photos: List<String>.from(data['photos'] as List? ?? []),
     );
-  }
-
-  String _formatCondition(String? apiCond) {
-    if (apiCond == null) return 'Sangat Baik';
-    switch (apiCond.toLowerCase()) {
-      case 'new':
-        return 'Baru';
-      case 'like-new':
-      case 'like_new':
-        return 'Sangat Baik';
-      case 'fair':
-      case 'good':
-        return 'Baik';
-      case 'poor':
-        return 'Cukup';
-      default:
-        return 'Sangat Baik';
-    }
-  }
-
-  Color _getConditionColor(String? apiCond) {
-    if (apiCond == null) return const Color(0xFF00796B); // default teal
-    switch (apiCond.toLowerCase()) {
-      case 'new':
-        return const Color(0xFF1B4332); // deep green
-      case 'like-new':
-      case 'like_new':
-        return const Color(0xFF00796B); // teal
-      case 'fair':
-      case 'good':
-        return const Color(0xFF7B5804); // gold/accent brown
-      case 'poor':
-        return const Color(0xFFE33629); // danger red
-      default:
-        return const Color(0xFF00796B);
-    }
   }
 
   Future<void> _deleteItem() async {
