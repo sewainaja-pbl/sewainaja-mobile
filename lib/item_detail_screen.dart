@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -8,6 +9,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'ajukan_sewa_screen.dart';
 import 'map_common_widgets.dart';
 import 'profile_view_screen.dart';
+import 'data/models/item_model.dart';
+import 'image_upload_service.dart';
+import 'data/repositories/item_repository.dart';
+import 'api_config.dart';
+import 'map_explore_screen.dart';
+import 'add_product_screen.dart';
+import 'auth_session_service.dart';
+import 'app_feedback.dart';
 
 
 class ItemDetailScreen extends StatefulWidget {
@@ -91,6 +100,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Color _getConditionColor(String? condition) {
+    if (condition == null) return Colors.grey;
+    final lowerCond = condition.toLowerCase();
+    if (lowerCond.contains('excellent') || lowerCond.contains('sangat baik') || lowerCond.contains('like new')) {
+      return Colors.green;
+    } else if (lowerCond.contains('good') || lowerCond.contains('baik')) {
+      return Colors.blue;
+    } else if (lowerCond.contains('fair') || lowerCond.contains('cukup')) {
+      return Colors.orange;
+    } else if (lowerCond.contains('poor') || lowerCond.contains('buruk')) {
+      return Colors.red;
+    }
+    return Colors.grey;
+  }
+
+  String _formatCondition(String? condition) {
+    if (condition == null || condition.trim().isEmpty) return 'Unknown';
+    return condition[0].toUpperCase() + condition.substring(1);
   }
 
   @override
