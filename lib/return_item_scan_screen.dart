@@ -128,13 +128,33 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
               ),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12.0),
-                    child: Image.asset(
-                      'assets/images/camera_sony.jpg',
-                      width: 64,
-                      height: 64,
-                      fit: BoxFit.cover,
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
+                          SizedBox(height: 2),
+                          Text(
+                            'DUMMY\n(NO API)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),

@@ -1028,16 +1028,20 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           // Price Row 1
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Biaya Sewa ($_totalDays Hari / $_totalHours Jam)",
-                style: const TextStyle(
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w500,
-                  fontSize: 14,
-                  color: Color(0xFF414844),
+              Expanded(
+                child: Text(
+                  "Biaya Sewa ($_totalDays Hari / $_totalHours Jam)",
+                  style: const TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                    color: Color(0xFF414844),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 "Rp. ${_formatCurrency(_totalPrice)}",
                 style: const TextStyle(
@@ -1063,16 +1067,20 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           // Total Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Total Harga",
-                style: TextStyle(
-                  fontFamily: 'Manrope',
-                  fontWeight: FontWeight.w800, // ExtraBold
-                  fontSize: 18,
-                  color: Color(0xFF012D1D),
+              Expanded(
+                child: const Text(
+                  "Total Harga",
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontWeight: FontWeight.w800, // ExtraBold
+                    fontSize: 18,
+                    color: Color(0xFF012D1D),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 "Rp. ${_formatCurrency(_totalPrice)}",
                 style: const TextStyle(

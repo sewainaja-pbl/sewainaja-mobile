@@ -139,18 +139,32 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
               ),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(15.0),
-                    child: Image.asset(
-                      'assets/images/camera_sony.jpg', // Dummy placeholder
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 60,
-                        height: 60,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image, color: Colors.grey),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
+                          SizedBox(height: 2),
+                          Text(
+                            'DUMMY\n(NO API)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

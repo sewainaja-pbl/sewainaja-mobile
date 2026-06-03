@@ -99,18 +99,32 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
               ),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(15.0),
-                    child: Image.asset(
-                      'assets/images/camera_sony.jpg', // Dummy placeholder
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 60,
-                        height: 60,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image, color: Colors.grey),
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3CD),
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
+                          SizedBox(height: 2),
+                          Text(
+                            'DUMMY\n(NO API)',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -191,15 +205,34 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                       children: List.generate(5, (index) {
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(11.0),
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            color: const Color(0xFFC1ECD4), // Placeholder background
-                            child: Image.asset(
-                              'assets/images/camera_sony.jpg', // Simulasi foto pengembalian
-                              fit: BoxFit.cover,
+                            child: Container(
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF3CD),
+                                borderRadius: BorderRadius.circular(11),
+                                border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                              ),
+                              child: const Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 14),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      'MOCK',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF856404),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
                         );
                       }),
                     ),
@@ -411,11 +444,34 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12.0),
-                    child: Image.asset(
-                      'assets/images/camera_sony.jpg',
+                    child: Container(
                       width: 80,
                       height: 80,
-                      fit: BoxFit.cover,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF3CD),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                      ),
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 20),
+                            SizedBox(height: 2),
+                            Text(
+                              'DUMMY\n(NO API)',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF856404),
+                                height: 1.1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),

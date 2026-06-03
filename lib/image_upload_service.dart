@@ -22,6 +22,28 @@ class ProcessedImageFile {
 
 enum ImageSourceChoice { camera, gallery }
 
+String getSafeImageUrl(String pathOrUrl) {
+  final trimmed = pathOrUrl.trim();
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+  final filename = trimmed.split('/').last;
+  const productFiles = {
+    'airpods_max.png', 'bor_listrik.png', 'camera_canon.jpg', 'camera_nikon.jpg',
+    'camera_sony.jpg', 'celana.jpg', 'celana_jeans.jpg', 'gergaji_circular.png',
+    'handphone.jpg', 'hp_asus.jpg', 'hp_realme.jpg', 'jaz_abu.jpg', 'jaz_hitam.jpg',
+    'kemeja_lengan_panjang.jpg', 'kemeja_warna_putih.jpg', 'kompor_camping.png',
+    'lentera_camping.png', 'matras_camping.png', 'mesin_amplas.png',
+    'mesin_gerinda.png', 'mesin_serut.png', 'obeng_listrik.png',
+    'ps5_controller.png', 'sleeping_bag.png', 'sony_camera.png',
+    'tas_carrier.png', 'tenda_camping.png'
+  };
+  if (productFiles.contains(filename)) {
+    return 'https://firebasestorage.googleapis.com/v0/b/sewainaja-b4834.firebasestorage.app/o/items%2Fdummy_assets%2F$filename?alt=media';
+  }
+  return trimmed;
+}
+
 class ImageUploadService {
   ImageUploadService({ImagePicker? picker, FirebaseStorage? storage})
     : _picker = picker ?? ImagePicker(),
@@ -210,9 +232,12 @@ class ImageUploadService {
     if (pathOrUrl == null || pathOrUrl.trim().isEmpty) {
       throw ArgumentError('Path or URL must not be empty');
     }
-    final trimmed = pathOrUrl.trim();
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      return NetworkImage(trimmed);
+    final safeUrl = getSafeImageUrl(pathOrUrl);
+    if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
+      return NetworkImage(safeUrl);
+    }
+    if (safeUrl.startsWith('assets/')) {
+      return AssetImage(safeUrl);
     }
     throw ArgumentError(
       'Local file path preview is not supported in this method',
