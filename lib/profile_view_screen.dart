@@ -136,22 +136,24 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF012D1D), // Deep Forest Green Scaffold background
-      body: Stack(
-        children: [
-          // -------------------------------------------------------------------
-          // LAYER 1: FIXED GREEN BACKGROUND PROFILE HEADER
-          // -------------------------------------------------------------------
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: screenHeight * 0.40, // Allocating 40% height for header
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      backgroundColor: const Color(0xFFFFF8EF), // Cream background
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            backgroundColor: const Color(0xFF012D1D),
+            pinned: false,
+            expandedHeight: 330, // Approximate height for header
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  SafeArea(
+                    bottom: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                   // --- 1A. TOP APP BAR ACTION ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
@@ -389,52 +391,42 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 ],
               ),
             ),
-          ),
-
-          // -------------------------------------------------------------------
-          // LAYER 2: DRAGGABLE SCROLLABLE SHEET (BODY CONTENT)
-          // -------------------------------------------------------------------
-          NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification notification) {
-              return true;
-            },
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.65,
-              minChildSize: 0.65,
-              maxChildSize: 1.0,
-              snap: true,
-              builder: (context, scrollController) {
-                return Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF8EF), // Cream sheet background
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(30),
+                  const SizedBox(height: 36),
+                ],
+              ),
+            ),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(20),
+              child: Container(
+                height: 20,
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFFF8EF),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                ),
+                child: Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD6C7A1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    physics: const ClampingScrollPhysics(),
-                    slivers: [
-                      // --- DRAG HANDLE & SECTIONS ---
-                      SliverToBoxAdapter(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Drag Handle Bar
-                            Center(
-                              child: Container(
-                                width: 40,
-                                height: 5,
-                                margin: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                ),
+              ),
+            ),
+          ),
 
-                            // --- 2A. ABOUT ME SECTION ---
+          // --- SECTIONS ---
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- 2A. ABOUT ME SECTION ---
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Column(
@@ -697,6 +689,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           ],
                         ),
                       ),
+                    ),
 
                       // Listing Grid (SliverGrid)
                       filteredProducts.isEmpty
@@ -776,12 +769,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 40),
                       ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
         ],
       ),
     );
