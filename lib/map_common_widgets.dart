@@ -90,7 +90,7 @@ class _ReusableMapCardState extends State<ReusableMapCard> {
               children: [
                 TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.sewainaja',
+                  userAgentPackageName: 'com.sewainaja.app',
                 ),
                 if (widget.radiusKm != null)
                   CircleLayer(

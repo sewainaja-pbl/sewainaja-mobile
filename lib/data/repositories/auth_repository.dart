@@ -118,7 +118,8 @@ class AuthRepository {
     final rawMessage = 'PlatformException(code: ${error.code}, message: ${error.message ?? '-'}, details: ${error.details ?? '-'})';
 
     if (code == 'sign_in_failed' &&
-        (message.contains('api10') ||
+        (message.contains('10') ||
+            message.contains('api10') ||
             message.contains('api 10') ||
             message.contains('developer_error'))) {
       return GoogleLoginException(

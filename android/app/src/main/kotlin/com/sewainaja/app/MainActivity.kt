@@ -1,4 +1,4 @@
-package com.example.sewainaja
+package com.sewainaja.app
 
 import io.flutter.embedding.android.FlutterActivity
 
