@@ -11,28 +11,73 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # ── UI & Animasi ──────────────────────────────────────────────────────────
+  # Icon default Material Design untuk iOS/Android
   cupertino_icons: ^1.0.8
-  firebase_core: ^4.7.0
-  # Package untuk membuat Native Splash Screen
-  flutter_native_splash: ^2.4.0
+  # Animasi pre-built (FadeIn, SlideIn, BounceIn, dll) untuk micro-interaction
   animate_do: ^5.1.0
+  # Icon FontAwesome — ikon tambahan di luar Material Icons
   font_awesome_flutter: ^11.0.0
+
+  # ── Splash Screen ─────────────────────────────────────────────────────────
+  # Generate native splash screen (Android/iOS) secara otomatis via flutter_native_splash
+  flutter_native_splash: ^2.4.0
+
+  # ── Networking & Storage Lokal ────────────────────────────────────────────
+  # HTTP client untuk REST API call (digunakan di api_config.dart)
   http: ^1.6.0
+  # Penyimpanan data sederhana key-value di device (login state, preferensi user)
   shared_preferences: ^2.2.0
-  flutter_map: ^8.2.2
-  latlong2: ^0.9.1
-  geolocator: ^14.0.2
-  firebase_auth: ^6.5.1
-  firebase_messaging: ^16.0.4
-  firebase_storage: ^13.3.0
-  cloud_firestore: ^6.4.1
-  image_picker: ^1.2.2
-  flutter_image_compress: ^2.4.0
+  # Akses path direktori lokal (cache, dokumen) — dipakai image_upload_service
   path_provider: ^2.1.5
+
+  # ── Maps & Lokasi ─────────────────────────────────────────────────────────
+  # Widget peta interaktif berbasis OpenStreetMap (dipakai di map_explore_screen)
+  flutter_map: ^8.2.2
+  # Tipe data LatLng untuk koordinat peta (dependency flutter_map)
+  latlong2: ^0.9.1
+  # Akses GPS dan lokasi perangkat untuk fitur "barang di sekitar kamu"
+  geolocator: ^14.0.2
+
+  # ── Firebase ──────────────────────────────────────────────────────────────
+  # Core Firebase SDK — wajib ada sebagai fondasi semua package Firebase lainnya
+  firebase_core: ^4.7.0
+  # Firebase Authentication — login email/password & Google Sign-In
+  firebase_auth: ^6.5.1
+  # Firebase Cloud Messaging — push notification untuk rental & chat
+  firebase_messaging: ^16.0.4
+  # Firebase Storage — upload & akses foto barang dan bukti serah terima
+  firebase_storage: ^13.3.0
+  # Cloud Firestore — database utama: items, users, transaksi, chat
+  cloud_firestore: ^6.4.1
+
+  # ── Upload & Kompresi Gambar ──────────────────────────────────────────────
+  # Ambil foto dari galeri atau kamera (dipakai di add_product & edit_profile)
+  image_picker: ^1.2.2
+  # Kompresi gambar sebelum upload ke Firebase Storage untuk hemat bandwidth
+  flutter_image_compress: ^2.4.0
+
+  # ── Autentikasi Sosial ────────────────────────────────────────────────────
+  # Google Sign-In — login dengan akun Google (terintegrasi dengan firebase_auth)
   google_sign_in: ^6.2.1
+
+  # ── State Management ─────────────────────────────────────────────────────
+  # Provider — state management ringan untuk auth session & data global
   provider: ^6.1.2
+
+  # ── QR Code ───────────────────────────────────────────────────────────────
+  # Scanner QR Code via kamera (dipakai di scan_qr & handover screens)
   mobile_scanner: ^5.2.3
+  # Generate widget QR Code untuk serah terima barang
   qr_flutter: ^4.1.0
+
+  # ── Search & Filtering ────────────────────────────────────────────────────
+  # Fuzzy search client-side — pure Dart, tanpa backend.
+  # Digunakan di search_screen.dart untuk 3 mode pencarian:
+  #   1. Fuzzy   → cocok meski ada typo (threshold: 0.4)
+  #   2. Mirip   → name.contains(query)
+  #   3. Exact   → name == query
+  fuzzy: ^0.5.0
 
 dev_dependencies:
   flutter_test:
@@ -3773,3 +3818,101 @@ flutter:
 # 1. CustomScrollView: Gunakan CustomScrollView dengan SliverAppBar dan SliverList agar proses scroll halus dan app bar bereaksi secara dinamis.
 # 2. Progress Bar Sizing: Pada Overall Rating, bagian grafik baris (1-5 bintang) harus dibungkus dalam widget `Expanded` di dalam struktur Row agar otomatis mengisi sisa lebar layar dan tidak overflow.
 # 3. Padding Konsisten: Semua konten dalam halaman ini (baik section ringkasan maupun kartu review) harus memiliki margin horizontal 24px agar sejajar dengan Homepage.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SEARCH RESULT PAGE
+# =============================================================
+# Name: SewaIn Aja - Search Result Page
+# Description: Halaman yang menampilkan hasil pencarian barang (contoh: "Tech").
+#              Terdiri dari kolom pencarian, jumlah hasil, opsi urutkan, 
+#              grid kartu produk dengan badge overlay, dan fixed bottom navbar.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Manrope & Plus Jakarta Sans
+# Icons: Material Icons (arrow_back, person_outline, search, close, swap_vert, star, more_horiz)
+# Layout: Scaffold -> CustomScrollView -> SliverAppBar, SliverToBoxAdapter, SliverGrid
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+
+# --- 1A. TOP APP BAR ---
+# Widget: SliverAppBar (pinned: true, floating: true)
+# Background: #FFF8EF, elevation: 0
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "SewainAja" (Manrope Bold 20, #012D1D)
+# CenterTitle: true
+# Actions: IconButton person_outline terbungkus Container circle dengan border 1px #012D1D (#414844)
+
+# --- 1B. SEARCH INPUT BAR ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 16px, top 8px, bottom 16px
+# TextField Container:
+#   - Background: #FFFFFF
+#   - Border: 1px solid #012D1D, borderRadius 16px
+#   - Padding: 12px 16px
+#   - PrefixIcon: Icon search (#414844)
+#   - Text Input: "Tech" (Plus Jakarta Sans Medium 16, #012D1D)
+#   - SuffixIcon: Icon close (#414844)
+
+# --- 1C. RESULT HEADER & SORT OPTION ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 16px, bottom 16px
+# Row (spaceBetween, crossAxisAlignment: center):
+#   - Left: Text 'Hasil untuk "Tech"' (Manrope Bold 18, #012D1D)
+#   - Right: Row -> Text "Urutkan" (Plus Jakarta Sans Medium 14, #414844) + Icon swap_vert / sort (#414844, size 18)
+
+# --- 1D. PRODUCT GRID (SEARCH RESULTS) ---
+# Widget: SliverPadding (padding: horizontal 16px, bottom 40px) -> SliverGrid
+# Grid Setup: crossAxisCount 2, mainAxisSpacing 16, crossAxisSpacing 16, childAspectRatio 0.65
+# 
+# ### [PRODUCT CARD STYLE] ###
+# Container: bg #FFFFFF, border 1px solid #012D1D, borderRadius 16px
+# Children (Column, crossAxisAlignment: start):
+#   - Top (Image & Badge):
+#     - Stack:
+#       - Image: ClipRRect borderRadius_top 16px, height 155, asset cover produk, fit: cover
+#       - Overlay Badge (Positioned top: 8, left: 8):
+#         - Container: bg #000000 70% opacity, borderRadius 12px, padding 2x8
+#         - Row: Icon star (#FBBF24, size 12) + Text "4.8 (282)" (Plus Jakarta Sans Medium 10, #FFFFFF)
+#   - Bottom (Details):
+#     - Container padding 12px, Column (gap 8px):
+#       - Title: "Sony W830 with 8x Optical Zoom" (Plus Jakarta Sans Medium 14, #012D1D, maxLines 2, overflow: ellipsis, height 1.25)
+#       - Price Row (Row spaceBetween, crossAxisAlignment: end):
+#         - Left (Row): Text "Rp.120,000" (Manrope Bold 14, #012D1D) + Text "/Day" (Plus Jakarta Sans Medium 10, #414844)
+#         - Right: Icon more_horiz (#414844, size 16)
+
+# --- 1E. FIXED BOTTOM NAVBAR ---
+# Widget: BottomNavigationBar / Fixed Container di bottomNavigationBar Scaffold
+# Background: #FDF9F4, Border Top: 1px solid #012D1D 20% opacity
+# Layout: Row, spaceAround, padding vertical 12px
+# Items:
+#   1. Beranda: Column -> Icon home (#414844) + Text "Beranda" (Plus Jakarta Sans Medium 10, #414844)
+#   2. Cari (ACTIVE): Container bg #C1ECD4 (Light Mint), borderRadius 16px, padding 8x20, Column -> Icon search (#012D1D) + Text "Cari" (Plus Jakarta Sans Bold 10, #012D1D)
+#   3. Tambah: Column -> Icon add_box (#414844) + Text "Tambah" (#414844)
+#   4. Chat: Column -> Icon chat_bubble_outline (#414844) + Text "Chat" (#414844)
+#   5. Profil: Column -> Icon person_outline (#414844) + Text "Profil" (#414844)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF"
+# Color_Card_Bg: "#FFFFFF"
+# Color_Text_Dark: "#012D1D"
+# Color_Text_Sub: "#414844"
+# Color_Nav_Active_Bg: "#C1ECD4"
+# Color_Badge_Bg: "#000000"
+# Color_Accent_Star: "#FBBF24"
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Image Overlay: Pastikan komponen "Rating Badge" dimasukkan menggunakan widget Stack di dalam kartu produk agar posisinya melayang tepat di pojok kiri atas foto produk.
+# 2. Text Overflow: Judul produk pada item card dibatasi maksimal 2 baris (maxLines: 2) dengan efek ellipsis agar ukuran grid tetap konsisten meskipun nama barang panjang.
+# 3. Bottom Navbar: Berstatus statis (fixed) dan item "Cari" menjadi tab aktif yang disorot dengan latar belakang hijau mint (#C1ECD4).

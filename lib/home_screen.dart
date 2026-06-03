@@ -15,6 +15,7 @@ import 'widgets/product_card.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
+import 'search_result_screen.dart';
 import 'default_address_setup_screen.dart';
 import 'profile_settings_screen.dart';
 
@@ -54,10 +55,8 @@ class _HomeScreenState extends State<HomeScreen>
   final GlobalKey<SearchSheetState> _searchSheetKey =
       GlobalKey<SearchSheetState>();
 
-  // Animation for home sheet sliding down when search opens
-  late final AnimationController _homeSheetAnim;
-  late final Animation<Offset> _homeSheetSlide;
-  ScrollController? _activeScrollController;
+  // Scroll controller for main view
+  final ScrollController _scrollController = ScrollController();
   final GlobalKey _trustedSectionKey = GlobalKey();
   bool _isMapCardPressed = false;
 
@@ -83,24 +82,13 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _loadDefaultLocationLabel();
     _loadCategories();
-
-    // Home sheet slides UP (out) when search opens, slides DOWN back in when closing
-    _homeSheetAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      value: 0,
-    );
-    _homeSheetSlide = Tween<Offset>(
-      begin: Offset.zero,
-      end: const Offset(0, -1), // slides UP off screen
-    ).animate(CurvedAnimation(parent: _homeSheetAnim, curve: Curves.easeInCubic));
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     _searchFocusNode.dispose();
-    _homeSheetAnim.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -124,7 +112,6 @@ class _HomeScreenState extends State<HomeScreen>
   void _openSearch() {
     setState(() => _isSearchActive = true);
     widget.onSearchActiveChanged?.call(true);
-    _homeSheetAnim.forward();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
     });
@@ -132,16 +119,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _closeSearch() {
     _searchFocusNode.unfocus();
-    // 1. Search sheet slides DOWN out of view
     _searchSheetKey.currentState?.closeAsync().then((_) {
-      // 2. Home sheet slides DOWN back into view from above
       _searchController.clear();
-      _homeSheetAnim.reverse().then((_) {
-        if (mounted) {
-          setState(() => _isSearchActive = false);
-          widget.onSearchActiveChanged?.call(false);
-        }
-      });
+      if (mounted) {
+        setState(() => _isSearchActive = false);
+        widget.onSearchActiveChanged?.call(false);
+      }
     });
   }
 
@@ -179,7 +162,6 @@ class _HomeScreenState extends State<HomeScreen>
     setState(() {
       selectedCategory = 'All';
     });
-    if (_activeScrollController == null) return;
     try {
       final context = _trustedSectionKey.currentContext;
       if (context != null) {
@@ -189,14 +171,14 @@ class _HomeScreenState extends State<HomeScreen>
           curve: Curves.easeInOut,
         );
       } else {
-        _activeScrollController!.animateTo(
+        _scrollController.animateTo(
           380,
           duration: const Duration(milliseconds: 500),
           curve: Curves.easeInOut,
         );
       }
     } catch (_) {
-      _activeScrollController!.animateTo(
+      _scrollController.animateTo(
         380,
         duration: const Duration(milliseconds: 500),
         curve: Curves.easeInOut,
@@ -266,117 +248,109 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF012D1D),
+      backgroundColor: const Color(0xFFFFF8EF),
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          // =============================================================
-          // ### [LAYER 1: BACKGROUND / FIXED GREEN HEADER]
-          // =============================================================
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(),
-                    const SizedBox(height: 24),
-                    _buildSearchBar(),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // =============================================================
-          // ### [LAYER 2: HOME SHEET — slides down when search opens]
-          // =============================================================
-          SlideTransition(
-            position: _homeSheetSlide,
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.76,
-              minChildSize: 0.76,
-              maxChildSize: 1.0,
-              snap: true,
-              builder: (context, scrollController) {
-                _activeScrollController = scrollController;
-                return Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFF8EF),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 20,
-                        offset: Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: CustomScrollView(
-                    controller: scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    slivers: [
-                      SliverToBoxAdapter(
-                        child: Center(
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(vertical: 12),
-                            width: 40,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD6C7A1).withValues(alpha: 0.5),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
+          CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                backgroundColor: const Color(0xFF012D1D),
+                pinned: false,
+                floating: false,
+                expandedHeight: 200,
+                elevation: 0,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      SafeArea(
+                        bottom: false,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildHeader(),
+                              const SizedBox(height: 24),
+                              _buildSearchBar(),
+                            ],
                           ),
                         ),
                       ),
-                      const SliverPadding(padding: EdgeInsets.only(top: 8)),
-                      SliverToBoxAdapter(child: _buildPromoBanner()),
-                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                      SliverToBoxAdapter(child: _buildLocationPreview()),
-                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                      SliverToBoxAdapter(
-                        child: _buildSectionHeader(
-                          "New Arrivals",
-                          onSeeMoreTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const NewArrivalsScreen(),
-                              ),
-                            );
-                          },
+                      const SizedBox(height: 36),
+                    ],
+                  ),
+                ),
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(20),
+                  child: Container(
+                    height: 20,
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF8EF),
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    ),
+                    child: Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD6C7A1),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                      SliverToBoxAdapter(child: _buildNewArrivals()),
-                      const SliverToBoxAdapter(child: SizedBox(height: 28)),
-                      SliverToBoxAdapter(
+                    ),
+                  ),
+                ),
+              ),
+
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Column(
+                    children: [
+                      _buildPromoBanner(),
+                      const SizedBox(height: 28),
+                      _buildLocationPreview(),
+                      const SizedBox(height: 28),
+                      _buildSectionHeader(
+                        "New Arrivals",
+                        onSeeMoreTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NewArrivalsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      _buildNewArrivals(),
+                      const SizedBox(height: 28),
+                      Container(
                         key: _trustedSectionKey,
                         child: _buildSectionHeader(
                           "Most Trusted Nearby",
                           showSeeMore: false,
                         ),
                       ),
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                      SliverToBoxAdapter(child: _buildCategoryFilter()),
-                      const SliverToBoxAdapter(child: SizedBox(height: 16)),
-                      _buildTrustedNearbySliver(),
-                      const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
+                      const SizedBox(height: 16),
+                      _buildCategoryFilter(),
+                      const SizedBox(height: 16),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              ),
+
+              _buildTrustedNearbySliver(),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            ],
           ),
 
-          // =============================================================
-          // ### [LAYER 3: SEARCH SHEET — slides up when search opens]
-          // =============================================================
           if (_isSearchActive)
             SearchSheet(
               key: _searchSheetKey,
@@ -515,6 +489,17 @@ class _HomeScreenState extends State<HomeScreen>
           onChanged: (_) {
             // Trigger rebuild in SearchSheet via shared controller listener
             if (!_isSearchActive) _openSearch();
+          },
+          onSubmitted: (value) {
+            final query = value.trim();
+            if (query.isNotEmpty) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SearchResultScreen(searchQuery: query),
+                ),
+              );
+            }
           },
           style: const TextStyle(fontFamily: 'Poppins', fontSize: 14),
           textInputAction: TextInputAction.search,

@@ -137,4 +137,20 @@ class ItemRepository {
       return [];
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // SEARCH — fetch semua item available untuk keperluan search client-side
+  // ---------------------------------------------------------------------------
+
+  /// Fetch semua item dengan status "available" tanpa filter kategori.
+  /// Digunakan oleh SearchSheet untuk filtering client-side (contains/exact/fuzzy).
+  Stream<List<ItemModel>> watchSearchableItems() {
+    return _itemsRef
+        .where('status', isEqualTo: 'available')
+        .snapshots()
+        .map(
+          (snap) =>
+              snap.docs.map((doc) => ItemModel.fromFirestore(doc)).toList(),
+        );
+  }
 }

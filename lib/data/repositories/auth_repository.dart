@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
@@ -24,7 +25,11 @@ class GoogleLoginException implements Exception {
 
 class AuthRepository {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: kIsWeb
+        ? '1073702990942-l3rf6d0h9fg0ds386f06cj32avn4dnhg.apps.googleusercontent.com'
+        : null,
+  );
 
   Future<Map<String, dynamic>> signInWithGoogle() async {
     try {
