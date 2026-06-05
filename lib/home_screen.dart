@@ -1,4 +1,4 @@
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
@@ -12,6 +12,9 @@ import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'widgets/product_more_sheet.dart';
+import 'favorite_service.dart';
+import 'widgets/report_dialog.dart';
 import 'new_arrivals_screen.dart';
 import 'notification_screen.dart';
 import 'search_screen.dart';
@@ -44,6 +47,14 @@ class _HomeScreenState extends State<HomeScreen>
   String _userName = '';
   String _profilePhotoUrl = '';
   LatLng _mapCenter = _fallbackCenter;
+
+  // Caching variables for Firestore streams to optimize performance
+  StreamSubscription<List<ItemModel>>? _newArrivalsSub;
+  StreamSubscription<List<ItemModel>>? _trustedNearbySub;
+  List<ItemModel>? _newArrivals;
+  List<ItemModel>? _trustedNearby;
+  bool _isLoadingNewArrivals = true;
+  bool _isLoadingTrustedNearby = true;
 
   // Kategori dari Firestore + "All" selalu ada di depan
   List<String> _firestoreCategories = [];
@@ -82,6 +93,8 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _loadDefaultLocationLabel();
     _loadCategories();
+    _listenToNewArrivals();
+    _listenToTrustedNearby();
   }
 
   @override
@@ -89,7 +102,45 @@ class _HomeScreenState extends State<HomeScreen>
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
+    _newArrivalsSub?.cancel();
+    _trustedNearbySub?.cancel();
     super.dispose();
+  }
+
+  void _listenToNewArrivals() {
+    _newArrivalsSub?.cancel();
+    setState(() {
+      _isLoadingNewArrivals = true;
+    });
+    _newArrivalsSub = _itemRepo.watchNewArrivals(limit: 5).listen((items) {
+      if (!mounted) return;
+      setState(() {
+        _newArrivals = items;
+        _isLoadingNewArrivals = false;
+      });
+    }, onError: (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingNewArrivals = false);
+    });
+  }
+
+  void _listenToTrustedNearby() {
+    _trustedNearbySub?.cancel();
+    setState(() {
+      _isLoadingTrustedNearby = true;
+    });
+    _trustedNearbySub = _itemRepo.watchAvailableItems(
+      categoryName: selectedCategory == 'All' ? null : selectedCategory,
+    ).listen((items) {
+      if (!mounted) return;
+      setState(() {
+        _trustedNearby = items;
+        _isLoadingTrustedNearby = false;
+      });
+    }, onError: (_) {
+      if (!mounted) return;
+      setState(() => _isLoadingTrustedNearby = false);
+    });
   }
 
   /// Load kategori dari Firestore collection `item_categories`.
@@ -159,9 +210,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _scrollToProducts() {
+    final wasNotAll = selectedCategory != 'All';
     setState(() {
       selectedCategory = 'All';
     });
+    if (wasNotAll) {
+      _listenToTrustedNearby();
+    }
     try {
       final context = _trustedSectionKey.currentContext;
       if (context != null) {
@@ -545,7 +600,13 @@ class _HomeScreenState extends State<HomeScreen>
           final cat = categories[index];
           final isSelected = cat == selectedCategory;
           return GestureDetector(
-            onTap: () => setState(() => selectedCategory = cat),
+            onTap: () {
+              if (selectedCategory == cat) return;
+              setState(() {
+                selectedCategory = cat;
+              });
+              _listenToTrustedNearby();
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -994,61 +1055,58 @@ class _HomeScreenState extends State<HomeScreen>
   // ---------------------------------------------------------------------------
 
   Widget _buildNewArrivals() {
-    return StreamBuilder<List<ItemModel>>(
-      stream: _itemRepo.watchNewArrivals(limit: 5),
-      builder: (context, snapshot) {
-        // Loading state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildNewArrivalsLoading();
-        }
+    if (_isLoadingNewArrivals || _newArrivals == null) {
+      return _buildNewArrivalsLoading();
+    }
 
-        // Error atau kosong
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildNewArrivalsEmpty();
-        }
+    if (_newArrivals!.isEmpty) {
+      return _buildNewArrivalsEmpty();
+    }
 
-        final items = snapshot.data!;
+    final items = _newArrivals!;
 
-        return SizedBox(
-          height: 210,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            physics: const BouncingScrollPhysics(),
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final product = ProductData(
-                name: item.name,
-                price: item.formattedPricePerDay,
-                rating: item.ownerRating > 0
-                    ? item.ownerRating.toStringAsFixed(1)
-                    : '—',
-                image: item.primaryPhoto,
-              );
-              return FadeInUp(
-                delay: Duration(milliseconds: 80 * index),
-                child: GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemDetailScreen(
-                        itemId: item.id,
-                        item: item,
-                        itemName: item.name,
-                        pricePerHour: item.pricePerHour,
-                        imagePath: item.primaryPhoto,
-                      ),
-                    ),
+    return SizedBox(
+      height: 210,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        physics: const BouncingScrollPhysics(),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final product = ProductData(
+            id: item.id,
+            name: item.name,
+            price: item.formattedPricePerHour,
+            rating: item.ownerRating > 0
+                ? item.ownerRating.toStringAsFixed(1)
+                : '—',
+            image: item.primaryPhoto,
+          );
+          return FadeInUp(
+            delay: Duration(milliseconds: 80 * index),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItemDetailScreen(
+                    itemId: item.id,
+                    item: item,
+                    itemName: item.name,
+                    pricePerHour: item.pricePerHour,
+                    imagePath: item.primaryPhoto,
                   ),
-                  child: ProductCard(product: product),
                 ),
-              );
-            },
-          ),
-        );
-      },
+              ),
+              child: ProductCard(
+                product: product,
+                onMorePressed: () => _showProductOptions(context, item, product),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -1087,114 +1145,173 @@ class _HomeScreenState extends State<HomeScreen>
   // ---------------------------------------------------------------------------
 
   Widget _buildTrustedNearbySliver() {
-    return StreamBuilder<List<ItemModel>>(
-      stream: _itemRepo.watchAvailableItems(
-        categoryName: selectedCategory == 'All' ? null : selectedCategory,
-      ),
-      builder: (context, snapshot) {
-        // Loading state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 0.65,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                (_, __) => _buildShimmerCard(
-                  width: double.infinity,
-                  height: double.infinity,
+    if (_isLoadingTrustedNearby || _trustedNearby == null) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.65,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (_, __) => _buildShimmerCard(
+              width: double.infinity,
+              height: double.infinity,
+            ),
+            childCount: 4,
+          ),
+        ),
+      );
+    }
+
+    if (_trustedNearby!.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+          child: Center(
+            child: Column(
+              children: [
+                Icon(
+                  Icons.inventory_2_outlined,
+                  size: 48,
+                  color: const Color(0xFF012D1D).withValues(alpha: 0.25),
                 ),
-                childCount: 4,
-              ),
-            ),
-          );
-        }
-
-        // Error atau kosong
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-          return SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 48,
-                      color: const Color(0xFF012D1D).withValues(alpha: 0.25),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      selectedCategory == 'All'
-                          ? 'Belum ada barang tersedia'
-                          : 'Tidak ada barang di kategori "$selectedCategory"',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        color: const Color(0xFF414844).withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                Text(
+                  selectedCategory == 'All'
+                      ? 'Belum ada barang tersedia'
+                      : 'Tidak ada barang di kategori "$selectedCategory"',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: const Color(0xFF414844).withValues(alpha: 0.5),
+                  ),
                 ),
-              ),
-            ),
-          );
-        }
-
-        final items = snapshot.data!;
-
-        return SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.65,
-            ),
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                final item = items[index];
-                final product = ProductData(
-                  name: item.name,
-                  price: item.formattedPricePerDay,
-                  rating: item.ownerRating > 0
-                      ? item.ownerRating.toStringAsFixed(1)
-                      : '—',
-                  image: item.primaryPhoto,
-                );
-                return FadeInUp(
-                  key: ValueKey(
-                    '${selectedCategory}_${item.id}_$index',
-                  ),
-                  delay: Duration(milliseconds: 50 * (index % 4)),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ItemDetailScreen(
-                            itemId: item.id,
-                            item: item,
-                            itemName: item.name,
-                            pricePerHour: item.pricePerHour,
-                            imagePath: item.primaryPhoto,
-                          ),
-                        ),
-                      );
-                    },
-                    child: ProductCard(product: product),
-                  ),
-                );
-              },
-              childCount: items.length,
+              ],
             ),
           ),
+        ),
+      );
+    }
+
+    final items = _trustedNearby!;
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 0.65,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final item = items[index];
+            final product = ProductData(
+              id: item.id,
+              name: item.name,
+              price: item.formattedPricePerHour,
+              rating: item.ownerRating > 0
+                  ? item.ownerRating.toStringAsFixed(1)
+                  : '—',
+              image: item.primaryPhoto,
+            );
+            return FadeInUp(
+              key: ValueKey(
+                '${selectedCategory}_${item.id}_$index',
+              ),
+              delay: Duration(milliseconds: 50 * (index % 4)),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemId: item.id,
+                        item: item,
+                        itemName: item.name,
+                        pricePerHour: item.pricePerHour,
+                        imagePath: item.primaryPhoto,
+                      ),
+                    ),
+                  );
+                },
+                child: ProductCard(
+                  product: product,
+                  onMorePressed: () => _showProductOptions(context, item, product),
+                ),
+              ),
+            );
+          },
+          childCount: items.length,
+        ),
+      ),
+    );
+  }
+
+  void _showProductOptions(BuildContext context, ItemModel item, ProductData product) async {
+    final isFav = await FavoriteService.isFavorite(item.id);
+    if (!context.mounted) return;
+    showProductMoreSheet(
+      context: context,
+      product: product,
+      isFavorite: isFav,
+      onFavoritePressed: () async {
+        final nowFav = await FavoriteService.toggleFavorite(item.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              nowFav ? '${item.name} disimpan ke Favorit!' : '${item.name} dihapus dari Favorit!',
+              style: const TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: const Color(0xFF012D1D),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      onSimilarPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SearchResultScreen(
+              searchQuery: item.name,
+            ),
+          ),
+        );
+      },
+      onNotInterestedPressed: () {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: Color(0xFF012D1D),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      onReportPressed: () {
+        if (item.ownerId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data pemilik tidak ditemukan.', style: TextStyle(fontFamily: 'Poppins')),
+              backgroundColor: Color(0xFFE33629),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        showReportDialog(
+          context,
+          reportedId: item.ownerId,
+          itemId: item.id,
+          itemName: item.name,
         );
       },
     );

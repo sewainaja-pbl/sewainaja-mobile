@@ -6,7 +6,10 @@ import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'widgets/product_more_sheet.dart';
+import 'favorite_service.dart';
 import 'item_detail_screen.dart';
+import 'widgets/report_dialog.dart';
 
 enum SortOption { relevance, lowestPrice, highestPrice, highestRating }
 
@@ -109,8 +112,9 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   ProductData _toProductData(ItemModel item) => ProductData(
+        id: item.id,
         name: item.name,
-        price: item.formattedPricePerDay,
+        price: item.formattedPricePerHour,
         rating: item.ownerRating > 0
             ? item.ownerRating.toStringAsFixed(1)
             : '—',
@@ -352,7 +356,10 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                         final product = _toProductData(item);
                         return GestureDetector(
                           onTap: () => _navigateToDetail(item),
-                          child: ProductCard(product: product),
+                          child: ProductCard(
+                            product: product,
+                            onMorePressed: () => _showProductOptions(context, item, product),
+                          ),
                         );
                       },
                       childCount: _results.length,
@@ -416,6 +423,70 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showProductOptions(BuildContext context, ItemModel item, ProductData product) async {
+    final isFav = await FavoriteService.isFavorite(item.id);
+    if (!context.mounted) return;
+    showProductMoreSheet(
+      context: context,
+      product: product,
+      isFavorite: isFav,
+      onFavoritePressed: () async {
+        final nowFav = await FavoriteService.toggleFavorite(item.id);
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              nowFav ? '${item.name} disimpan ke Favorit!' : '${item.name} dihapus dari Favorit!',
+              style: const TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: const Color(0xFF012D1D),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      onSimilarPressed: () {
+        setState(() {
+          _currentQuery = item.name;
+          _searchController.text = item.name;
+          _applyFilter();
+        });
+      },
+      onNotInterestedPressed: () {
+        setState(() {
+          _results.removeWhere((i) => i.id == item.id);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
+              style: TextStyle(fontFamily: 'Poppins'),
+            ),
+            backgroundColor: Color(0xFF012D1D),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      },
+      onReportPressed: () {
+        if (item.ownerId.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data pemilik tidak ditemukan.', style: TextStyle(fontFamily: 'Poppins')),
+              backgroundColor: Color(0xFFE33629),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          return;
+        }
+        showReportDialog(
+          context,
+          reportedId: item.ownerId,
+          itemId: item.id,
+          itemName: item.name,
+        );
+      },
     );
   }
 

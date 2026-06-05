@@ -4,7 +4,10 @@ import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'widgets/product_more_sheet.dart';
+import 'search_result_screen.dart';
 import 'item_detail_screen.dart';
+import 'widgets/report_dialog.dart';
 
 class NewArrivalsScreen extends StatelessWidget {
   const NewArrivalsScreen({super.key});
@@ -113,8 +116,9 @@ class NewArrivalsScreen extends StatelessWidget {
             itemBuilder: (context, index) {
               final item = items[index];
               final product = ProductData(
+                id: item.id,
                 name: item.name,
-                price: item.formattedPricePerDay,
+                price: item.formattedPricePerHour,
                 rating: item.ownerRating > 0
                     ? item.ownerRating.toStringAsFixed(1)
                     : '—',
@@ -133,7 +137,67 @@ class NewArrivalsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                child: ProductCard(product: product),
+                child: ProductCard(
+                  product: product,
+                  onMorePressed: () {
+                    showProductMoreSheet(
+                      context: context,
+                      product: product,
+                      onFavoritePressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '${item.name} disimpan ke Favorit!',
+                              style: const TextStyle(fontFamily: 'Poppins'),
+                            ),
+                            backgroundColor: const Color(0xFF012D1D),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      onSimilarPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SearchResultScreen(
+                              searchQuery: item.name,
+                            ),
+                          ),
+                        );
+                      },
+                      onNotInterestedPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
+                              style: TextStyle(fontFamily: 'Poppins'),
+                            ),
+                            backgroundColor: Color(0xFF012D1D),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      onReportPressed: () {
+                        if (item.ownerId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Data pemilik tidak ditemukan.', style: TextStyle(fontFamily: 'Poppins')),
+                              backgroundColor: Color(0xFFE33629),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                          return;
+                        }
+                        showReportDialog(
+                          context,
+                          reportedId: item.ownerId,
+                          itemId: item.id,
+                          itemName: item.name,
+                        );
+                      },
+                    );
+                  },
+                ),
               );
             },
           );

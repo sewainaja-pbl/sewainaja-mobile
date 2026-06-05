@@ -6,10 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'item_detail_screen.dart';
 import 'room_chat_screen.dart';
 import 'widgets/product_card.dart';
+import 'widgets/product_more_sheet.dart';
+import 'search_result_screen.dart';
 import 'models/product.dart';
 import 'see_all_reviews_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'widgets/report_dialog.dart';
 
 class ProfileViewScreen extends StatefulWidget {
+  final String? ownerId;
   final String ownerName;
   final String? rating;
   final String? listingCount;
@@ -17,6 +22,7 @@ class ProfileViewScreen extends StatefulWidget {
 
   const ProfileViewScreen({
     super.key,
+    this.ownerId,
     this.ownerName = "Mas Tahes",
     this.rating,
     this.listingCount,
@@ -118,8 +124,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double screenHeight = MediaQuery.of(context).size.height;
-    
     // Default Owner Info fallback
     final String displayName = widget.ownerName.trim().isEmpty ? "Mas Tahes" : widget.ownerName;
     final String joinDate = "Member since 2010";
@@ -756,7 +760,82 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                             ),
                                           );
                                         },
-                                        child: ProductCard(product: product),
+                                        child: ProductCard(
+                                          product: product,
+                                          onMorePressed: () {
+                                            showProductMoreSheet(
+                                              context: context,
+                                              product: product,
+                                              onFavoritePressed: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text(
+                                                      '${product.name} disimpan ke Favorit!',
+                                                      style: const TextStyle(fontFamily: 'Poppins'),
+                                                    ),
+                                                    backgroundColor: const Color(0xFF012D1D),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                              onSimilarPressed: () {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => SearchResultScreen(
+                                                      searchQuery: product.name,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                              onNotInterestedPressed: () {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text(
+                                                      'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
+                                                      style: TextStyle(fontFamily: 'Poppins'),
+                                                    ),
+                                                    backgroundColor: Color(0xFF012D1D),
+                                                    behavior: SnackBarBehavior.floating,
+                                                  ),
+                                                );
+                                              },
+                                               onReportPressed: () {
+                                                 final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                                                 final reportedId = widget.ownerId ?? '';
+                                                 
+                                                 if (reportedId.isEmpty) {
+                                                   ScaffoldMessenger.of(context).showSnackBar(
+                                                     const SnackBar(
+                                                       content: Text('Informasi pemilik tidak tersedia untuk dilaporkan.', style: TextStyle(fontFamily: 'Poppins')),
+                                                       backgroundColor: Color(0xFFE33629),
+                                                       behavior: SnackBarBehavior.floating,
+                                                     ),
+                                                   );
+                                                   return;
+                                                 }
+                                                 
+                                                 if (currentUserId == reportedId) {
+                                                   ScaffoldMessenger.of(context).showSnackBar(
+                                                     const SnackBar(
+                                                       content: Text('Anda tidak bisa melaporkan barang Anda sendiri.', style: TextStyle(fontFamily: 'Poppins')),
+                                                       backgroundColor: Color(0xFFE33629),
+                                                       behavior: SnackBarBehavior.floating,
+                                                     ),
+                                                   );
+                                                   return;
+                                                 }
+
+                                                 showReportDialog(
+                                                   context,
+                                                   reportedId: reportedId,
+                                                   itemId: productMap["id"]?.toString() ?? "local_or_dummy_item",
+                                                   itemName: product.name,
+                                                 );
+                                               },
+                                            );
+                                          },
+                                        ),
                                       ),
                                     );
                                   },

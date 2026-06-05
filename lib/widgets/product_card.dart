@@ -9,11 +9,13 @@ import '../image_upload_service.dart';
 class ProductCard extends StatelessWidget {
   final ProductData product;
   final bool isHorizontal;
+  final VoidCallback? onMorePressed;
 
   const ProductCard({
     super.key,
     required this.product,
     this.isHorizontal = false,
+    this.onMorePressed,
   });
 
   /// Membangun ImageProvider yang tepat:
@@ -279,10 +281,17 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
-                  Icons.more_horiz,
-                  size: 18,
-                  color: Color(0xFF414844),
+                GestureDetector(
+                  onTap: onMorePressed,
+                  behavior: HitTestBehavior.opaque,
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Icon(
+                      Icons.more_horiz,
+                      size: 18,
+                      color: Color(0xFF414844),
+                    ),
+                  ),
                 ),
               ],
             ),

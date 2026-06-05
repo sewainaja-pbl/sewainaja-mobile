@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
@@ -17,6 +18,10 @@ import 'image_upload_service.dart';
 import 'map_common_widgets.dart';
 import 'map_explore_screen.dart';
 import 'profile_view_screen.dart';
+import 'favorite_service.dart';
+import 'help_center_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'widgets/report_dialog.dart';
 
 
 class ItemDetailScreen extends StatefulWidget {
@@ -49,6 +54,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   bool _isLoading = false;
   Map<String, dynamic>? _itemData;
   LatLng _itemCenter = const LatLng(-6.9791, 110.4208);
+  bool _isFavorite = false;
 
   @override
   void initState() {
@@ -58,6 +64,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       _updateCenterFromData();
     }
     _fetchItemDetails();
+    _initFavoriteState();
+  }
+
+  void _initFavoriteState() async {
+    final itemId = widget.itemId ?? widget.item?.id;
+    if (itemId != null && itemId.isNotEmpty) {
+      final isFav = await FavoriteService.isFavorite(itemId);
+      if (mounted) {
+        setState(() => _isFavorite = isFav);
+      }
+    }
   }
 
   void _updateCenterFromData() {
@@ -328,7 +345,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
     final priceRaw = _itemData?['pricePerHour'] ?? widget.pricePerHour ?? 15000.0;
     final priceVal = (priceRaw as num).toDouble();
-    final itemPrice = "Rp. ${priceVal.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')},00/jam";
+    final itemPrice = "Rp. ${priceVal.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/jam";
     
     final cond = _itemData?['condition']?.toString();
     final hasCondition = cond != null && cond.trim().isNotEmpty;
@@ -367,12 +384,33 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
             // Action: Heart/Like Icon
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              child: const Icon(
-                Icons.favorite_border_rounded,
-                size: 28,
-                color: Color(0xFFE33629), // Color_Danger_Red
+            GestureDetector(
+              onTap: () async {
+                final itemId = widget.itemId ?? widget.item?.id;
+                if (itemId != null && itemId.isNotEmpty) {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final nowFav = await FavoriteService.toggleFavorite(itemId);
+                  if (!mounted) return;
+                  setState(() => _isFavorite = nowFav);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        nowFav ? '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} disimpan ke Favorit!' : '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} dihapus dari Favorit!',
+                        style: const TextStyle(fontFamily: 'Poppins'),
+                      ),
+                      backgroundColor: const Color(0xFF012D1D),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.only(top: 4),
+                child: Icon(
+                  _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  size: 28,
+                  color: const Color(0xFFE33629), // Color_Danger_Red
+                ),
               ),
             ),
           ],
@@ -406,9 +444,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               color: Colors.black54,
             ),
             const SizedBox(width: 6),
-            const Text(
-              "Baru saja",
-              style: TextStyle(
+            Text(
+              _formatTimeAgo(_itemData?['createdAt'] ?? widget.item?.createdAt),
+              style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
                 color: Colors.black87,
@@ -418,6 +456,35 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         ),
       ],
     );
+  }
+
+  String _formatTimeAgo(dynamic createdAt) {
+    if (createdAt == null) return "Baru saja";
+    DateTime? dateTime;
+    if (createdAt is DateTime) {
+      dateTime = createdAt;
+    } else if (createdAt is String) {
+      dateTime = DateTime.tryParse(createdAt);
+    } else if (createdAt is int) {
+      dateTime = DateTime.fromMillisecondsSinceEpoch(createdAt);
+    } else if (createdAt is Timestamp) {
+      dateTime = createdAt.toDate();
+    }
+    
+    if (dateTime == null) return "Baru saja";
+    
+    final diff = DateTime.now().difference(dateTime);
+    if (diff.inSeconds < 60) {
+      return "Baru saja";
+    } else if (diff.inMinutes < 60) {
+      return "${diff.inMinutes} menit yang lalu";
+    } else if (diff.inHours < 24) {
+      return "${diff.inHours} jam yang lalu";
+    } else if (diff.inDays < 30) {
+      return "${diff.inDays} hari yang lalu";
+    } else {
+      return "${dateTime.day}/${dateTime.month}/${dateTime.year}";
+    }
   }
 
   String _getDynamicDescription(String? itemName) {
@@ -443,7 +510,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2D. DESCRIPTION SECTION (DENGAN EXPAND TOGGLE)
   Widget _buildDescription() {
-    final String fullDescription = _getDynamicDescription(widget.itemName);
+    final String descFromApi = _itemData?['description'] as String? ?? '';
+    final String descFromWidget = widget.item?.description ?? '';
+    final String fallbackDesc = _getDynamicDescription(widget.itemName ?? _itemData?['name']);
+    final String fullDescription = descFromApi.isNotEmpty
+        ? descFromApi
+        : (descFromWidget.isNotEmpty ? descFromWidget : fallbackDesc);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -515,14 +587,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2B. SELLER PROFILE CARD
   Widget _buildSellerProfileCard() {
+    final String sellerName = _itemData?['ownerName'] as String? ?? widget.item?.ownerName ?? 'Han Soo Hee';
+    final double ratingRaw = ((_itemData?['ownerRating'] ?? widget.item?.ownerRating ?? 4.9) as num).toDouble();
+    final String ratingStr = ratingRaw > 0 ? ratingRaw.toStringAsFixed(1) : "—";
+    final String? addressLabel = _itemData?['address']?['label']?.toString() ?? _itemData?['address']?['fullAddress']?.toString();
+    final String sellerLoc = addressLabel ?? widget.sellerLocation ?? "Tembalang, Banyumanik";
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => const ProfileViewScreen(
-              ownerName: "Han Soo Hee",
-              avatarImage: AssetImage('assets/images/profile_user.png'),
+            builder: (context) => ProfileViewScreen(
+              ownerId: _itemData?['ownerId'] as String? ?? widget.item?.ownerId,
+              ownerName: sellerName,
+              avatarImage: const AssetImage('assets/images/profile_user.png'),
             ),
           ),
         );
@@ -559,9 +638,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    "Han Soo Hee",
-                    style: TextStyle(
+                  Text(
+                    sellerName,
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w500, // Regular to Medium
                       fontSize: 12,
@@ -571,25 +650,25 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.star_rounded,
                         color: Color(0xFFF8BD00),
                         size: 12,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        "4.9",
-                        style: TextStyle(
+                        ratingStr,
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w600,
                           fontSize: 10,
                           color: Colors.black,
                         ),
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
-                        "| ${widget.sellerLocation ?? "Tembalang, Banyumanik"}",
-                        style: TextStyle(
+                        "| $sellerLoc",
+                        style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 10,
                           color: Colors.black54,
@@ -1022,6 +1101,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       color: const Color(0xFF012D1D),
                       onTap: () {
                         Navigator.pop(context);
+                        final itemId = widget.item?.id ?? widget.itemId ?? '';
+                        Clipboard.setData(ClipboardData(text: 'https://sewainaja-b4834.web.app/items/$itemId'));
                         showAppSuccessSnack(context, 'Link berhasil disalin ke clipboard!');
                       },
                     ),
@@ -1152,7 +1233,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   title: const Text('Bantuan SewainAja', style: TextStyle(fontFamily: 'Poppins')),
                   onTap: () {
                     Navigator.pop(context);
-                    showAppSuccessSnack(context, 'Membuka Pusat Bantuan...');
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const HelpCenterScreen(),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -1165,48 +1251,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   void _showReportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFFFFF8EF),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Laporkan Barang', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Laporkan barang ini jika melanggar ketentuan layanan kami atau merupakan penipuan.', style: TextStyle(fontFamily: 'Poppins', fontSize: 13)),
-            const SizedBox(height: 16),
-            TextField(
-              maxLines: 3,
-              style: const TextStyle(fontFamily: 'Poppins', fontSize: 13),
-              decoration: InputDecoration(
-                hintText: 'Tulis alasan laporan Anda di sini...',
-                hintStyle: const TextStyle(fontSize: 12),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF585D59))),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE33629),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              showAppSuccessSnack(context, 'Laporan Anda telah terkirim. Terima kasih!');
-            },
-            child: const Text('Kirim', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+    final reportedId = widget.item?.ownerId ?? _itemData?['ownerId'] as String? ?? '';
+    final itemId = widget.item?.id ?? widget.itemId ?? '';
+    final itemName = widget.item?.name ?? _itemData?['name'] as String? ?? widget.itemName ?? 'Barang';
+
+    if (reportedId.isEmpty) {
+      showAppErrorSnack(context, 'Data pemilik belum dimuat.');
+      return;
+    }
+
+    showReportDialog(
+      context,
+      reportedId: reportedId,
+      itemId: itemId,
+      itemName: itemName,
     );
   }
 }
@@ -1289,7 +1347,7 @@ class _RecommendationCardItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    "${item.formattedPricePerDay}/hari",
+                    item.formattedPricePerHour,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,

@@ -145,12 +145,17 @@ class ItemRepository {
   /// Fetch semua item dengan status "available" tanpa filter kategori.
   /// Digunakan oleh SearchSheet untuk filtering client-side (contains/exact/fuzzy).
   Stream<List<ItemModel>> watchSearchableItems() {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     return _itemsRef
         .where('status', isEqualTo: 'available')
         .snapshots()
-        .map(
-          (snap) =>
-              snap.docs.map((doc) => ItemModel.fromFirestore(doc)).toList(),
-        );
+        .map((snap) {
+      final items =
+          snap.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+      if (currentUserId != null) {
+        items.removeWhere((item) => item.ownerId == currentUserId);
+      }
+      return items;
+    });
   }
 }

@@ -148,33 +148,6 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
     }
   }
 
-  List<MapItem> get _fallbackDemoItems {
-    return [
-      MapItem(
-        id: 'demo-1',
-        name: 'Sony A7 (Demo)',
-        categoryId: 'demo-tech',
-        pricePerHour: 25000,
-        latitude: _center.latitude + 0.0033,
-        longitude: _center.longitude + 0.0015,
-        distanceKm: 0.8,
-        categoryName: 'Tech',
-        photoUrl: '',
-      ),
-      MapItem(
-        id: 'demo-2',
-        name: 'Tenda Outdoor (Demo)',
-        categoryId: 'demo-camp',
-        pricePerHour: 18000,
-        latitude: _center.latitude - 0.0028,
-        longitude: _center.longitude - 0.0020,
-        distanceKm: 1.2,
-        categoryName: 'Camp',
-        photoUrl: '',
-      ),
-    ];
-  }
-
   _UiCategory get _selectedCategory {
     for (final category in _categories) {
       if (category.key == _selectedCategoryKey) {
@@ -187,7 +160,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   int get _activeFilterCount => _selectedCategory.isAll ? 0 : 1;
 
   List<MapItem> get _visibleItems {
-    final base = _items.isNotEmpty ? _items : _fallbackDemoItems;
+    final base = _items;
     if (_selectedCategory.isAll) return base;
     final label = _selectedCategory.label.toLowerCase();
     return base.where((item) {
