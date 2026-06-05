@@ -366,7 +366,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => RoomChatScreen(
-                                    chatPartnerName: displayName,
+                                    partnerId: widget.ownerName, // Using name as fallback ID
+                                    partnerName: displayName,
+                                    itemId: "profile_chat",
+                                    itemName: "Diskusi Profil",
+                                    itemPhotoUrl: "",
                                   ),
                                 ),
                               );
