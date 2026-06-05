@@ -1,25 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'room_chat_screen.dart';
 
-class ChatMessage {
-  final String userName;
-  final String messagePreview;
-  final String userAvatar;
-  final String productName;
-  final String productThumbnail;
-  final bool isUnread;
-  final bool isRequest;
-
-  ChatMessage({
-    required this.userName,
-    required this.messagePreview,
-    required this.userAvatar,
-    required this.productName,
-    required this.productThumbnail,
-    this.isUnread = false,
-    this.isRequest = false,
-  });
-}
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+import 'data/models/chat_model.dart';
+import 'data/repositories/chat_repository.dart';
+import 'image_upload_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -31,6 +18,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   String selectedTab = "All"; // Tab Options: "All", "Unread", "Request"
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
 
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
@@ -41,72 +30,91 @@ class _ChatScreenState extends State<ChatScreen> {
     });
   }
 
-  // Mock Data matching the provided images
-  final List<ChatMessage> _allChats = [
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: true,
-      isRequest: true,
-    ),
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: true,
-      isRequest: true,
-    ),
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: false,
-      isRequest: true,
-    ),
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: true,
-      isRequest: false,
-    ),
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: false,
-      isRequest: false,
-    ),
-    ChatMessage(
-      userName: "JoyKowi",
-      messagePreview: "Apakah ini masih ada?",
-      userAvatar: "assets/images/profile_user.png",
-      productName: "Sony A6000",
-      productThumbnail: "assets/images/sony_camera.png",
-      isUnread: false,
-      isRequest: true,
-    ),
-  ];
+  final ChatRepository _chatRepository = ChatRepository();
+  final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final ImageUploadService _imageUploadService = ImageUploadService();
 
-  // List filtering logic
-  List<ChatMessage> get _filteredChats {
-    if (selectedTab == "Unread") {
-      return _allChats.where((chat) => chat.isUnread).toList();
-    } else if (selectedTab == "Request") {
-      return _allChats.where((chat) => chat.isRequest).toList();
+  // Cache for unread counts per room
+  final Map<String, int> _unreadCounts = {};
+  // Cache for actual partner profiles fetched from Firestore users collection
+  final Map<String, Map<String, String?>> _partnerProfiles = {};
+
+  Future<void> _fetchUnreadCounts(List<ChatRoomModel> rooms) async {
+    for (final room in rooms) {
+      if (!_unreadCounts.containsKey(room.id)) {
+        final count = await _chatRepository.getUnreadCount(room.id);
+        if (mounted) {
+          setState(() {
+            _unreadCounts[room.id] = count;
+          });
+        }
+      }
     }
-    return _allChats;
+  }
+
+  Future<void> _fetchPartnerProfile(String partnerId) async {
+    if (_partnerProfiles.containsKey(partnerId)) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(partnerId).get();
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        if (data != null) {
+          setState(() {
+            _partnerProfiles[partnerId] = {
+              'name': data['name'] as String? ?? '',
+              'avatarUrl': data['profilePhotoUrl'] as String? ?? '',
+            };
+          });
+        }
+      }
+    } catch (_) {}
+  }
+
+  List<ChatRoomModel> _filterChats(List<ChatRoomModel> chats) {
+    List<ChatRoomModel> filtered = chats;
+
+    // Apply tab filter
+    if (selectedTab == "Unread") {
+      filtered = filtered.where((room) {
+        final count = _unreadCounts[room.id] ?? 0;
+        return count > 0;
+      }).toList();
+    } else if (selectedTab == "Request") {
+      // Request = rooms created by someone else (not the current user)
+      // meaning someone initiated a chat with the current user
+      filtered = filtered.where((room) {
+        return room.createdBy != null && room.createdBy != _currentUserId;
+      }).toList();
+    }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((room) {
+        // Search by partner name
+        String partnerName = "";
+        for (var entry in room.participants.entries) {
+          if (entry.key != _currentUserId) {
+            // Check cached profile first
+            final cached = _partnerProfiles[entry.key];
+            partnerName = (cached?['name']?.isNotEmpty == true)
+                ? cached!['name']!
+                : entry.value.name;
+            break;
+          }
+        }
+        // Search by item name or partner name
+        return partnerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+            room.itemName.toLowerCase().contains(_searchQuery.toLowerCase());
+      }).toList();
+    }
+
+    return filtered;
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -194,22 +202,46 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // ### [SECTION 4: CHAT LIST VIEW] ###
           Expanded(
-            child: _filteredChats.isEmpty
-                ? _buildEmptyState()
-                : ListView.builder(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.only(
-                      left: 24,
-                      right: 24,
-                      bottom: 110,
-                    ), // Navbar Whitespace Fix
-                    itemCount: _filteredChats.length,
-                    itemBuilder: (context, index) {
-                      return _buildChatCard(_filteredChats[index]);
-                    },
+            child: StreamBuilder<List<ChatRoomModel>>(
+              stream: _chatRepository.watchMyChatRooms(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)));
+                }
+
+                final chats = snapshot.data ?? [];
+                
+                // Fetch unread counts and partner profiles for all rooms
+                _fetchUnreadCounts(chats);
+                for (final room in chats) {
+                  for (var entry in room.participants.entries) {
+                    if (entry.key != _currentUserId) {
+                      _fetchPartnerProfile(entry.key);
+                    }
+                  }
+                }
+
+                final filteredChats = _filterChats(chats);
+
+                if (filteredChats.isEmpty) {
+                  return _buildEmptyState();
+                }
+
+                return ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.only(
+                    left: 24,
+                    right: 24,
+                    bottom: 110,
                   ),
+                  itemCount: filteredChats.length,
+                  itemBuilder: (context, index) {
+                    return _buildChatCard(filteredChats[index]);
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -218,18 +250,32 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Widget for Empty States
   Widget _buildEmptyState() {
+    String message;
+    if (selectedTab == "Unread") {
+      message = "Tidak ada pesan yang belum dibaca";
+    } else if (selectedTab == "Request") {
+      message = "Tidak ada permintaan chat baru";
+    } else if (_searchQuery.isNotEmpty) {
+      message = "Tidak ditemukan hasil untuk \"$_searchQuery\"";
+    } else {
+      message = "Belum ada percakapan";
+    }
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.chat_bubble_outline_rounded,
+            selectedTab == "Request"
+                ? Icons.person_add_disabled_rounded
+                : Icons.chat_bubble_outline_rounded,
             size: 64,
             color: const Color(0xFF919191).withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
-            "Tidak ada pesan di tab $selectedTab",
+            message,
+            textAlign: TextAlign.center,
             style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
@@ -253,8 +299,14 @@ class _ChatScreenState extends State<ChatScreen> {
           width: 1,
         ),
       ),
-      child: const TextField(
-        style: TextStyle(
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            _searchQuery = value.trim();
+          });
+        },
+        style: const TextStyle(
           fontFamily: 'Poppins',
           fontSize: 13,
           fontWeight: FontWeight.w400,
@@ -262,19 +314,30 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         decoration: InputDecoration(
           hintText: "Search . . .", // Placeholder
-          hintStyle: TextStyle(
+          hintStyle: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 12,
             fontWeight: FontWeight.w300, // Light
             color: Colors.black, // Spec Placeholder color
           ),
-          prefixIcon: Icon(
+          prefixIcon: const Icon(
             Icons.search_rounded, // Leading Icon
             color: Colors.black,
             size: 20,
           ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF919191)),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = "";
+                    });
+                  },
+                )
+              : null,
           border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
         ),
       ),
     );
@@ -332,20 +395,69 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // Widget for Chat Cards inside ListView
-  Widget _buildChatCard(ChatMessage chat) {
-    // Determine whether to show exclamation icon based on design rules
-    // "Ikon amplop merah hanya muncul pada mode tab Request"
-    final bool showRedIcon = (selectedTab == "Request") && chat.isRequest;
+  Widget _buildChatCard(ChatRoomModel room) {
+    // Find partner info
+    String partnerId = "";
+    ChatParticipantInfo? partnerInfo;
+    for (var entry in room.participants.entries) {
+      if (entry.key != _currentUserId) {
+        partnerId = entry.key;
+        partnerInfo = entry.value;
+        break;
+      }
+    }
+
+    // Use cached Firestore profile if available, fallback to denormalized data
+    final cachedProfile = _partnerProfiles[partnerId];
+    final String partnerName = (cachedProfile?['name']?.isNotEmpty == true)
+        ? cachedProfile!['name']!
+        : (partnerInfo?.name ?? "Unknown");
+    final String partnerAvatarUrl = (cachedProfile?['avatarUrl']?.isNotEmpty == true)
+        ? cachedProfile!['avatarUrl']!
+        : (partnerInfo?.avatarUrl ?? "");
+    final String lastMessage = room.lastMessage;
+    final int unreadCount = _unreadCounts[room.id] ?? 0;
+    final bool hasUnread = unreadCount > 0;
+
+    // Format time
+    String timeString = "";
+    if (room.lastMessageAt != null) {
+      final now = DateTime.now();
+      final diff = now.difference(room.lastMessageAt!);
+      if (diff.inDays == 0) {
+        timeString = DateFormat('HH:mm').format(room.lastMessageAt!);
+      } else if (diff.inDays == 1) {
+        timeString = "Kemarin";
+      } else if (diff.inDays < 7) {
+        timeString = DateFormat('EEEE').format(room.lastMessageAt!);
+      } else {
+        timeString = DateFormat('dd/MM/yy').format(room.lastMessageAt!);
+      }
+    }
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        await Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                RoomChatScreen(chatPartnerName: chat.userName),
+            builder: (context) => RoomChatScreen(
+              initialRoomId: room.id,
+              partnerId: partnerId,
+              partnerName: partnerName,
+              partnerAvatarUrl: partnerAvatarUrl,
+              itemId: room.itemId,
+              itemName: room.itemName,
+              itemPhotoUrl: room.itemPhotoUrl,
+            ),
           ),
         );
+        // Refresh unread count when returning from chat
+        if (mounted) {
+          final count = await _chatRepository.getUnreadCount(room.id);
+          setState(() {
+            _unreadCounts[room.id] = count;
+          });
+        }
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
@@ -376,13 +488,28 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   // Avatar Rectangle (Radius 5px)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(5), // ID: '217:2077'
-                    child: Image.asset(
-                      chat.userAvatar,
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.cover,
-                    ),
+                    borderRadius: BorderRadius.circular(5),
+                    child: partnerAvatarUrl.isNotEmpty
+                        ? Image(
+                            image: _imageUploadService.buildImageProvider(partnerAvatarUrl),
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/images/profile_user.png',
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                        : Image.asset(
+                            'assets/images/profile_user.png',
+                            width: 44,
+                            height: 44,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   const SizedBox(width: 12),
 
@@ -392,32 +519,64 @@ class _ChatScreenState extends State<ChatScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          chat.userName, // ID: '217:2071'
-                          style: const TextStyle(
+                          partnerName, // ID: '217:2071'
+                          style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 13,
-                            fontWeight: FontWeight.w600, // SemiBold
+                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
                             color: Colors.black,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          chat.messagePreview, // ID: '217:2072'
+                          room.lastMessage.startsWith('https://') ? '📷 Foto' : lastMessage, // ID: '217:2072'
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
-                            fontWeight: FontWeight.w300, // Light
-                            color: Colors.black,
+                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.w300,
+                            color: hasUnread ? Colors.black : const Color(0xFF585D59),
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Trailing red warning envelope (Conditional UI)
-                  if (showRedIcon) _buildRedExclamationEnvelope(),
+                  // Time & Unread Badge Column
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        timeString,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400,
+                          color: hasUnread ? const Color(0xFF012D1D) : const Color(0xFF919191),
+                        ),
+                      ),
+                      if (hasUnread) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF012D1D),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            unreadCount > 99 ? '99+' : unreadCount.toString(),
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
 
@@ -438,19 +597,26 @@ class _ChatScreenState extends State<ChatScreen> {
                   // Product Image Thumbnail
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
-                    child: Image.asset(
-                      chat.productThumbnail, // ID: '217:2075'
-                      width: 26,
-                      height: 26,
-                      fit: BoxFit.cover,
-                    ),
+                    child: room.itemPhotoUrl.isNotEmpty
+                        ? Image(
+                            image: _imageUploadService.buildImageProvider(room.itemPhotoUrl),
+                            width: 26,
+                            height: 26,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.asset(
+                            'assets/images/sony_camera.png',
+                            width: 26,
+                            height: 26,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                   const SizedBox(width: 10),
 
                   // Product Name
                   Expanded(
                     child: Text(
-                      chat.productName, // ID: '217:2076'
+                      room.itemName, // ID: '217:2076'
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 10,
@@ -465,39 +631,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  // Polished Red Exclamation Envelope widget
-  Widget _buildRedExclamationEnvelope() {
-    return Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
-      children: [
-        // Envelope
-        const Icon(
-          Icons.mail_outline_rounded,
-          color: Color(0xFFFF0000), // Color_Alert: #FF0000
-          size: 26,
-        ),
-        // Exclamation Point Overlay
-        Positioned(
-          right: -4,
-          bottom: -3,
-          child: Container(
-            padding: const EdgeInsets.all(1),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.error_rounded, // Material Exclamation Symbol
-              color: Color(0xFFFF0000),
-              size: 12,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

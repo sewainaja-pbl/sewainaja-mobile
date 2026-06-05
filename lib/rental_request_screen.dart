@@ -555,7 +555,11 @@ class RentalRequestScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const RoomChatScreen(
-                              chatPartnerName: 'Aminah',
+                              partnerId: 'aminah_123',
+                              partnerName: 'Aminah',
+                              itemId: 'sony_a6000_1',
+                              itemName: 'Sony ɑ6000 Body Only',
+                              itemPhotoUrl: '',
                             ),
                           ),
                         );

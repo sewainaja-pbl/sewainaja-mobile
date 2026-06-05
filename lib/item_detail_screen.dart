@@ -22,6 +22,7 @@ import 'favorite_service.dart';
 import 'help_center_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/report_dialog.dart';
+import 'room_chat_screen.dart';
 
 
 class ItemDetailScreen extends StatefulWidget {
@@ -680,16 +681,44 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               ),
             ),
             // Chat Action Button
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const FaIcon(
-                FontAwesomeIcons.solidCommentDots,
-                size: 16,
-                color: Color(0xFF012D1D),
+            GestureDetector(
+              onTap: () {
+                final String partnerId = _itemData?['ownerId']?.toString() ?? widget.item?.ownerId ?? "";
+                final String partnerName = _itemData?['ownerName']?.toString() ?? "User";
+                final String partnerAvatarUrl = ""; // Fetch from users collection or leave empty
+                final String itemId = widget.itemId ?? widget.item?.id ?? "";
+                final String itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
+                final String itemPhotoUrl = (_itemData?['photos'] as List?)?.isNotEmpty == true 
+                    ? _itemData!['photos'][0].toString() 
+                    : (widget.imagePath ?? "");
+
+                if (partnerId.isNotEmpty && itemId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RoomChatScreen(
+                        partnerId: partnerId,
+                        partnerName: partnerName,
+                        partnerAvatarUrl: partnerAvatarUrl,
+                        itemId: itemId,
+                        itemName: itemName,
+                        itemPhotoUrl: itemPhotoUrl,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF012D1D).withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.solidCommentDots,
+                  size: 16,
+                  color: Color(0xFF012D1D),
+                ),
               ),
             ),
           ],
@@ -993,6 +1022,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       photos: List<String>.from(data['photos'] as List? ?? []),
     );
   }
+
 
   Future<void> _deleteItem() async {
     final itemId = widget.itemId ?? widget.item?.id;
