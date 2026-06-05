@@ -39,7 +39,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   int _totalSewaCount = 0;
   int _listingCount = 0;
   double _userRating = 0.0;
-  bool _isLoadingStats = true;
+
 
   @override
   void initState() {
@@ -92,7 +92,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
   Future<void> _loadUserStats() async {
     if (!mounted) return;
-    setState(() => _isLoadingStats = true);
+
 
     // 1. Fetch Listings & Rating dari Firestore
     try {
@@ -152,10 +152,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       }
     } catch (e) {
       debugPrint("Error loading transactions REST stats: $e");
-    } finally {
-      if (mounted) {
-        setState(() => _isLoadingStats = false);
-      }
     }
   }
 
@@ -399,9 +395,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            _isLoadingStats
-                                ? '...'
-                                : '${_userRating > 0.0 ? _userRating.toStringAsFixed(1) : '4.9'} ($_totalSewaCount)',
+                            '${_userRating > 0.0 ? _userRating.toStringAsFixed(1) : '0.0'} ($_totalSewaCount)',
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -431,21 +425,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 children: [
                   _buildStatColumn(
                     'TOTAL SEWA',
-                    _isLoadingStats ? '...' : '$_totalSewaCount',
+                    '$_totalSewaCount',
                   ),
                   _buildVerticalDivider(),
                   _buildStatColumn(
                     'LISTING',
-                    _isLoadingStats ? '...' : '$_listingCount',
+                    '$_listingCount',
                   ),
                   _buildVerticalDivider(),
                   _buildStatColumn(
                     'RATING',
-                    _isLoadingStats
-                        ? '...'
-                        : (_userRating > 0.0
-                              ? _userRating.toStringAsFixed(1)
-                              : '4.9'),
+                    _userRating > 0.0
+                        ? _userRating.toStringAsFixed(1)
+                        : '0.0',
                   ),
                 ],
               ),

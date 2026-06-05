@@ -1,37 +1,104 @@
 import 'package:flutter/material.dart';
+import 'data/models/item_model.dart';
+import 'data/repositories/item_repository.dart';
+import 'favorite_service.dart';
+import 'item_detail_screen.dart';
+import 'image_upload_service.dart';
 
-class FavoritesScreen extends StatelessWidget {
+class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> dummyFavorites = [
-      {
-        "name": "Sony Camera a6000",
-        "owner": "Han so Hee",
-        "date_range": "8 Apr - 10 Apr 2025",
-        "image": "assets/images/Iklan.jpg",
-      },
-      {
-        "name": "Sony Camera a6000",
-        "owner": "Han so Hee",
-        "date_range": "8 Mar - 10 Mar 2025",
-        "image": "assets/images/Iklan.jpg",
-      },
-      {
-        "name": "Sony Camera a6000",
-        "owner": "Han so Hee",
-        "date_range": "8 Jan - 10 Jan 2025",
-        "image": "assets/images/Iklan.jpg",
-      },
-      {
-        "name": "Sony Camera a6000",
-        "owner": "Han so Hee",
-        "date_range": "8 Jan - 10 Jan 2025",
-        "image": "assets/images/Iklan.jpg",
-      },
-    ];
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
+}
 
+class _FavoritesScreenState extends State<FavoritesScreen> {
+  final ItemRepository _itemRepo = ItemRepository();
+  List<ItemModel> _favoriteItems = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+    try {
+      final favIds = await FavoriteService.getFavorites();
+      if (favIds.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _favoriteItems = [];
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Ambil all searchable items (items dengan status available)
+      final allItems = await _itemRepo.watchSearchableItems().first;
+      final filtered = allItems.where((item) => favIds.contains(item.id)).toList();
+      
+      if (mounted) {
+        setState(() {
+          _favoriteItems = filtered;
+          _isLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  ImageProvider _buildImageProvider(String imagePath) {
+    final safeUrl = getSafeImageUrl(imagePath);
+    if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
+      return NetworkImage(safeUrl);
+    }
+    return AssetImage(safeUrl);
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.favorite_border_rounded,
+            size: 64,
+            color: const Color(0xFF012D1D).withValues(alpha: 0.2),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Belum ada barang favorit',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF414844),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Barang yang kamu sukai akan muncul di sini',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 13,
+              color: const Color(0xFF414844).withValues(alpha: 0.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
       appBar: AppBar(
@@ -53,120 +120,160 @@ class FavoritesScreen extends StatelessWidget {
           ),
         ),
         title: const Text(
-          "Favorite",
+          "Favorite Saya",
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 30,
+            fontSize: 26,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1B4332), // Hijau Medium
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(24.0),
-        itemCount: dummyFavorites.length,
-        itemBuilder: (context, index) {
-          final item = dummyFavorites[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: Container(
-              padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF012D1D),
               ),
-              child: Row(
-                children: [
-                  // Image Thumbnail
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(
-                        image: AssetImage(item["image"]),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  
-                  // Details
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item["name"],
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600, // Semibold
-                            color: Color(0xFF414844),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          "Pemilik: ${item['owner']}",
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400, // Regular
-                            color: Color(0xFF414844),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.calendar_month_rounded,
-                              size: 14,
-                              color: Color(0xFF414844),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              item["date_range"],
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400, // Regular
-                                color: Color(0xFF414844),
+            )
+          : _favoriteItems.isEmpty
+              ? _buildEmptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(24.0),
+                  itemCount: _favoriteItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _favoriteItems[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemDetailScreen(
+                                itemId: item.id,
+                                item: item,
+                                itemName: item.name,
+                                pricePerHour: item.pricePerHour,
+                                imagePath: item.primaryPhoto,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
                             ),
-                          ],
+                          ).then((_) => _loadFavorites());
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12.0),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFFFF),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Image Thumbnail
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5F5F5),
+                                  borderRadius: BorderRadius.circular(15),
+                                  image: item.primaryPhoto.isNotEmpty
+                                      ? DecorationImage(
+                                          image: _buildImageProvider(item.primaryPhoto),
+                                          fit: BoxFit.cover,
+                                        )
+                                      : null,
+                                ),
+                                child: item.primaryPhoto.isEmpty
+                                    ? const Icon(
+                                        Icons.image_not_supported_outlined,
+                                        color: Color(0xFFB0B0B0),
+                                        size: 24,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 16),
+                              
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600, // Semibold
+                                        color: Color(0xFF414844),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Pemilik: ${item.ownerName}",
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400, // Regular
+                                        color: Color(0xFF414844),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.formattedPricePerDay,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF012D1D),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // Favorite Icon
+                              GestureDetector(
+                                onTap: () async {
+                                  await FavoriteService.toggleFavorite(item.id);
+                                  _loadFavorites();
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '${item.name} dihapus dari Favorit!',
+                                        style: const TextStyle(fontFamily: 'Poppins'),
+                                      ),
+                                      backgroundColor: const Color(0xFF012D1D),
+                                      behavior: SnackBarBehavior.floating,
+                                    ),
+                                  );
+                                },
+                                behavior: HitTestBehavior.opaque,
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Icon(
+                                    Icons.favorite_rounded,
+                                    color: Color(0xFFE33629), // Red
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Favorite Icon (Optional enhancement to indicate it's a favorite)
-                  const Padding(
-                    padding: EdgeInsets.only(left: 8.0),
-                    child: Icon(
-                      Icons.favorite_rounded,
-                      color: Color(0xFF2F6743), // Hijau SewaInAja
-                      size: 24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

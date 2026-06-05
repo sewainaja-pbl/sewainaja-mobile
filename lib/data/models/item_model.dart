@@ -50,6 +50,17 @@ class ItemModel {
     return 'Rp.$formatted';
   }
 
+  /// Harga formatted dalam Rupiah per jam (pricePerHour) tanpa pecahan ",00"
+  String get formattedPricePerHour {
+    final formatted = pricePerHour
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
+    return 'Rp. $formatted/jam';
+  }
+
   factory ItemModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
     return ItemModel(
