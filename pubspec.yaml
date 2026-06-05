@@ -78,6 +78,7 @@ dependencies:
   #   2. Mirip   → name.contains(query)
   #   3. Exact   → name == query
   fuzzy: ^0.5.0
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:

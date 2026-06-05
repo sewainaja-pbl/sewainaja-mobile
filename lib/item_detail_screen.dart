@@ -1321,7 +1321,7 @@ class _RecommendationCardItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
                     image: item.primaryPhoto.isNotEmpty
-                        ? imageUploadService.buildImageProvider(item.primaryPhoto)
+                        ? imageUploadService.buildImageProvider(item.primaryPhoto, targetWidth: 290)
                         : const AssetImage('assets/images/Iklan.jpg') as ImageProvider,
                     fit: BoxFit.cover,
                   ),

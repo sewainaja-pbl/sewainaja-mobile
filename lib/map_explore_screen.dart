@@ -892,6 +892,7 @@ class _PhotoMarker extends StatelessWidget {
                       ? Image.network(
                               item.photoUrl,
                               fit: BoxFit.cover,
+                              cacheWidth: compact ? 80 : 100, // Decode as tiny thumbnail to avoid lag
                               errorBuilder: (context, error, stackTrace) =>
                                   const _MarkerImageFallback(),
                             )
@@ -985,6 +986,7 @@ class _SelectedItemCard extends StatelessWidget {
                   ? Image.network(
                       item.photoUrl,
                       fit: BoxFit.cover,
+                      cacheWidth: 120, // Optimize memory for preview card
                       errorBuilder: (context, error, stackTrace) =>
                           const _MarkerImageFallback(),
                     )

@@ -236,6 +236,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     child: Image.network(
                       item.imageUrl!,
                       fit: BoxFit.cover,
+                      cacheWidth: 400, // Optimize memory for detail sheet
                       errorBuilder: (context, error, stackTrace) => Container(
                         color: const Color(0xFFF1EDE8),
                         alignment: Alignment.center,
@@ -442,43 +443,52 @@ class _NotificationList extends StatelessWidget {
     return RefreshIndicator(
       color: const Color(0xFF012D1D),
       onRefresh: onRefresh,
-      child: ListView(
+      child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
           parent: BouncingScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              height: 1.4,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF717973),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (items.isEmpty)
-            const _EmptyState()
-          else
-            ...items.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _NotificationCard(item: item, onTap: () => onTap(item)),
+        itemCount: items.isEmpty ? 4 : items.length + 3,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return Text(
+              title,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF012D1D),
               ),
-            ),
-        ],
+            );
+          }
+          if (index == 1) {
+            return Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                subtitle,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  height: 1.4,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF717973),
+                ),
+              ),
+            );
+          }
+          if (index == 2) {
+            return const SizedBox(height: 12);
+          }
+          final itemIndex = index - 3;
+          if (items.isEmpty) {
+            return const _EmptyState();
+          }
+          final item = items[itemIndex];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _NotificationCard(item: item, onTap: () => onTap(item)),
+          );
+        },
       ),
     );
   }
@@ -583,6 +593,7 @@ class _NotificationCard extends StatelessWidget {
                         child: Image.network(
                           item.imageUrl!,
                           fit: BoxFit.cover,
+                          cacheHeight: 150, // Optimize image memory footprint
                           errorBuilder: (context, error, stackTrace) =>
                               Container(
                                 color: const Color(0xFFF4F1EB),

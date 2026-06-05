@@ -762,7 +762,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
               image: DecorationImage(
                 image: photos.isEmpty
                     ? const AssetImage('assets/images/Iklan.jpg')
-                    : _imageUploadService.buildImageProvider(photos.first.toString()),
+                    : _imageUploadService.buildImageProvider(photos.first.toString(), targetWidth: 200),
                 fit: BoxFit.cover,
               ),
             ),

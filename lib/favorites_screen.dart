@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'favorite_service.dart';
@@ -58,7 +59,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   ImageProvider _buildImageProvider(String imagePath) {
     final safeUrl = getSafeImageUrl(imagePath);
     if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
-      return NetworkImage(safeUrl);
+      return ResizeImage(CachedNetworkImageProvider(safeUrl), width: 160);
     }
     return AssetImage(safeUrl);
   }
