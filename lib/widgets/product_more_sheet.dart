@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../image_upload_service.dart';
 
@@ -19,7 +20,7 @@ void showProductMoreSheet({
     }
     final safeUrl = getSafeImageUrl(imagePath);
     if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
-      return NetworkImage(safeUrl);
+      return ResizeImage(CachedNetworkImageProvider(safeUrl), width: 120);
     }
     return AssetImage(safeUrl);
   }

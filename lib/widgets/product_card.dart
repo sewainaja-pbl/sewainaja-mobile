@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/product.dart';
 import '../image_upload_service.dart';
 
@@ -28,7 +29,10 @@ class ProductCard extends StatelessWidget {
     }
     final safeUrl = getSafeImageUrl(imagePath);
     if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
-      return NetworkImage(safeUrl);
+      return ResizeImage(
+        NetworkImage(safeUrl),
+        width: 200, // Optimize memory for horizontal card preview
+      );
     }
     return AssetImage(safeUrl);
   }
@@ -182,33 +186,31 @@ class ProductCard extends StatelessWidget {
                               ),
                             )
                           : isNetworkImage
-                          ? Image.network(
-                              safeImage,
+                          ? CachedNetworkImage(
+                              imageUrl: safeImage,
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              errorBuilder: (_, __, ___) => const Center(
+                              memCacheWidth: 300,
+                              placeholder: (_, __) => const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Color(0xFF012D1D),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              errorWidget: (_, __, ___) => const Center(
                                 child: Icon(
                                   Icons.image_not_supported_outlined,
                                   color: Color(0xFFB0B0B0),
                                   size: 32,
                                 ),
                               ),
-                              loadingBuilder: (_, child, progress) {
-                                if (progress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation(
-                                        Color(0xFF012D1D),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
                             )
                           : Image.asset(
                               product.image,

@@ -874,7 +874,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return _imageUploadService.buildProcessedImageProvider(_pendingProfilePhoto!);
     }
     if (_profilePhotoUrl.trim().isNotEmpty) {
-      return _imageUploadService.buildImageProvider(_profilePhotoUrl);
+      return _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 280);
     }
     return const AssetImage('assets/images/profile_user.png');
   }

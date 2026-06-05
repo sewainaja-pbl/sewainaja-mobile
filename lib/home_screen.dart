@@ -439,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen>
                 image: DecorationImage(
                   image: _profilePhotoUrl.trim().isEmpty
                       ? const AssetImage('assets/images/profile_user.png')
-                      : _imageUploadService.buildImageProvider(_profilePhotoUrl),
+                      : _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 90),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -767,13 +767,15 @@ class _HomeScreenState extends State<HomeScreen>
                         Positioned.fill(
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(25),
-                            child: ReusableMapCard(
-                              center: _mapCenter,
-                              zoom: 13,
-                              interactive: false,
-                              showCenterPin: true,
-                              height: 184,
-                              borderRadius: BorderRadius.circular(25),
+                            child: RepaintBoundary(
+                              child: ReusableMapCard(
+                                center: _mapCenter,
+                                zoom: 13,
+                                interactive: false,
+                                showCenterPin: true,
+                                height: 184,
+                                borderRadius: BorderRadius.circular(25),
+                              ),
                             ),
                           ),
                         ),

@@ -1,5 +1,6 @@
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
@@ -228,16 +229,24 @@ class ImageUploadService {
     return 'items/$itemId/photos/${safeTimestamp}_$index.jpg';
   }
 
-  ImageProvider buildImageProvider(String? pathOrUrl) {
+  ImageProvider buildImageProvider(String? pathOrUrl, {int? targetWidth}) {
     if (pathOrUrl == null || pathOrUrl.trim().isEmpty) {
       throw ArgumentError('Path or URL must not be empty');
     }
     final safeUrl = getSafeImageUrl(pathOrUrl);
     if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
-      return NetworkImage(safeUrl);
+      final networkImage = CachedNetworkImageProvider(safeUrl);
+      if (targetWidth != null) {
+        return ResizeImage(networkImage, width: targetWidth);
+      }
+      return networkImage;
     }
     if (safeUrl.startsWith('assets/')) {
-      return AssetImage(safeUrl);
+      final assetImage = AssetImage(safeUrl);
+      if (targetWidth != null) {
+        return ResizeImage(assetImage, width: targetWidth);
+      }
+      return assetImage;
     }
     throw ArgumentError(
       'Local file path preview is not supported in this method',

@@ -782,7 +782,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ClipRRect(
                     borderRadius: radius,
                     child: Image(
-                      image: _imageUploadService.buildImageProvider(existingUrl),
+                      image: _imageUploadService.buildImageProvider(existingUrl, targetWidth: isLarge ? 360 : 110),
                       fit: BoxFit.cover,
                     ),
                   ),
