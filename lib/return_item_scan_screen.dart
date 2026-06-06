@@ -3,7 +3,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'return_evidence_screen.dart';
 
 class ReturnItemScanScreen extends StatefulWidget {
-  const ReturnItemScanScreen({super.key});
+  final String? transactionId;
+  final String? itemName;
+  const ReturnItemScanScreen({super.key, this.transactionId, this.itemName});
 
   @override
   State<ReturnItemScanScreen> createState() => _ReturnItemScanScreenState();
@@ -58,7 +60,12 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
     
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const ReturnEvidenceScreen()),
+      MaterialPageRoute(
+        builder: (_) => ReturnEvidenceScreen(
+          transactionId: widget.transactionId,
+          itemName: widget.itemName,
+        ),
+      ),
     );
   }
 
@@ -158,21 +165,21 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sony Camera a6000',
-                          style: TextStyle(
+                          widget.itemName ?? 'Sony Camera a6000',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF414844),
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
+                        const SizedBox(height: 4),
+                        const Text(
                           'Pemilik: Han so Hee',
                           style: TextStyle(
                             fontFamily: 'Poppins',
@@ -181,7 +188,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
                             color: Color(0xFF5C635E),
                           ),
                         ),
-                        Text(
+                        const Text(
                           '8 Jan - 10 Jan 2025',
                           style: TextStyle(
                             fontFamily: 'Poppins',

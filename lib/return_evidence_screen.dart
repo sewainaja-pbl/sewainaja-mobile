@@ -5,9 +5,12 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
+import 'dispute_form_screen.dart';
 
 class ReturnEvidenceScreen extends StatefulWidget {
-  const ReturnEvidenceScreen({super.key});
+  final String? transactionId;
+  final String? itemName;
+  const ReturnEvidenceScreen({super.key, this.transactionId, this.itemName});
 
   @override
   State<ReturnEvidenceScreen> createState() => _ReturnEvidenceScreenState();
@@ -76,11 +79,141 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
       return;
     }
 
+    if (_rating <= 2) {
+      _showDisputeRecommendationDialog();
+    } else {
+      _executeSubmit();
+    }
+  }
+
+  void _executeSubmit() {
     // Tampilkan pesan sukses dan kembali ke awal (misalnya layar beranda)
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Bukti pengembalian dan rating berhasil dikirim!')),
     );
     Navigator.popUntil(context, (route) => route.isFirst);
+  }
+
+  void _showDisputeRecommendationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+          ),
+          backgroundColor: Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.all(28.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFF4DB),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.gpp_maybe,
+                      color: Color(0xFF9A6700),
+                      size: 36,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Kendala Transaksi?',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF012D1D),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Apakah Anda mengalami kendala fisik/finansial yang serius dengan barang ini? Anda dapat mengajukan sengketa resmi agar admin kami membantu mediasi.',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    height: 1.5,
+                    color: Color(0xFF5C635E),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 28),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DisputeFormScreen(
+                            transactionId: widget.transactionId ?? 'dummy_trans_123',
+                            category: 'checkout_damage',
+                            itemName: widget.itemName ?? 'Sony Camera a6000',
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF012D1D),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Ajukan Sengketa Resmi',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      _executeSubmit(); // proceed with normal submit
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF012D1D),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFF012D1D), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    child: const Text(
+                      'Kirim Rating Saja',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -169,21 +302,21 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sony Camera a6000',
-                          style: TextStyle(
+                          widget.itemName ?? 'Sony Camera a6000',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF414844),
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
+                        const SizedBox(height: 4),
+                        const Text(
                           'Pemilik: Han so Hee',
                           style: TextStyle(
                             fontFamily: 'Poppins',
@@ -192,7 +325,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                             color: Color(0xFF414844),
                           ),
                         ),
-                        Text(
+                        const Text(
                           '8 Jan - 10 Jan 2025',
                           style: TextStyle(
                             fontFamily: 'Poppins',
