@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
@@ -56,6 +57,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Map<String, dynamic>? _itemData;
   LatLng _itemCenter = const LatLng(-6.9791, 110.4208);
   bool _isFavorite = false;
+  int _currentImageIndex = 0;
 
   @override
   void initState() {
@@ -156,6 +158,29 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final double screenHeight = MediaQuery.of(context).size.height;
     const double heroImageHeightFactor = 0.40;
 
+    final List<String> photos = [];
+    if (_itemData?['photos'] != null) {
+      final rawPhotos = _itemData!['photos'] as List;
+      for (final p in rawPhotos) {
+        if (p != null && p.toString().isNotEmpty) {
+          photos.add(p.toString());
+        }
+      }
+    }
+    if (photos.isEmpty && widget.item?.photos != null) {
+      for (final p in widget.item!.photos) {
+        if (p.isNotEmpty) {
+          photos.add(p);
+        }
+      }
+    }
+    if (photos.isEmpty && widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+      photos.add(widget.imagePath!);
+    }
+    if (photos.isEmpty) {
+      photos.add('assets/images/Iklan.jpg');
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Base canvas color
       body: Stack(
@@ -168,13 +193,84 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             left: 0,
             right: 0,
             height: screenHeight * heroImageHeightFactor, // Hero image height
-            child: widget.imagePath != null && widget.imagePath!.isNotEmpty
-                ? (widget.isLocalAsset
-                    ? Image.file(File(widget.imagePath!), fit: BoxFit.cover, alignment: Alignment.center)
-                    : (widget.imagePath!.startsWith('http://') || widget.imagePath!.startsWith('https://')
-                        ? Image.network(widget.imagePath!, fit: BoxFit.cover, alignment: Alignment.center)
-                        : Image.asset(widget.imagePath!, fit: BoxFit.cover, alignment: Alignment.center)))
-                : Image.asset('assets/images/Iklan.jpg', fit: BoxFit.cover, alignment: Alignment.center),
+            child: Stack(
+              children: [
+                PageView.builder(
+                  itemCount: photos.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentImageIndex = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final photoPath = photos[index];
+                    final isLocal = widget.isLocalAsset || (!photoPath.startsWith('http') && !photoPath.startsWith('assets/'));
+                    
+                    if (isLocal && !photoPath.startsWith('assets/')) {
+                      return Image.file(
+                        File(photoPath),
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                      );
+                    } else if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+                      return CachedNetworkImage(
+                        imageUrl: photoPath,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                        errorWidget: (context, url, error) => Image.asset(
+                          'assets/images/Iklan.jpg',
+                          fit: BoxFit.cover,
+                          alignment: Alignment.center,
+                        ),
+                      );
+                    } else {
+                      return Image.asset(
+                        photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                      );
+                    }
+                  },
+                ),
+                // Indicator dots
+                if (photos.length > 1)
+                  Positioned(
+                    bottom: 45, // Slightly above the bottom sheet overlap
+                    left: 0,
+                    right: 0,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        photos.length,
+                        (index) => AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                          height: 8,
+                          width: _currentImageIndex == index ? 24 : 8,
+                          decoration: BoxDecoration(
+                            color: _currentImageIndex == index
+                                ? const Color(0xFF012D1D)
+                                : Colors.white.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 2,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
 
           // -------------------------------------------------------------------
@@ -459,17 +555,80 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
+  DateTime? _parseTimestamp(dynamic val) {
+    if (val == null) return null;
+    if (val is DateTime) return val;
+    if (val is String) return DateTime.tryParse(val)?.toLocal();
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val).toLocal();
+    if (val is Timestamp) return val.toDate().toLocal();
+    if (val is Map) {
+      final rawSeconds = val['_seconds'] ?? val['seconds'];
+      if (rawSeconds is int) {
+        final rawNanos = val['_nanoseconds'] ?? val['nanoseconds'];
+        final nanos = rawNanos is int ? rawNanos : 0;
+        return DateTime.fromMillisecondsSinceEpoch(
+          (rawSeconds * 1000) + (nanos ~/ 1000000),
+          isUtc: true,
+        ).toLocal();
+      }
+    }
+    return null;
+  }
+
+  DateTime? _extractTimestampFromUrl(String? url) {
+    if (url == null || url.isEmpty) return null;
+    try {
+      final decodedUrl = Uri.decodeComponent(url);
+      final regex = RegExp(r'(\d{10,13})_\d+\.(?:jpg|jpeg|png|webp|gif)', caseSensitive: false);
+      final match = regex.firstMatch(decodedUrl);
+      if (match != null) {
+        final tsStr = match.group(1);
+        if (tsStr != null) {
+          final ts = int.tryParse(tsStr);
+          if (ts != null) {
+            if (tsStr.length == 13) {
+              return DateTime.fromMillisecondsSinceEpoch(ts).toLocal();
+            } else if (tsStr.length == 10) {
+              return DateTime.fromMillisecondsSinceEpoch(ts * 1000).toLocal();
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   String _formatTimeAgo(dynamic createdAt) {
-    if (createdAt == null) return "Baru saja";
-    DateTime? dateTime;
-    if (createdAt is DateTime) {
-      dateTime = createdAt;
-    } else if (createdAt is String) {
-      dateTime = DateTime.tryParse(createdAt);
-    } else if (createdAt is int) {
-      dateTime = DateTime.fromMillisecondsSinceEpoch(createdAt);
-    } else if (createdAt is Timestamp) {
-      dateTime = createdAt.toDate();
+    DateTime? dateTime = _parseTimestamp(createdAt);
+    
+    if (dateTime == null) {
+      final photos = _itemData?['photos'] as List?;
+      if (photos != null && photos.isNotEmpty) {
+        for (final photo in photos) {
+          final extracted = _extractTimestampFromUrl(photo?.toString());
+          if (extracted != null) {
+            dateTime = extracted;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (dateTime == null) {
+      final photos = widget.item?.photos;
+      if (photos != null && photos.isNotEmpty) {
+        for (final photo in photos) {
+          final extracted = _extractTimestampFromUrl(photo);
+          if (extracted != null) {
+            dateTime = extracted;
+            break;
+          }
+        }
+      }
+    }
+    
+    if (dateTime == null) {
+      dateTime = _extractTimestampFromUrl(widget.imagePath);
     }
     
     if (dateTime == null) return "Baru saja";
@@ -918,26 +1077,57 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           children: [
             // Secondary Action: Chat Button Icon (only if it's not own item)
             if (!isOwnItem) ...[
-              Container(
-                height: 56,
-                width: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white, // Frame putih melingkar
-                  border: Border.all(color: const Color(0xFF012D1D), width: 1.5),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+              GestureDetector(
+                onTap: () {
+                  final String partnerId = _itemData?['ownerId']?.toString() ?? widget.item?.ownerId ?? "";
+                  final String partnerName = _itemData?['ownerName']?.toString() ?? widget.item?.ownerName ?? "User";
+                  final String partnerAvatarUrl = ""; // Fetch from users collection or leave empty
+                  final String itemId = widget.itemId ?? widget.item?.id ?? "";
+                  final String itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
+                  final List<dynamic>? apiPhotos = _itemData?['photos'] as List<dynamic>?;
+                  final String itemPhotoUrl = (apiPhotos != null && apiPhotos.isNotEmpty)
+                      ? apiPhotos.first.toString()
+                      : (widget.item?.photos.isNotEmpty == true
+                          ? widget.item!.photos.first
+                          : (widget.imagePath ?? ""));
+
+                  if (partnerId.isNotEmpty && itemId.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => RoomChatScreen(
+                          partnerId: partnerId,
+                          partnerName: partnerName,
+                          partnerAvatarUrl: partnerAvatarUrl,
+                          itemId: itemId,
+                          itemName: itemName,
+                          itemPhotoUrl: itemPhotoUrl,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Container(
+                  height: 56,
+                  width: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Frame putih melingkar
+                    border: Border.all(color: const Color(0xFF012D1D), width: 1.5),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: FaIcon(
+                      FontAwesomeIcons.solidComments, // ID: '259:2031'
+                      color: Color(0xFF012D1D),
+                      size: 20,
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: FaIcon(
-                    FontAwesomeIcons.solidComments, // ID: '259:2031'
-                    color: Color(0xFF012D1D),
-                    size: 20,
                   ),
                 ),
               ),
