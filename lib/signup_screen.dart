@@ -9,6 +9,7 @@ import 'app_feedback.dart';
 import 'notification_service.dart';
 import 'otp_verification_screen.dart';
 import 'api_config.dart';
+import 'add_phone_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -85,12 +86,22 @@ class _SignUpScreenState extends State<SignUpScreen>
     await NotificationService.instance.syncAfterLogin();
     if (!mounted) return;
     _showSnackBar('Login berhasil!', isError: false);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MainNavigationScreen(),
-      ),
-    );
+    final phoneNum = (user['phone'] ?? '').toString().trim();
+    if (phoneNum.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddPhoneScreen(),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MainNavigationScreen(),
+        ),
+      );
+    }
   }
 
   void _showGoogleLoginDebugDialog(AuthController authController) {
