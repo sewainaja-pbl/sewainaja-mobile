@@ -1,9 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
 import 'profile_setup_screen.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
-  const OtpVerificationScreen({super.key});
+  final String? phoneNumber;
+  const OtpVerificationScreen({super.key, this.phoneNumber});
 
   @override
   State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
@@ -200,12 +205,31 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
+                            onPressed: () async {
+                              if (widget.phoneNumber != null) {
+                                final prefs = await SharedPreferences.getInstance();
+                                await prefs.setString('user_phone', widget.phoneNumber!);
+                                final token = prefs.getString('token') ?? '';
+                                if (token.isNotEmpty) {
+                                  try {
+                                    await http.patch(
+                                      Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+                                      headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': 'Bearer $token',
+                                      },
+                                      body: jsonEncode({'phone': widget.phoneNumber!}),
+                                    );
+                                  } catch (e) {
+                                    debugPrint('Error updating phone to server: $e');
+                                  }
+                                }
+                              }
+                              if (!context.mounted) return;
+                              Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ProfileSetupScreen(),
+                                  builder: (context) => const ProfileSetupScreen(),
                                 ),
                               );
                             },

@@ -8,6 +8,7 @@ import 'presentation/controllers/auth_controller.dart';
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
+import 'add_phone_screen.dart';
 import 'app_feedback.dart';
 import 'notification_service.dart';
 
@@ -73,12 +74,22 @@ class _LoginScreenState extends State<LoginScreen>
     await NotificationService.instance.syncAfterLogin();
     if (!mounted) return;
     _showSnackBar('Login berhasil!', isError: false);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const MainNavigationScreen(),
-      ),
-    );
+    final phoneNum = (user['phone'] ?? '').toString().trim();
+    if (phoneNum.isEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddPhoneScreen(),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const MainNavigationScreen(),
+        ),
+      );
+    }
   }
 
   // Custom SnackBar Premium Style
