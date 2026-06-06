@@ -546,6 +546,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             'date': 'Detail Transaksi',
                             'image': itemPhoto,
                           },
+                          transactionId: widget.transactionId,
                         ),
                       ),
                     );

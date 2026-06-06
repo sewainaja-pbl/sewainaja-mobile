@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
 
 class MyItemsScreen extends StatefulWidget {
@@ -122,10 +123,34 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
 
     return GestureDetector(
       onTap: () {
-        double parsedPrice = 0.0;
+        ItemModel? lightweightItem;
         try {
-          String priceStr = item["price"].toString().replaceAll(RegExp(r'[^0-9]'), '');
-          parsedPrice = double.parse(priceStr);
+          String priceStr = item["price"].toString();
+          String unit = "Hari";
+          if (priceStr.toLowerCase().contains("hour") || priceStr.toLowerCase().contains("jam")) {
+            unit = "Jam";
+          } else if (priceStr.toLowerCase().contains("week") || priceStr.toLowerCase().contains("minggu")) {
+            unit = "Minggu";
+          }
+          double parsedPrice = double.parse(priceStr.replaceAll(RegExp(r'[^0-9]'), ''));
+          double computedPricePerHour = unit == "Jam" ? parsedPrice : (unit == "Minggu" ? parsedPrice / 168 : parsedPrice / 24);
+          
+          lightweightItem = ItemModel(
+            id: item['id']?.toString() ?? '',
+            ownerId: '',
+            ownerName: item['owner']?.toString() ?? 'Owner',
+            ownerRating: 4.8,
+            categoryId: '',
+            categoryName: '',
+            name: item['name'],
+            description: '',
+            pricePerHour: computedPricePerHour,
+            price: parsedPrice,
+            priceUnit: unit,
+            status: 'available',
+            condition: 'fair',
+            photos: [item['image']],
+          );
         } catch (_) {}
         
         Navigator.push(
@@ -133,10 +158,10 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
           MaterialPageRoute(
             builder: (context) => ItemDetailScreen(
               itemName: item["name"],
-              pricePerHour: parsedPrice / 24, // Convert dummy daily price to hourly
               sellerLocation: "Semarang",
               imagePath: item["image"],
               isLocalAsset: item['isLocalAsset'] == true,
+              item: lightweightItem,
             ),
           ),
         );

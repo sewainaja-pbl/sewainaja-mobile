@@ -5,8 +5,9 @@ import 'upload_evidence_screen.dart';
 
 class ScanQRRenterScreen extends StatefulWidget {
   final Map<String, String> itemData;
+  final String? transactionId;
 
-  const ScanQRRenterScreen({super.key, required this.itemData});
+  const ScanQRRenterScreen({super.key, required this.itemData, this.transactionId});
 
   @override
   State<ScanQRRenterScreen> createState() => _ScanQRRenterScreenState();
@@ -45,13 +46,13 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
     for (final barcode in barcodes) {
       if (barcode.rawValue != null) {
         debugPrint('Barcode found! ${barcode.rawValue}');
-        _navigateToNextPage();
+        _navigateToNextPage(barcode.rawValue!);
         break;
       }
     }
   }
 
-  void _navigateToNextPage() {
+  void _navigateToNextPage(String token) {
     if (_isNavigating) return;
     setState(() {
       _isNavigating = true;
@@ -70,7 +71,11 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => UploadEvidenceScreen(itemData: widget.itemData),
+        builder: (_) => UploadEvidenceScreen(
+          itemData: widget.itemData,
+          transactionId: widget.transactionId,
+          qrToken: token,
+        ),
       ),
     );
   }
@@ -94,7 +99,7 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
           'Serah Terima',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 24, // Matched typical app bar sizes, spec says 30 but might be too large, let's stick to 24 for standard, wait spec says 30, let's use 26
+            fontSize: 24,
             fontWeight: FontWeight.w700,
             color: Color(0xFF1B4332),
           ),
@@ -237,7 +242,7 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
                   GestureDetector(
                     onTap: () {
                       debugPrint('Camera viewport clicked! Simulating successful scan.');
-                      _navigateToNextPage();
+                      _navigateToNextPage('DUMMY_TOKEN_FROM_TAP');
                     },
                     child: Container(
                       height: 380.0,
@@ -318,7 +323,7 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
 
             // DUMMY BUTTON (Untuk Testing Emulator/Preview)
             TextButton(
-              onPressed: _navigateToNextPage,
+              onPressed: () => _navigateToNextPage('DUMMY_TOKEN_FROM_SIMULATION'),
               child: const Text(
                 'Gunakan Barcode Dummy (Simulasi)',
                 style: TextStyle(

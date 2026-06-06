@@ -1080,7 +1080,7 @@ class _HomeScreenState extends State<HomeScreen>
           final product = ProductData(
             id: item.id,
             name: item.name,
-            price: item.formattedPricePerHour,
+            price: item.formattedPrice,
             rating: item.ownerRating > 0
                 ? item.ownerRating.toStringAsFixed(1)
                 : '—',
@@ -1216,7 +1216,7 @@ class _HomeScreenState extends State<HomeScreen>
             final product = ProductData(
               id: item.id,
               name: item.name,
-              price: item.formattedPricePerHour,
+              price: item.formattedPrice,
               rating: item.ownerRating > 0
                   ? item.ownerRating.toStringAsFixed(1)
                   : '—',

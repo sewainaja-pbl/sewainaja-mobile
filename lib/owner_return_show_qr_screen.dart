@@ -1,12 +1,211 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'api_config.dart';
+import 'auth_session_service.dart';
 import 'owner_return_evidence_screen.dart';
+import 'return_evidence_screen.dart';
 
-class OwnerReturnShowQRScreen extends StatelessWidget {
-  const OwnerReturnShowQRScreen({super.key});
+class OwnerReturnShowQRScreen extends StatefulWidget {
+  final Map<String, String>? itemData;
+  final String? transactionId;
+
+  const OwnerReturnShowQRScreen({super.key, this.itemData, this.transactionId});
+
+  @override
+  State<OwnerReturnShowQRScreen> createState() => _OwnerReturnShowQRScreenState();
+}
+
+class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
+  bool _isRefreshing = false;
+  bool _isNavigated = false;
+
+  Future<void> _refreshQR() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Simulasi Refresh: Token QR diperbarui')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/regenerate-qr'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Kode QR Berhasil Diperbarui!'),
+                backgroundColor: Color(0xFF1B4332),
+              ),
+            );
+          }
+        } else {
+          throw Exception(body['message'] ?? 'Gagal me-regenerate QR');
+        }
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui QR: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  void _navigateToEvidence() {
+    if (_isNavigated) return;
+    _isNavigated = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReturnEvidenceScreen(
+            transactionId: widget.transactionId,
+            itemName: widget.itemData?['title'] ?? 'Sony Camera a6000',
+          ),
+        ),
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final initialQRData = widget.transactionId != null 
+        ? "INITIAL_RETURN_TOKEN_${widget.transactionId}" 
+        : "dummy-return-qr-data";
+
+    Widget qrCodeWidget;
+    if (widget.transactionId != null) {
+      qrCodeWidget = StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('transactions')
+            .doc(widget.transactionId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Text('Gagal memuat status QR secara real-time');
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator(color: Color(0xFF012D1D));
+          }
+
+          final data = snapshot.data?.data() as Map<String, dynamic>?;
+          if (data == null) {
+            return const Text('Transaksi tidak ditemukan.');
+          }
+
+          final status = data['status']?.toString() ?? 'pending';
+          final token = data['qrCheckoutTokenHash']?.toString() ?? '';
+          final expiredAt = data['qrCheckoutExpiredAt'];
+
+          // Auto navigate if status changes to completed
+          if (status.toLowerCase() == 'completed') {
+            _navigateToEvidence();
+          }
+
+          if (token.isEmpty) {
+            return const Text('Token QR tidak tersedia.');
+          }
+
+          // Check if token expired
+          bool isExpired = false;
+          if (expiredAt != null) {
+            DateTime? expTime;
+            if (expiredAt is Timestamp) {
+              expTime = expiredAt.toDate();
+            } else if (expiredAt is String) {
+              expTime = DateTime.tryParse(expiredAt);
+            }
+            if (expTime != null && DateTime.now().isAfter(expTime)) {
+              isExpired = true;
+            }
+          }
+
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: isExpired ? 0.2 : 1.0,
+                child: QrImageView(
+                  data: token,
+                  version: QrVersions.auto,
+                  size: 220.0,
+                  backgroundColor: const Color(0xFFFDF9F4),
+                ),
+              ),
+              if (isExpired)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'QR KADALUWARSA\nHarap klik tombol Refresh',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Fallback/mock mode
+      qrCodeWidget = GestureDetector(
+        onTap: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const OwnerReturnEvidenceScreen(),
+            ),
+          );
+        },
+        child: QrImageView(
+          data: initialQRData,
+          version: QrVersions.auto,
+          size: 220.0,
+          backgroundColor: const Color(0xFFFDF9F4),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
       appBar: AppBar(
@@ -39,7 +238,7 @@ class OwnerReturnShowQRScreen extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(top: 24.0, left: 32.0, right: 32.0),
               child: Text(
-                'Tunjukkan kode QR ini ke penyewa\nsebagai tanda serah terima',
+                'Tunjukkan kode QR ini ke pemilik\nsebagai tanda serah terima pengembalian',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -99,23 +298,23 @@ class OwnerReturnShowQRScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sony Camera a6000',
-                          style: TextStyle(
+                          widget.itemData?['title'] ?? 'Sony Camera a6000',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF414844),
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Penyewa: Andini Larasati',
-                          style: TextStyle(
+                          widget.itemData?['owner'] ?? 'Penyewa: Andini Larasati',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
@@ -123,8 +322,8 @@ class OwnerReturnShowQRScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '8 Jan - 10 Jan 2025',
-                          style: TextStyle(
+                          widget.itemData?['date'] ?? '8 Jan - 10 Jan 2025',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
@@ -163,24 +362,40 @@ class OwnerReturnShowQRScreen extends StatelessWidget {
                       border: Border.all(color: const Color(0xFF1B4332), width: 1.0),
                     ),
                     child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const OwnerReturnEvidenceScreen(),
-                            ),
-                          );
-                        },
-                        child: QrImageView(
-                          data: 'dummy-return-qr-data',
-                          version: QrVersions.auto,
-                          size: 220.0,
-                          backgroundColor: const Color(0xFFFDF9F4),
+                      child: qrCodeWidget,
+                    ),
+                  ),
+                  if (widget.transactionId != null) ...[
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: _isRefreshing ? null : _refreshQR,
+                        icon: _isRefreshing 
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1B4332)),
+                              )
+                            : const Icon(Icons.refresh, color: Color(0xFF1B4332)),
+                        label: const Text(
+                          'Refresh QR Code',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1B4332),
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          side: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -194,12 +409,12 @@ class OwnerReturnShowQRScreen extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFFF0000), width: 1.0),
                 borderRadius: BorderRadius.circular(20.0),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF0000), size: 24),
-                  const SizedBox(width: 12),
-                  const Expanded(
+                  Icon(Icons.warning_amber_rounded, color: Color(0xFFFF0000), size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
                     child: Text(
                       'Pemindaian QR ini adalah bukti sah bahwa barang telah dikembalikan. Setelah di-scan, waktu sewa akan resmi dihentikan. Jangan terima barang sebelum QR ini berhasil dipindai oleh penyewa.',
                       style: TextStyle(

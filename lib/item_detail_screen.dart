@@ -186,161 +186,157 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       body: Stack(
         children: [
           // -------------------------------------------------------------------
-          // Layer 1 (Dasar): IMAGE BACKGROUND & TOP ACTIONS
-          // -------------------------------------------------------------------
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: screenHeight * heroImageHeightFactor, // Hero image height
-            child: Stack(
-              children: [
-                PageView.builder(
-                  itemCount: photos.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentImageIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    final photoPath = photos[index];
-                    final isLocal = widget.isLocalAsset || (!photoPath.startsWith('http') && !photoPath.startsWith('assets/'));
-                    
-                    if (isLocal && !photoPath.startsWith('assets/')) {
-                      return Image.file(
-                        File(photoPath),
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                      );
-                    } else if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
-                      return CachedNetworkImage(
-                        imageUrl: photoPath,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                        placeholder: (context, url) => const Center(
-                          child: CircularProgressIndicator(
-                            color: Color(0xFF012D1D),
-                          ),
-                        ),
-                        errorWidget: (context, url, error) => Image.asset(
-                          'assets/images/Iklan.jpg',
-                          fit: BoxFit.cover,
-                          alignment: Alignment.center,
-                        ),
-                      );
-                    } else {
-                      return Image.asset(
-                        photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
-                        fit: BoxFit.cover,
-                        alignment: Alignment.center,
-                      );
-                    }
-                  },
-                ),
-                // Indicator dots
-                if (photos.length > 1)
-                  Positioned(
-                    bottom: 45, // Slightly above the bottom sheet overlap
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        photos.length,
-                        (index) => AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          height: 8,
-                          width: _currentImageIndex == index ? 24 : 8,
-                          decoration: BoxDecoration(
-                            color: _currentImageIndex == index
-                                ? const Color(0xFF012D1D)
-                                : Colors.white.withValues(alpha: 0.6),
-                            borderRadius: BorderRadius.circular(4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 2,
-                                offset: const Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // -------------------------------------------------------------------
-          // Layer 2 (Tengah): SCROLLABLE PRODUCT INFO SHEET
+          // Layer 1 (Dasar): SCROLLABLE CONTENT (IMAGE SLIDER & PRODUCT INFO)
           // -------------------------------------------------------------------
           Positioned.fill(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              child: Column(
+              child: Stack(
                 children: [
-                  // Spacer Transparan agar sheet tidak menutupi gambar secara default di atas
-                  SizedBox(height: (screenHeight * heroImageHeightFactor) - 30),
-
-                  // ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
-                  FadeInUp(
-                    duration: const Duration(milliseconds: 600),
-                    child: Container(
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF9F4), // ID: '259:1971'
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(30),
+                  // Image Slider (PageView)
+                  SizedBox(
+                    height: screenHeight * heroImageHeightFactor,
+                    child: PageView.builder(
+                      itemCount: photos.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final photoPath = photos[index];
+                        final isLocal = widget.isLocalAsset || (!photoPath.startsWith('http') && !photoPath.startsWith('assets/'));
+                        
+                        if (isLocal && !photoPath.startsWith('assets/')) {
+                          return Image.file(
+                            File(photoPath),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                          );
+                        } else if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+                          return CachedNetworkImage(
+                            imageUrl: photoPath,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF012D1D),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Image.asset(
+                              'assets/images/Iklan.jpg',
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                            ),
+                          );
+                        } else {
+                          return Image.asset(
+                            photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  // Indicator dots
+                  if (photos.length > 1)
+                    Positioned(
+                      top: (screenHeight * heroImageHeightFactor) - 65,
+                      left: 0,
+                      right: 0,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          photos.length,
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: 8,
+                            width: _currentImageIndex == index ? 24 : 8,
+                            decoration: BoxDecoration(
+                              color: _currentImageIndex == index
+                                  ? const Color(0xFF012D1D)
+                                  : Colors.white.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(4),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 2,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black12,
-                            blurRadius: 15,
-                            offset: Offset(0, -5),
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 32.0,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // --- 2A. MAIN INFO ---
-                          _buildTitleAndBadges(),
-                          const SizedBox(height: 24),
-
-                          // Divider
-                          const Divider(
-                            height: 1,
-                            color: Color(0xFFE0E0E0),
-                            thickness: 1,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // --- 2D. DESCRIPTION SECTION (With Toggle logic) ---
-                          _buildDescription(),
-                          const SizedBox(height: 32),
-
-                          // --- 2B. SELLER PROFILE CARD ---
-                          _buildSellerProfileCard(),
-                          const SizedBox(height: 32),
-
-                          // --- 2C. LOCATION RADIUS MAP ---
-                          _buildLocationRadiusMap(),
-                          const SizedBox(height: 32),
-
-                          // --- 2E. RECOMMENDATION SLIDER ---
-                          _buildRecommendationSlider(),
-
-                          // Padding bottom sangat penting agar konten tidak tertutup Bottom Action Bar (Layer 3)
-                          const SizedBox(height: 130),
-                        ],
                       ),
                     ),
+
+                  // Column Content containing a spacer and the info sheet container
+                  Column(
+                    children: [
+                      // Spacer Transparan agar sheet tidak menutupi gambar secara default di atas
+                      SizedBox(height: (screenHeight * heroImageHeightFactor) - 30),
+
+                      // ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
+                      FadeInUp(
+                        duration: const Duration(milliseconds: 600),
+                        child: Container(
+                          width: double.infinity,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFDF9F4), // ID: '259:1971'
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(30),
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 15,
+                                offset: Offset(0, -5),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24.0,
+                            vertical: 32.0,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // --- 2A. MAIN INFO ---
+                              _buildTitleAndBadges(),
+                              const SizedBox(height: 24),
+
+                              // Divider
+                              const Divider(
+                                height: 1,
+                                color: Color(0xFFE0E0E0),
+                                thickness: 1,
+                              ),
+                              const SizedBox(height: 24),
+
+                              // --- 2D. DESCRIPTION SECTION (With Toggle logic) ---
+                              _buildDescription(),
+                              const SizedBox(height: 32),
+
+                              // --- 2B. SELLER PROFILE CARD ---
+                              _buildSellerProfileCard(),
+                              const SizedBox(height: 32),
+
+                              // --- 2C. LOCATION RADIUS MAP ---
+                              _buildLocationRadiusMap(),
+                              const SizedBox(height: 32),
+
+                              // --- 2E. RECOMMENDATION SLIDER ---
+                              _buildRecommendationSlider(),
+
+                              // Padding bottom sangat penting agar konten tidak tertutup Bottom Action Bar (Layer 3)
+                              const SizedBox(height: 130),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -440,9 +436,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   // 2A. MAIN INFO
   Widget _buildTitleAndBadges() {
     final itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
-    final priceRaw = _itemData?['pricePerHour'] ?? widget.pricePerHour ?? 15000.0;
+    final priceUnit = _itemData?['priceUnit']?.toString() ?? widget.item?.priceUnit ?? "Jam";
+    final priceRaw = _itemData?['price'] ?? widget.item?.price ?? widget.pricePerHour ?? 15000.0;
     final priceVal = (priceRaw as num).toDouble();
-    final itemPrice = "Rp. ${priceVal.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/jam";
+    final unitLabel = priceUnit.toLowerCase();
+    final double displayPrice = (_itemData?['price'] != null || widget.item?.price != null)
+        ? priceVal
+        : (unitLabel == 'hari' ? priceVal * 24 : priceVal);
+    final itemPrice = "Rp. ${displayPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/$unitLabel";
     
     final cond = _itemData?['condition']?.toString();
     final hasCondition = cond != null && cond.trim().isNotEmpty;
@@ -1207,6 +1208,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       name: data['name']?.toString() ?? '',
       description: data['description']?.toString() ?? '',
       pricePerHour: (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+      price: (data['price'] as num?)?.toDouble() ?? ((data['pricePerHour'] as num?)?.toDouble() ?? 0.0) * 24,
+      priceUnit: data['priceUnit']?.toString() ?? 'Hari',
       status: data['status']?.toString() ?? 'available',
       condition: data['condition']?.toString() ?? 'fair',
       photos: List<String>.from(data['photos'] as List? ?? []),
@@ -1567,7 +1570,7 @@ class _RecommendationCardItem extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    item.formattedPricePerHour,
+                    item.formattedPrice,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w700,
