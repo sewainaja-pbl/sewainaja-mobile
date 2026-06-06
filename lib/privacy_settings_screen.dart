@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PrivacySettingsScreen extends StatefulWidget {
   const PrivacySettingsScreen({super.key});
@@ -27,10 +29,73 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+    
+    // Load local cache first
+    bool localPublicProfile = prefs.getBool(_keyPublicProfile) ?? true;
+    bool localShowLocation = prefs.getBool(_keyShowLocation) ?? true;
+    bool localShowFavorites = prefs.getBool(_keyShowFavorites) ?? false;
+
     setState(() {
-      _publicProfile = prefs.getBool(_keyPublicProfile) ?? true;
-      _showLocation = prefs.getBool(_keyShowLocation) ?? true;
-      _showFavorites = prefs.getBool(_keyShowFavorites) ?? false;
+      _publicProfile = localPublicProfile;
+      _showLocation = localShowLocation;
+      _showFavorites = localShowFavorites;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        if (doc.exists) {
+          final data = doc.data();
+          if (data != null) {
+            Map<String, dynamic> updates = {};
+
+            // privacyPublicProfile
+            if (data.containsKey('privacyPublicProfile')) {
+              _publicProfile = data['privacyPublicProfile'] as bool;
+              await prefs.setBool(_keyPublicProfile, _publicProfile);
+            } else {
+              updates['privacyPublicProfile'] = _publicProfile;
+            }
+
+            // privacyShowLocation
+            if (data.containsKey('privacyShowLocation')) {
+              _showLocation = data['privacyShowLocation'] as bool;
+              await prefs.setBool(_keyShowLocation, _showLocation);
+            } else {
+              updates['privacyShowLocation'] = _showLocation;
+            }
+
+            // privacyShowFavorites
+            if (data.containsKey('privacyShowFavorites')) {
+              _showFavorites = data['privacyShowFavorites'] as bool;
+              await prefs.setBool(_keyShowFavorites, _showFavorites);
+            } else {
+              updates['privacyShowFavorites'] = _showFavorites;
+            }
+
+            if (updates.isNotEmpty) {
+              await FirebaseFirestore.instance.collection('users').doc(user.uid).set(
+                updates,
+                SetOptions(merge: true),
+              );
+            }
+          }
+        } else {
+          // If user doc doesn't exist, create it with privacy defaults
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+            'privacyPublicProfile': _publicProfile,
+            'privacyShowLocation': _showLocation,
+            'privacyShowFavorites': _showFavorites,
+          }, SetOptions(merge: true));
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing privacy preferences: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
       _isLoading = false;
     });
   }
@@ -38,6 +103,28 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
   Future<void> _save(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        String firestoreKey = '';
+        if (key == _keyPublicProfile) {
+          firestoreKey = 'privacyPublicProfile';
+        } else if (key == _keyShowLocation) {
+          firestoreKey = 'privacyShowLocation';
+        } else if (key == _keyShowFavorites) {
+          firestoreKey = 'privacyShowFavorites';
+        }
+
+        if (firestoreKey.isNotEmpty) {
+          await FirebaseFirestore.instance.collection('users').doc(user.uid).update({
+            firestoreKey: value,
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error saving privacy preference to Firestore: $e');
+    }
   }
 
   @override
@@ -281,7 +368,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
         borderRadius: BorderRadius.circular(24),
       ),
       child: const Text(
-        'Untuk tahap sekarang, preferensi privasi ini masih disimpan di perangkat dulu. Nantinya, pengaturan yang benar-benar sensitif bisa kita sinkronkan langsung ke akun.',
+        'Pengaturan privasi sensitif telah disinkronkan langsung ke akun Anda agar tetap aman dan konsisten di semua perangkat.',
         style: TextStyle(
           fontFamily: 'Poppins',
           fontSize: 13,

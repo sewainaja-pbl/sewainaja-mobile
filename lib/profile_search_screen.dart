@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
 
 class ProfileSearchScreen extends StatefulWidget {
@@ -60,14 +61,38 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
   }
 
   void _navigateToDetail(Map<String, dynamic> productMap) {
+    ItemModel? lightweightItem;
+    try {
+      double parsedPrice = (productMap["price"] as num).toDouble();
+      String unit = "Hari"; // Assume dummy products are daily
+      double computedPricePerHour = parsedPrice / 24;
+      
+      lightweightItem = ItemModel(
+        id: productMap['id']?.toString() ?? '',
+        ownerId: '',
+        ownerName: widget.ownerName,
+        ownerRating: 4.8,
+        categoryId: '',
+        categoryName: '',
+        name: productMap['name'],
+        description: '',
+        pricePerHour: computedPricePerHour,
+        price: parsedPrice,
+        priceUnit: unit,
+        status: 'available',
+        condition: 'fair',
+        photos: [productMap['image']],
+      );
+    } catch (_) {}
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailScreen(
           itemName: productMap["name"],
-          pricePerHour: productMap["price"] / 24, // Convert daily price dummy to hourly
           sellerLocation: "Tembalang, Banyumanik",
           imagePath: productMap["image"],
+          item: lightweightItem,
         ),
       ),
     );

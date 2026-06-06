@@ -1,16 +1,27 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:http/http.dart' as http;
 
 import 'rental_deadline_screen.dart';
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
 
 class UploadEvidenceScreen extends StatefulWidget {
   final Map<String, String> itemData;
+  final String? transactionId;
+  final String? qrToken;
 
-  const UploadEvidenceScreen({super.key, required this.itemData});
+  const UploadEvidenceScreen({
+    super.key,
+    required this.itemData,
+    this.transactionId,
+    this.qrToken,
+  });
 
   @override
   State<UploadEvidenceScreen> createState() => _UploadEvidenceScreenState();
@@ -20,34 +31,21 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
   final List<ProcessedImageFile> _photos = [];
   final ImageUploadService _imageUploadService = ImageUploadService();
   final int _maxPhotos = 10;
+  bool _isSubmitting = false;
 
   Future<void> _pickImage() async {
     final remainingSlots = _maxPhotos - _photos.length;
     if (remainingSlots <= 0) return;
 
     try {
-      final sourceChoice = await _imageUploadService.chooseImageSource(context);
-      if (sourceChoice == null) return;
-
-      if (sourceChoice == ImageSourceChoice.camera) {
-        final picked = await _imageUploadService.pickSingleImageFromSource(
-          policy: UploadImagePolicy.product, // Reuse product policy for image compression constraints
-          source: ImageSource.camera,
-        );
-        if (picked == null || !mounted) return;
-        setState(() {
-          _photos.add(picked);
-        });
-        return;
-      }
-
-      final picked = await _imageUploadService.pickMultipleImages(
+      // Kamera saja (Camera Only) untuk validasi keaslian
+      final picked = await _imageUploadService.pickSingleImageFromSource(
         policy: UploadImagePolicy.product,
-        remainingSlots: remainingSlots,
+        source: ImageSource.camera,
       );
-      if (picked.isEmpty || !mounted) return;
+      if (picked == null || !mounted) return;
       setState(() {
-        _photos.addAll(picked.take(remainingSlots));
+        _photos.add(picked);
       });
     } catch (error) {
       debugPrint('Error picking image: $error');
@@ -63,36 +61,143 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
     });
   }
 
-  void _submit() {
-    // For prototyping, bypass empty photo validation
-    /*
-    if (_photos.isEmpty) {
+  Future<void> _submit() async {
+    // Validasi minimal 2 foto bukti kondisi barang
+    if (_photos.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Harap unggah minimal 1 foto bukti kondisi barang.'),
+          content: Text('Harap unggah minimal 2 foto bukti kondisi barang (tampak keseluruhan dan detail).'),
           backgroundColor: Color(0xFFF04438),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;
     }
-    */
 
-    // Tampilkan snackbar sukses
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Bukti berhasil diunggah! Masa sewa telah dimulai.'),
-        backgroundColor: Color(0xFF1B4332),
-        behavior: SnackBarBehavior.floating,
+    final tId = widget.transactionId;
+    final tokenVal = widget.qrToken;
+
+    if (tId == null || tId.isEmpty || tokenVal == null || tokenVal.isEmpty) {
+      // Simulasi mode mock jika transactionId atau qrToken kosong
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Simulasi: Bukti terunggah & Check-in sukses.'),
+          backgroundColor: Color(0xFF1B4332),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const RentalDeadlineScreen(),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    // Tampilkan loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF1B4332)),
       ),
     );
 
-    // Lanjut ke RentalDeadlineScreen
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const RentalDeadlineScreen(),
-      ),
-    );
+    try {
+      final idToken = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (idToken != null) 'Authorization': 'Bearer $idToken',
+      };
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      
+      // 1. Upload foto ke Storage & kirim ke API evidences
+      for (int i = 0; i < _photos.length; i++) {
+        final storagePath = 'transactions/$tId/evidences/before_${timestamp}_$i.jpg';
+        final downloadUrl = await _imageUploadService.uploadProcessedImage(
+          processed: _photos[i],
+          storagePath: storagePath,
+        );
+
+        final evidenceResp = await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
+          headers: headers,
+          body: jsonEncode({
+            'type': 'before',
+            'mediaUrl': downloadUrl,
+            'mediaType': 'photo',
+          }),
+        );
+
+        if (evidenceResp.statusCode != 200) {
+          final body = jsonDecode(evidenceResp.body);
+          throw Exception(body['message'] ?? 'Gagal mengunggah foto bukti ke API.');
+        }
+      }
+
+      // 2. Kirim API checkin transaksi
+      final checkinResp = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/checkin'),
+        headers: headers,
+        body: jsonEncode({
+          'token': tokenVal,
+        }),
+      );
+
+      // Tutup loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (checkinResp.statusCode == 200) {
+        final checkinBody = jsonDecode(checkinResp.body);
+        if (checkinBody['success'] == true) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Bukti berhasil diunggah! Masa sewa telah dimulai.'),
+                backgroundColor: Color(0xFF1B4332),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RentalDeadlineScreen(),
+              ),
+            );
+          }
+        } else {
+          throw Exception(checkinBody['message'] ?? 'Gagal melakukan check-in.');
+        }
+      } else {
+        final checkinBody = jsonDecode(checkinResp.body);
+        throw Exception(checkinBody['message'] ?? 'Gagal melakukan check-in.');
+      }
+    } catch (e) {
+      // Tutup loading dialog jika masih tampil
+      if (mounted && _isSubmitting) Navigator.pop(context);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal: ${e.toString()}'),
+            backgroundColor: const Color(0xFFF04438),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -114,7 +219,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
           'Serah Terima',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 26, // Disesuaikan agar pas di layar
+            fontSize: 26,
             fontWeight: FontWeight.w600,
             color: Color(0xFF1B4332),
           ),
@@ -229,7 +334,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Upload Foto',
+                    'Upload Foto (Kamera Saja)',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 18,
@@ -321,7 +426,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
                               ),
                               child: const Center(
                                 child: Icon(
-                                  Icons.add,
+                                  Icons.add_a_photo_outlined,
                                   size: 28,
                                   color: Color(0xFF012D1D),
                                 ),
@@ -341,7 +446,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.0),
               child: Text(
-                'Kirimkan bukti kondisi barang sebelum peminjaman',
+                'Kirimkan bukti kondisi barang sebelum peminjaman. Wajib ambil minimal 2 foto (1 tampak keseluruhan, 1 tampak detail/close-up).',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
@@ -366,23 +471,23 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
                   width: 1,
                 ),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.warning_amber_rounded,
                     color: Color(0xFFFF0000),
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Foto wajib diunggah sebelum transaksi dimulai. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa',
+                      'Foto wajib diambil menggunakan kamera langsung di lokasi serah terima. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa.',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
                         fontWeight: FontWeight.w300,
-                        color: const Color(0xFF000000),
+                        color: Color(0xFF000000),
                         height: 1.83,
                       ),
                     ),
@@ -397,7 +502,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: ElevatedButton(
-                onPressed: _submit,
+                onPressed: _isSubmitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1B4332),
                   padding: const EdgeInsets.symmetric(vertical: 16),

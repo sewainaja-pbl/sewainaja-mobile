@@ -12,6 +12,8 @@ class ItemModel {
   final String name;
   final String description;
   final double pricePerHour;
+  final double price;
+  final String priceUnit;
   final String status; // "available" | "inactive" | "archived" | "blocked"
   final String condition; // "new" | "like-new" | "fair" | "poor"
   final List<String> photos; // index 0 = foto utama
@@ -28,6 +30,8 @@ class ItemModel {
     required this.name,
     required this.description,
     required this.pricePerHour,
+    required this.price,
+    required this.priceUnit,
     required this.status,
     required this.condition,
     required this.photos,
@@ -50,6 +54,17 @@ class ItemModel {
     return 'Rp.$formatted';
   }
 
+  /// Harga formatted sesuai unit dinamis yang disimpan (price / priceUnit).
+  String get formattedPrice {
+    final formatted = price
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (m) => '${m[1]}.',
+        );
+    return 'Rp. $formatted/${priceUnit.toLowerCase()}';
+  }
+
   /// Harga formatted dalam Rupiah per jam (pricePerHour) tanpa pecahan ",00"
   String get formattedPricePerHour {
     final formatted = pricePerHour
@@ -63,6 +78,7 @@ class ItemModel {
 
   factory ItemModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>? ?? {};
+    final pPerHour = (data['pricePerHour'] as num?)?.toDouble() ?? 0.0;
     return ItemModel(
       id: doc.id,
       ownerId: data['ownerId'] as String? ?? '',
@@ -72,7 +88,9 @@ class ItemModel {
       categoryName: data['categoryName'] as String? ?? '',
       name: data['name'] as String? ?? '',
       description: data['description'] as String? ?? '',
-      pricePerHour: (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
+      pricePerHour: pPerHour,
+      price: (data['price'] as num?)?.toDouble() ?? pPerHour * 24,
+      priceUnit: data['priceUnit'] as String? ?? 'Hari',
       status: data['status'] as String? ?? 'available',
       condition: data['condition'] as String? ?? 'fair',
       photos: List<String>.from(data['photos'] as List? ?? []),
@@ -91,6 +109,8 @@ class ItemModel {
     'name': name,
     'description': description,
     'pricePerHour': pricePerHour,
+    'price': price,
+    'priceUnit': priceUnit,
     'status': status,
     'condition': condition,
     'photos': photos,
