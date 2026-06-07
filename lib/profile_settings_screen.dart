@@ -19,6 +19,7 @@ import 'favorites_screen.dart';
 import 'transaction_history_screen.dart';
 import 'profile_view_screen.dart';
 import 'ktp_upload_screen.dart';
+import 'wallet_screen.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -33,6 +34,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String _defaultLocation = '';
   String _profilePhotoUrl = '';
   String _userStatus = '';
+  double _walletBalance = 0.0;
   final ImageUploadService _imageUploadService = ImageUploadService();
   final ProfileSyncService _profileSyncService = const ProfileSyncService();
 
@@ -72,6 +74,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _name = cached.displayName;
         _profilePhotoUrl = cached.profilePhotoUrl;
         _userStatus = cached.status;
+        _walletBalance = cached.walletBalance;
       });
       final prefs = await SharedPreferences.getInstance();
       final cachedLocation = prefs.getString('user_default_location')?.trim();
@@ -86,6 +89,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         _name = synced.displayName;
         _profilePhotoUrl = synced.profilePhotoUrl;
         _userStatus = synced.status;
+        _walletBalance = synced.walletBalance;
       });
     } catch (_) {}
   }
@@ -794,6 +798,19 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             context,
             MaterialPageRoute(builder: (_) => const FavoritesScreen()),
           );
+        },
+      ),
+      _MenuItem(
+        title: 'Dompet Saya',
+        icon: Icons.account_balance_wallet_outlined,
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => WalletScreen(currentBalance: _walletBalance),
+            ),
+          );
+          _loadUserData();
         },
       ),
       _MenuItem(
