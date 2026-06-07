@@ -191,11 +191,25 @@ class NotificationService extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
   List<AppNotification> _notifications = const [];
+  bool _isChatAreaActive = false;
 
   List<AppNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   int get unreadCount => _notifications.where((item) => !item.isRead).length;
+  bool get isChatAreaActive => _isChatAreaActive;
+
+  Future<void> setChatAreaActive(bool active) async {
+    if (_isChatAreaActive == active) return;
+    _isChatAreaActive = active;
+    _messaging ??= Firebase.apps.isNotEmpty ? FirebaseMessaging.instance : null;
+    await _messaging?.setForegroundNotificationPresentationOptions(
+      alert: !active,
+      badge: !active,
+      sound: !active,
+    );
+    notifyListeners();
+  }
 
   Future<void> initialize() async {
     if (_initialized) {
@@ -214,6 +228,13 @@ class NotificationService extends ChangeNotifier {
 
     _initialized = true;
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+    // Set default presentation options for foreground notifications
+    await messaging.setForegroundNotificationPresentationOptions(
+      alert: !_isChatAreaActive,
+      badge: !_isChatAreaActive,
+      sound: !_isChatAreaActive,
+    );
 
     FirebaseMessaging.onMessage.listen((message) {
       final incoming = AppNotification.fromRemoteMessage(message);
@@ -237,6 +258,9 @@ class NotificationService extends ChangeNotifier {
     if (initialMessage != null) {
       fetchNotifications(silent: true);
     }
+
+    // Sync FCM token on startup if already logged in
+    syncFcmToken();
   }
 
   Future<void> syncAfterLogin() async {

@@ -4,6 +4,7 @@ import 'categories_screen.dart';
 import 'add_product_screen.dart';
 import 'chat_screen.dart';
 import 'profile_settings_screen.dart';
+import 'notification_service.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
   bool _isSearchActive = false;
+  String? _lastProcessedNotificationId;
 
   late final List<Widget?> _screens;
 
@@ -30,6 +32,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       null,
     ];
     _screens[0] = _buildScreen(0);
+    // Ensure chat area state is set to false initially (Home tab)
+    NotificationService.instance.setChatAreaActive(false);
+    NotificationService.instance.addListener(_onNotificationReceived);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.instance.removeListener(_onNotificationReceived);
+    super.dispose();
   }
 
   @override
@@ -106,6 +117,117 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
+  void _onNotificationReceived() {
+    final service = NotificationService.instance;
+    if (service.notifications.isEmpty) return;
+
+    final latest = service.notifications.first;
+
+    // Check if this is a new unread notification and the user is NOT in the chat area
+    if (latest.id != _lastProcessedNotificationId && !latest.isRead) {
+      _lastProcessedNotificationId = latest.id;
+
+      if (!service.isChatAreaActive) {
+        _showInAppNotificationBanner(latest);
+      }
+    }
+  }
+
+  void _showInAppNotificationBanner(AppNotification notification) {
+    if (!mounted) return;
+
+    // Clear any active SnackBars to display the new one immediately
+    ScaffoldMessenger.of(context).clearSnackBars();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: GestureDetector(
+          onTap: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            _changeTab(3); // Switch to Chat tab
+          },
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1B4332),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  color: Color(0xFFFFF8EF),
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      notification.title,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFFFFF8EF),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      notification.message,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: Color(0xFFD5BF87),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Buka',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFFF8EF),
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: const Color(0xFF012D1D),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 100, // Float above the floating bottom navigation bar
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF1B4332), width: 1.5),
+        ),
+        duration: const Duration(seconds: 4),
+        dismissDirection: DismissDirection.horizontal,
+      ),
+    );
+  }
+
+  void _changeTab(int index) {
+    setState(() {
+      _screens[index] ??= _buildScreen(index);
+      _selectedIndex = index;
+    });
+    NotificationService.instance.setChatAreaActive(index == 3);
+  }
+
   // Helper widget to build each navigation item
   Widget _buildNavItem({
     required int index,
@@ -116,10 +238,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _screens[index] ??= _buildScreen(index);
-          _selectedIndex = index;
-        });
+        _changeTab(index);
       },
       behavior: HitTestBehavior.opaque, // Ensures the entire bounding box is clickable
       child: AnimatedContainer(
@@ -157,43 +276,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             setState(() => _isSearchActive = active);
           },
           onProfileRequested: () {
-            setState(() {
-              _screens[4] ??= _buildScreen(4);
-              _selectedIndex = 4;
-            });
+            _changeTab(4);
           },
         );
       case 1:
         return CategoriesScreen(
           onBack: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
+            _changeTab(0);
           },
         );
       case 2:
         return AddProductScreen(
           onBack: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
+            _changeTab(0);
           },
         );
       case 3:
         return ChatScreen(
           onBack: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
+            _changeTab(0);
           },
         );
       case 4:
       default:
         return ProfileSettingsScreen(
           onBack: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
+            _changeTab(0);
           },
         );
     }

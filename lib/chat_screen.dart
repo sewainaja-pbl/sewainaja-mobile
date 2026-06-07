@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 import 'room_chat_screen.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,22 +35,24 @@ class _ChatScreenState extends State<ChatScreen> {
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
   final ImageUploadService _imageUploadService = ImageUploadService();
 
-  // Cache for unread counts per room
+  // Cache for unread counts per room (updated in real-time via stream)
   final Map<String, int> _unreadCounts = {};
+  // Stream subscriptions for real-time unread count per room
+  final Map<String, StreamSubscription<int>> _unreadSubscriptions = {};
   // Cache for actual partner profiles fetched from Firestore users collection
   final Map<String, Map<String, String?>> _partnerProfiles = {};
 
-  Future<void> _fetchUnreadCounts(List<ChatRoomModel> rooms) async {
-    for (final room in rooms) {
-      if (!_unreadCounts.containsKey(room.id)) {
-        final count = await _chatRepository.getUnreadCount(room.id);
-        if (mounted) {
-          setState(() {
-            _unreadCounts[room.id] = count;
-          });
-        }
+  /// Subscribe to real-time unread count for a room if not already subscribed.
+  void _subscribeUnreadCount(String roomId) {
+    if (_unreadSubscriptions.containsKey(roomId)) return;
+    final sub = _chatRepository.watchUnreadCount(roomId).listen((newCount) {
+      if (mounted) {
+        setState(() {
+          _unreadCounts[roomId] = newCount;
+        });
       }
-    }
+    });
+    _unreadSubscriptions[roomId] = sub;
   }
 
   Future<void> _fetchPartnerProfile(String partnerId) async {
@@ -114,6 +117,10 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    // Cancel all real-time unread subscriptions
+    for (final sub in _unreadSubscriptions.values) {
+      sub.cancel();
+    }
     super.dispose();
   }
 
@@ -212,9 +219,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final chats = snapshot.data ?? [];
                 
-                // Fetch unread counts and partner profiles for all rooms
-                _fetchUnreadCounts(chats);
+                // Subscribe to real-time unread counts and fetch partner profiles
                 for (final room in chats) {
+                  _subscribeUnreadCount(room.id);
                   for (var entry in room.participants.entries) {
                     if (entry.key != _currentUserId) {
                       _fetchPartnerProfile(entry.key);
@@ -451,13 +458,8 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
         );
-        // Refresh unread count when returning from chat
-        if (mounted) {
-          final count = await _chatRepository.getUnreadCount(room.id);
-          setState(() {
-            _unreadCounts[room.id] = count;
-          });
-        }
+        // Stream subscription automatically updates unread count in real-time.
+        // No manual refresh needed here.
       },
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
