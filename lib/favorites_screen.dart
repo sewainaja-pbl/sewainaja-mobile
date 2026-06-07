@@ -5,6 +5,7 @@ import 'data/repositories/item_repository.dart';
 import 'favorite_service.dart';
 import 'item_detail_screen.dart';
 import 'image_upload_service.dart';
+import 'main_navigation_screen.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -130,16 +131,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF012D1D),
-              ),
-            )
-          : _favoriteItems.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.all(24.0),
+      extendBody: true,
+      body: Stack(
+        children: [
+          _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF012D1D),
+                  ),
+                )
+              : _favoriteItems.isEmpty
+                  ? _buildEmptyState()
+                  : ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
                   itemCount: _favoriteItems.length,
                   itemBuilder: (context, index) {
                     final item = _favoriteItems[index];
@@ -275,6 +279,87 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     );
                   },
                 ),
+          _buildBottomNavigationBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        child: Container(
+          height: 75,
+          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF012D1D),
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(index: 0, activeIcon: Icons.home_rounded, inactiveIcon: Icons.home_outlined),
+              _buildNavItem(index: 1, activeIcon: Icons.grid_view_rounded, inactiveIcon: Icons.grid_view_outlined),
+              _buildNavItem(index: 2, activeIcon: Icons.add_box_rounded, inactiveIcon: Icons.add_box_outlined),
+              _buildNavItem(index: 3, activeIcon: Icons.chat_bubble_rounded, inactiveIcon: Icons.chat_bubble_outline_rounded),
+              _buildNavItem(index: 4, activeIcon: Icons.person_rounded, inactiveIcon: Icons.person_outline_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({required int index, required IconData activeIcon, required IconData inactiveIcon}) {
+    final bool isActive = 4 == index; // Profile is always active in FavoritesScreen
+
+    return GestureDetector(
+      onTap: () {
+        if (index == 4) {
+          Navigator.pop(context); // Go back to profile screen
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => MainNavigationScreen(initialIndex: index),
+            ),
+            (route) => false,
+          );
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 55,
+        height: 55,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFFFF8EF) : const Color(0xFF1B4332),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: Icon(
+              isActive ? activeIcon : inactiveIcon,
+              key: ValueKey<bool>(isActive),
+              color: isActive ? const Color(0xFF012D1D) : const Color(0xFFFFF8EF),
+              size: 24,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -8,7 +8,8 @@ import 'notification_service.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
-  const MainNavigationScreen({super.key});
+  final int initialIndex;
+  const MainNavigationScreen({super.key, this.initialIndex = 0});
 
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
@@ -24,6 +25,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     _screens = [
       null,
       null,
@@ -31,7 +33,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       null,
       null,
     ];
-    _screens[0] = _buildScreen(0);
+    _screens[_selectedIndex] = _buildScreen(_selectedIndex);
     // Ensure chat area state is set to false initially (Home tab)
     NotificationService.instance.setChatAreaActive(false);
     NotificationService.instance.addListener(_onNotificationReceived);
