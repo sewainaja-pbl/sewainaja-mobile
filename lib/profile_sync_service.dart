@@ -13,6 +13,7 @@ class CachedUserProfile {
   final String phone;
   final String profilePhotoUrl;
   final String status;
+  final double walletBalance;
 
   const CachedUserProfile({
     required this.name,
@@ -20,6 +21,7 @@ class CachedUserProfile {
     required this.phone,
     required this.profilePhotoUrl,
     required this.status,
+    this.walletBalance = 0.0,
   });
 
   factory CachedUserProfile.fromPrefs(SharedPreferences prefs) {
@@ -29,6 +31,7 @@ class CachedUserProfile {
       phone: prefs.getString('user_phone')?.trim() ?? '',
       profilePhotoUrl: prefs.getString('user_profile_photo_url')?.trim() ?? '',
       status: prefs.getString('user_status')?.trim() ?? '',
+      walletBalance: prefs.getDouble('user_wallet_balance') ?? 0.0,
     );
   }
 
@@ -39,6 +42,7 @@ class CachedUserProfile {
       phone: (json['phone'] ?? '').toString().trim(),
       profilePhotoUrl: (json['profilePhotoUrl'] ?? '').toString().trim(),
       status: (json['status'] ?? '').toString().trim(),
+      walletBalance: (json['walletBalance'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -106,6 +110,7 @@ class ProfileSyncService {
     await prefs.setString('user_phone', profile.phone);
     await prefs.setString('user_profile_photo_url', profile.profilePhotoUrl);
     await prefs.setString('user_status', profile.status);
+    await prefs.setDouble('user_wallet_balance', profile.walletBalance);
     if (notify) {
       profileRevision.value++;
     }

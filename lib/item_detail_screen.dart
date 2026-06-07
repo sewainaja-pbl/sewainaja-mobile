@@ -205,15 +205,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       },
                       itemBuilder: (context, index) {
                         final photoPath = photos[index];
-                        final isLocal = widget.isLocalAsset || (!photoPath.startsWith('http') && !photoPath.startsWith('assets/'));
+                        final isUrl = photoPath.startsWith('http://') || photoPath.startsWith('https://');
+                        final isAsset = photoPath.startsWith('assets/');
+                        final isLocal = photoPath.isNotEmpty && !isUrl && !isAsset;
                         
-                        if (isLocal && !photoPath.startsWith('assets/')) {
+                        if (isLocal && !isAsset) {
                           return Image.file(
                             File(photoPath),
                             fit: BoxFit.cover,
                             alignment: Alignment.center,
                           );
-                        } else if (photoPath.startsWith('http://') || photoPath.startsWith('https://')) {
+                        } else if (isUrl) {
                           return CachedNetworkImage(
                             imageUrl: photoPath,
                             fit: BoxFit.cover,
