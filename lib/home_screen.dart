@@ -1085,6 +1085,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ? item.ownerRating.toStringAsFixed(1)
                 : '—',
             image: item.primaryPhoto,
+            originalItem: item,
           );
           return FadeInUp(
             delay: Duration(milliseconds: 80 * index),

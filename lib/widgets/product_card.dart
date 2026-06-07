@@ -192,7 +192,7 @@ class ProductCard extends StatelessWidget {
                               width: double.infinity,
                               height: double.infinity,
                               memCacheWidth: 300,
-                              placeholder: (_, __) => const Center(
+                              placeholder: (context, url) => const Center(
                                 child: SizedBox(
                                   width: 20,
                                   height: 20,
@@ -204,7 +204,7 @@ class ProductCard extends StatelessWidget {
                                   ),
                                 ),
                               ),
-                              errorWidget: (_, __, ___) => const Center(
+                              errorWidget: (context, url, error) => const Center(
                                 child: Icon(
                                   Icons.image_not_supported_outlined,
                                   color: Color(0xFFB0B0B0),
@@ -217,7 +217,7 @@ class ProductCard extends StatelessWidget {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              errorBuilder: (_, __, ___) => const Center(
+                              errorBuilder: (context, error, stackTrace) => const Center(
                                 child: Icon(
                                   Icons.image_not_supported_outlined,
                                   color: Color(0xFFB0B0B0),

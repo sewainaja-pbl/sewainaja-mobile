@@ -605,12 +605,20 @@ class _ChatScreenState extends State<ChatScreen> {
                             width: 26,
                             height: 26,
                             fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 26,
+                                height: 26,
+                                color: const Color(0xFFF5F5F5),
+                                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
+                              );
+                            },
                           )
-                        : Image.asset(
-                            'assets/images/sony_camera.png',
+                        : Container(
                             width: 26,
                             height: 26,
-                            fit: BoxFit.cover,
+                            color: const Color(0xFFF5F5F5),
+                            child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
                           ),
                   ),
                   const SizedBox(width: 10),

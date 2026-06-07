@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'item_detail_screen.dart';
 import 'room_chat_screen.dart';
 import 'widgets/product_card.dart';
@@ -12,6 +9,15 @@ import 'models/product.dart';
 import 'see_all_reviews_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'widgets/report_dialog.dart';
+import 'data/repositories/user_repository.dart';
+import 'data/repositories/rating_repository.dart';
+import 'data/repositories/item_repository.dart';
+import 'data/models/item_model.dart';
+import 'add_product_screen.dart';
+import 'package:http/http.dart' as http;
+import 'auth_session_service.dart';
+import 'api_config.dart';
+import 'app_feedback.dart';
 
 class ProfileViewScreen extends StatefulWidget {
   final String? ownerId;
@@ -49,72 +55,46 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     "Cook",
   ];
   
-  List<Map<String, dynamic>> _ownerProducts = [];
+  late String _targetOwnerId;
+  Map<String, dynamic>? _userProfile;
+  bool _isLoadingProfile = true;
+
+  late Stream<List<ItemModel>> _itemsStream;
+  late Stream<List<Map<String, dynamic>>> _reviewsStream;
+
+  final UserRepository _userRepo = UserRepository();
+  final RatingRepository _ratingRepo = RatingRepository();
+  final ItemRepository _itemRepo = ItemRepository();
 
   @override
   void initState() {
     super.initState();
-    _loadItems();
+    _targetOwnerId = widget.ownerId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
+    _loadProfile();
+    if (_targetOwnerId.isNotEmpty) {
+      _itemsStream = _itemRepo.watchItemsByOwner(_targetOwnerId);
+      _reviewsStream = _ratingRepo.watchOwnerReviews(_targetOwnerId);
+    } else {
+      _itemsStream = const Stream.empty();
+      _reviewsStream = const Stream.empty();
+    }
   }
 
-  Future<void> _loadItems() async {
-    final List<Map<String, dynamic>> dummyProducts = [
-      {
-        "name": "Sony W830 #1",
-        "price": 120000.0,
-        "image": "assets/images/sony_camera.png",
-        "category": "Tech",
-      },
-      {
-        "name": "Apple Airpods Max 2",
-        "price": 45000.0,
-        "image": "assets/images/airpods_max.png",
-        "category": "Tech",
-      },
-      {
-        "name": "Sony Dual-Sense PS5",
-        "price": 45000.0,
-        "image": "assets/images/ps5_controller.png",
-        "category": "Tech",
-      },
-      {
-        "name": "Sony a6000 Body Only",
-        "price": 150000.0,
-        "image": "assets/images/placeholder.png",
-        "category": "Tech",
-      },
-    ];
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final localItemsStr = prefs.getString('local_user_items') ?? '[]';
-      final List<dynamic> localItemsDynamic = jsonDecode(localItemsStr);
-      final List<Map<String, dynamic>> localItems = List<Map<String, dynamic>>.from(localItemsDynamic).map((item) {
-        // Map the string price back to double for ProfileViewScreen logic
-        double parsedPrice = 0.0;
-        try {
-          String priceStr = item['price'].toString().replaceAll(RegExp(r'[^0-9]'), '');
-          parsedPrice = double.parse(priceStr);
-        } catch (_) {}
-        return {
-          "name": item["name"],
-          "price": parsedPrice,
-          "image": item["image"],
-          "category": item["category"],
-          "isLocalAsset": item["isLocalAsset"],
-        };
-      }).toList();
-      
+  Future<void> _loadProfile() async {
+    if (_targetOwnerId.isEmpty) {
+      if (mounted) setState(() => _isLoadingProfile = false);
+      return;
+    }
+    final profile = await _userRepo.getUserProfile(_targetOwnerId);
+    if (mounted) {
       setState(() {
-        _ownerProducts = [...localItems, ...dummyProducts];
-      });
-    } catch (e) {
-      debugPrint('Failed to load local items: $e');
-      setState(() {
-        _ownerProducts = dummyProducts;
+        _userProfile = profile;
+        _isLoadingProfile = false;
       });
     }
   }
+
+  // _loadItems removed
 
   @override
   void dispose() {
@@ -124,34 +104,65 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Default Owner Info fallback
-    final String displayName = widget.ownerName.trim().isEmpty ? "Mas Tahes" : widget.ownerName;
-    final String joinDate = "Member since 2010";
-    final String statsFollowers = "103 Followers";
-    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "20+ Active Listings";
-    final String aboutMeText = "Passionate gadget & tools enthusiast. I specialize in premium and well-maintained items...";
-    final ImageProvider effectiveAvatar = widget.avatarImage ?? const AssetImage("assets/images/profile_user.png");
+    if (_isLoadingProfile) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFFFF8EF),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF012D1D))),
+      );
+    }
 
-    // Filtered products listings for owner catalog
-    final List<Map<String, dynamic>> filteredProducts = _ownerProducts.where((product) {
-      final matchesCategory = _selectedCategory == "All" || product["category"] == _selectedCategory;
-      final matchesSearch = _searchQuery.isEmpty || product["name"].toString().toLowerCase().contains(_searchQuery);
-      return matchesCategory && matchesSearch;
-    }).toList();
+    final String displayName = _userProfile?['name'] ?? (widget.ownerName.trim().isEmpty ? "Mas Tahes" : widget.ownerName);
+    final double ratingNum = (_userProfile?['avgRatingAsOwner'] as num?)?.toDouble() ?? double.tryParse(widget.rating ?? '') ?? 0.0;
+    final String displayRating = ratingNum > 0 ? ratingNum.toStringAsFixed(1) : (widget.rating ?? "4.3");
+    
+    final dynamic rawCreatedAt = _userProfile?['createdAt'];
+    String joinDate = "Member sejak 2024";
+    try {
+      if (rawCreatedAt != null) {
+        joinDate = "Member sejak ${rawCreatedAt.toDate().year}";
+      }
+    } catch (_) {}
+    final String statsFollowers = "103 Followers"; // dummy
+    final int listingCount = _userProfile?['totalTransactions'] ?? 20;
+    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "$listingCount+ Transactions";
+    final String aboutMeText = "Passionate gadget & tools enthusiast. I specialize in premium and well-maintained items...";
+    
+    final String? avatarUrl = () {
+      final profile = _userProfile?['profilePhotoUrl'] as String?;
+      if (profile != null && profile.trim().isNotEmpty) return profile;
+      final selfie = _userProfile?['selfiePhotoUrl'] as String?;
+      if (selfie != null && selfie.trim().isNotEmpty) return selfie;
+      return null;
+    }();
+    final ImageProvider effectiveAvatar = avatarUrl != null 
+        ? NetworkImage(avatarUrl) as ImageProvider 
+        : (widget.avatarImage ?? const AssetImage("assets/images/profile_user.png"));
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF), // Cream background
-      body: CustomScrollView(
+      body: StreamBuilder<List<ItemModel>>(
+        stream: _itemsStream,
+        builder: (context, snapshot) {
+          final items = snapshot.data ?? [];
+          
+          final List<ItemModel> filteredProducts = items.where((product) {
+            final matchesCategory = _selectedCategory == "All" || product.categoryName == _selectedCategory;
+            final matchesSearch = _searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery);
+            return matchesCategory && matchesSearch;
+          }).toList();
+
+          return CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverAppBar(
             backgroundColor: const Color(0xFF012D1D),
             pinned: false,
-            expandedHeight: 330, // Approximate height for header
+            automaticallyImplyLeading: false,
+            expandedHeight: 270, // Approximate height for header
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               background: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   SafeArea(
                     bottom: false,
@@ -209,7 +220,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 10),
 
                   // --- 1B. OWNER MAIN INFO ---
                   Padding(
@@ -255,7 +266,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                       ),
                                       SizedBox(width: 2),
                                       Text(
-                                        widget.rating ?? "4.3",
+                                        displayRating,
                                         style: const TextStyle(
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.bold,
@@ -322,7 +333,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
                   // --- 1C. ACTION BUTTONS ---
                   Padding(
@@ -399,7 +410,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                 ],
               ),
             ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
@@ -536,17 +547,40 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 // Review Cards Slider
                                 SizedBox(
                                   height: 135,
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                                    children: [
-                                      _buildReviewCard("Ceazar", "Dec 30, 2025", 5, "Barang ori, kondisinya mulus banget pas disewa..."),
-                                      const SizedBox(width: 12),
-                                      _buildReviewCard("Budi", "Nov 15, 2025", 4, "Pelayanan mantap, respon cepat."),
-                                      const SizedBox(width: 12),
-                                      _buildReviewCard("Ayu", "Oct 02, 2025", 5, "Sangat recommended, ramah sekali ownernya."),
-                                    ],
+                                  child: StreamBuilder<List<Map<String, dynamic>>>(
+                                    stream: _reviewsStream,
+                                    builder: (context, snapshot) {
+                                      if (snapshot.connectionState == ConnectionState.waiting) {
+                                        return const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)));
+                                      }
+                                      final reviews = snapshot.data ?? [];
+                                      if (reviews.isEmpty) {
+                                        return const Center(
+                                          child: Text(
+                                            "Belum ada ulasan.",
+                                            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.grey),
+                                          ),
+                                        );
+                                      }
+                                      return ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        physics: const BouncingScrollPhysics(),
+                                        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                                        itemCount: reviews.length,
+                                        separatorBuilder: (context, index) => const SizedBox(width: 12),
+                                        itemBuilder: (context, index) {
+                                          final r = reviews[index];
+                                          final dateObj = r['createdAt']?.toDate() ?? DateTime.now();
+                                          final dateStr = "${dateObj.day}-${dateObj.month}-${dateObj.year}";
+                                          return _buildReviewCard(
+                                            r['fromUserName'] ?? "Anonim",
+                                            dateStr,
+                                            r['score'] ?? 5,
+                                            r['comment'] ?? "",
+                                          );
+                                        },
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
@@ -738,13 +772,15 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                                 delegate: SliverChildBuilderDelegate(
                                   (context, index) {
-                                    final productMap = filteredProducts[index];
+                                    final itemModel = filteredProducts[index];
                                     final product = ProductData(
-                                      name: productMap["name"],
-                                      price: "Rp. ${productMap["price"].toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
-                                      image: productMap["image"],
-                                      rating: 4.5, // Dummy rating
-                                      isLocalAsset: productMap["isLocalAsset"] ?? false,
+                                      id: itemModel.id,
+                                      name: itemModel.name,
+                                      price: itemModel.formattedPricePerDay,
+                                      rating: itemModel.ownerRating > 0 ? itemModel.ownerRating.toDouble() : 4.5,
+                                      image: itemModel.primaryPhoto,
+                                      isLocalAsset: !itemModel.primaryPhoto.startsWith('http'),
+                                      originalItem: itemModel,
                                     );
                                     return FadeInUp(
                                       duration: const Duration(milliseconds: 400),
@@ -755,10 +791,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) => ItemDetailScreen(
+                                                item: itemModel,
+                                                itemId: itemModel.id,
                                                 itemName: product.name,
-                                                pricePerHour: productMap["price"] / 24, // Convert daily price dummy to hourly
-                                                sellerLocation: "Tembalang, Banyumanik",
-                                                imagePath: productMap["image"],
+                                                pricePerHour: itemModel.pricePerHour,
+                                                sellerLocation: "Tembalang, Banyumanik", // Dummy, bisa diambil dari itemModel address
+                                                imagePath: product.image,
                                                 isLocalAsset: product.isLocalAsset,
                                               ),
                                             ),
@@ -767,6 +805,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                         child: ProductCard(
                                           product: product,
                                           onMorePressed: () {
+                                            final isOwnItem = itemModel.ownerId == FirebaseAuth.instance.currentUser?.uid;
                                             showProductMoreSheet(
                                               context: context,
                                               product: product,
@@ -806,7 +845,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                               },
                                                onReportPressed: () {
                                                  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-                                                 final reportedId = widget.ownerId ?? '';
+                                                 final reportedId = _targetOwnerId;
                                                  
                                                  if (reportedId.isEmpty) {
                                                    ScaffoldMessenger.of(context).showSnackBar(
@@ -833,10 +872,79 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                                  showReportDialog(
                                                    context,
                                                    reportedId: reportedId,
-                                                   itemId: productMap["id"]?.toString() ?? "local_or_dummy_item",
+                                                   itemId: itemModel.id,
                                                    itemName: product.name,
                                                  );
                                                },
+                                              onEditPressed: isOwnItem
+                                                  ? () {
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (context) => AddProductScreen(
+                                                            editItem: itemModel,
+                                                          ),
+                                                        ),
+                                                      ).then((_) {
+                                                        _loadProfile();
+                                                      });
+                                                    }
+                                                  : null,
+                                              onDeletePressed: isOwnItem
+                                                  ? () async {
+                                                      final confirm = await showDialog<bool>(
+                                                        context: context,
+                                                        builder: (context) => AlertDialog(
+                                                          backgroundColor: const Color(0xFFFFF8EF),
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                                          title: const Text('Hapus Barang?', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                                                          content: const Text('Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.', style: TextStyle(fontFamily: 'Poppins')),
+                                                          actions: [
+                                                            TextButton(
+                                                              onPressed: () => Navigator.pop(context, false),
+                                                              child: const Text('Batal', style: TextStyle(color: Color(0xFF585D59))),
+                                                            ),
+                                                            ElevatedButton(
+                                                              style: ElevatedButton.styleFrom(
+                                                                backgroundColor: const Color(0xFFE33629),
+                                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                              ),
+                                                              onPressed: () => Navigator.pop(context, true),
+                                                              child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      );
+
+                                                      if (confirm != true || !mounted) return;
+
+                                                      setState(() => _isLoadingProfile = true);
+                                                      try {
+                                                        final token = await const AuthSessionService().getValidIdToken();
+                                                        final response = await http.delete(
+                                                          Uri.parse('${ApiConfig.baseUrl}/items/${itemModel.id}'),
+                                                          headers: {
+                                                            'Authorization': 'Bearer $token',
+                                                          },
+                                                        );
+                                                        if (response.statusCode == 200) {
+                                                          if (!context.mounted) return;
+                                                          showAppSuccessSnack(context, 'Barang berhasil dihapus!');
+                                                          _loadProfile();
+                                                        } else {
+                                                          if (!context.mounted) return;
+                                                          showAppErrorSnack(context, 'Gagal menghapus barang.');
+                                                        }
+                                                      } catch (e) {
+                                                        if (!context.mounted) return;
+                                                        showAppErrorSnack(context, 'Terjadi kesalahan: $e');
+                                                      } finally {
+                                                        if (mounted) {
+                                                          setState(() => _isLoadingProfile = false);
+                                                        }
+                                                      }
+                                                    }
+                                                  : null,
                                             );
                                           },
                                         ),
@@ -852,7 +960,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       const SliverToBoxAdapter(
                         child: SizedBox(height: 40),
                       ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }

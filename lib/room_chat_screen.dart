@@ -70,22 +70,14 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
   Future<void> _fetchPartnerProfile() async {
     try {
-      print('DEBUG: Fetching partner profile for partnerId: ${widget.partnerId}');
       final doc = await FirebaseFirestore.instance.collection('users').doc(widget.partnerId).get();
-      print('DEBUG: Document exists: ${doc.exists}');
       if (doc.exists && mounted) {
         final data = doc.data();
-        print('DEBUG: User data keys: ${data?.keys.toList()}');
-        print('DEBUG: User data name field: ${data?['name']}');
-        print('DEBUG: User data displayName field: ${data?['displayName']}');
-        print('DEBUG: User data profilePhotoUrl field: ${data?['profilePhotoUrl']}');
         if (data != null) {
           // Database schema uses 'name' for user name
           final fetchedName = data['name'] as String?;
           // Try multiple possible avatar fields
           final fetchedAvatar = (data['profilePhotoUrl'] as String?);
-          
-          print('DEBUG: fetchedName=$fetchedName, fetchedAvatar=$fetchedAvatar');
           
           setState(() {
             if (fetchedName != null && fetchedName.isNotEmpty) {
@@ -95,11 +87,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
               _actualPartnerAvatarUrl = fetchedAvatar;
             }
           });
-          print('DEBUG: Final _actualPartnerName=$_actualPartnerName, _actualPartnerAvatarUrl=$_actualPartnerAvatarUrl');
         }
       }
     } catch(e) {
-      print('Error fetching partner profile: $e');
+      // Ignore
     }
   }
 
@@ -376,6 +367,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                                 'status': 'pending',
                                 'createdAt': FieldValue.serverTimestamp(),
                               });
+                              if (!context.mounted) return;
                               if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
@@ -632,12 +624,20 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                     width: 48,
                     height: 48,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 48,
+                        height: 48,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 24),
+                      );
+                    },
                   )
-                : Image.asset(
-                    'assets/images/sony_camera.png',
+                : Container(
                     width: 48,
                     height: 48,
-                    fit: BoxFit.cover,
+                    color: const Color(0xFFF5F5F5),
+                    child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 24),
                   ),
           ),
           const SizedBox(width: 16),
@@ -695,7 +695,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: message.messageType == 'image' 
+                ? const EdgeInsets.all(4) 
+                : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: isMe 
                   ? const Color(0xFF1B4332) // Color_Primary: #1B4332

@@ -1,3 +1,5 @@
+import '../data/models/item_model.dart';
+
 class ProductData {
   final String? id;
   final String name;
@@ -5,6 +7,7 @@ class ProductData {
   final dynamic rating;
   final String image;
   final bool isLocalAsset;
+  final ItemModel? originalItem;
 
   ProductData({
     this.id,
@@ -13,5 +16,6 @@ class ProductData {
     required this.rating,
     required this.image,
     this.isLocalAsset = false,
+    this.originalItem,
   });
 }

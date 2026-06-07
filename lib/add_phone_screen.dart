@@ -97,15 +97,30 @@ class _AddPhoneScreenState extends State<AddPhoneScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              color: const Color(0xFF012D1D).withValues(alpha: 0.7),
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: SlideTransition(
               position: _slideAnimation,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFF8EF), // Warna bg_surface
@@ -114,41 +129,56 @@ class _AddPhoneScreenState extends State<AddPhoneScreen>
                     topRight: Radius.circular(24),
                   ),
                 ),
-                padding: const EdgeInsets.only(
+                padding: EdgeInsets.only(
                   left: 32,
                   right: 32,
-                  top: 36,
-                  bottom: 40,
+                  top: isKeyboardOpen ? 16 : 36,
+                  bottom: isKeyboardOpen ? 16 : 40,
                 ),
                 child: SingleChildScrollView(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 16),
-                    const Text(
-                      "Lengkapi Profil",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 32,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF012D1D),
-                        height: 1.1,
-                      ),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: isKeyboardOpen ? 8 : 16,
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Masukkan nomor telepon aktif Anda untuk verifikasi keamanan OTP.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        color: Color(0xFF414844),
-                      ),
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: isKeyboardOpen
+                          ? const SizedBox(width: double.infinity)
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text(
+                                  "Lengkapi Profil",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF012D1D),
+                                    height: 1.1,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  "Masukkan nomor telepon aktif Anda untuk verifikasi keamanan OTP.",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w400,
+                                    color: Color(0xFF414844),
+                                  ),
+                                ),
+                                const SizedBox(height: 36),
+                              ],
+                            ),
                     ),
-                    const SizedBox(height: 36),
 
                     // Phone Input Field
                     Column(
@@ -212,7 +242,11 @@ class _AddPhoneScreenState extends State<AddPhoneScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 36),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 16 : 36,
+                      ),
 
                     // Submit Button
                     SizedBox(
@@ -249,7 +283,11 @@ class _AddPhoneScreenState extends State<AddPhoneScreen>
                               ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      height: isKeyboardOpen ? 12 : 24,
+                    ),
                   ],
                 ),
               ),
