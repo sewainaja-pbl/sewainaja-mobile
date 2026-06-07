@@ -40,7 +40,7 @@ class CachedUserProfile {
       name: (json['name'] ?? '').toString().trim(),
       email: (json['email'] ?? '').toString().trim(),
       phone: (json['phone'] ?? '').toString().trim(),
-      profilePhotoUrl: (json['profilePhotoUrl'] ?? '').toString().trim(),
+      profilePhotoUrl: (json['profilePhotoUrl'] ?? json['selfiePhotoUrl'] ?? '').toString().trim(),
       status: (json['status'] ?? '').toString().trim(),
       walletBalance: (json['walletBalance'] as num?)?.toDouble() ?? 0.0,
     );

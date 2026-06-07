@@ -412,16 +412,30 @@ class _LoginScreenState extends State<LoginScreen>
     final authController = context.watch<AuthController>();
     final isGoogleLoading = authController.status == AuthStatus.loading;
     final isAnyLoading = _isLoading || _isResetLoading || isGoogleLoading;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              color: const Color(0xFF012D1D).withValues(alpha: 0.7),
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: SlideTransition(
               position: _slideAnimation,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(0xFFFFF8EF),
@@ -430,14 +444,29 @@ class _LoginScreenState extends State<LoginScreen>
                     topRight: Radius.circular(24),
                   ),
                 ),
-                padding: const EdgeInsets.only(
-                  left: 32,
-                  right: 32,
-                  top: 24,
-                  bottom: 40,
+                padding: EdgeInsets.only(
+                  top: isKeyboardOpen ? 16 : 24,
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
+                child: ShaderMask(
+                  shaderCallback: (Rect rect) {
+                    return const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black,
+                        Colors.transparent,
+                      ],
+                      stops: [0.95, 1.0],
+                    ).createShader(rect);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: 32,
+                      right: 32,
+                      bottom: isKeyboardOpen ? 16 : 40,
+                    ),
+                    child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -464,31 +493,46 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 8 : 16,
+                      ),
 
-                      const Text(
-                        "Hello",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 60,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF012D1D),
-                          height: 1.0,
-                        ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: isKeyboardOpen
+                            ? const SizedBox(width: double.infinity)
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    "Hello",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 60,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF012D1D),
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    "Masuk ke akun Anda untuk melanjutkan\npenjelajahan.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF414844),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
+                                ],
+                              ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Masuk ke akun Anda untuk melanjutkan\npenjelajahan.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF414844),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
 
                       // Email Input
                       Column(
@@ -536,7 +580,11 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
 
                       // Password Input
                       Column(
@@ -579,6 +627,7 @@ class _LoginScreenState extends State<LoginScreen>
                             controller: _passwordController,
                             enabled: !isAnyLoading,
                             obscureText: true,
+                            scrollPadding: const EdgeInsets.only(bottom: 180),
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -608,7 +657,11 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 32),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 16 : 32,
+                      ),
 
                       // Login Button
                       SizedBox(
@@ -645,7 +698,11 @@ class _LoginScreenState extends State<LoginScreen>
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
 
                       // Divider
                       Row(
@@ -670,7 +727,11 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
 
                       // Full Width Google Button
                       SizedBox(
@@ -736,6 +797,7 @@ class _LoginScreenState extends State<LoginScreen>
                       SizedBox(height: MediaQuery.of(context).padding.bottom),
                     ],
                   ),
+                ),
                 ),
               ),
             ),

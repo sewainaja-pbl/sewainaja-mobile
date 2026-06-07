@@ -6,6 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
 import 'main_navigation_screen.dart';
+import 'widgets/product_more_sheet.dart';
+import 'models/product.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'add_product_screen.dart';
+import 'package:http/http.dart' as http;
+import 'auth_session_service.dart';
+import 'api_config.dart';
+import 'app_feedback.dart';
 
 class MyItemsScreen extends StatefulWidget {
   const MyItemsScreen({super.key});
@@ -350,10 +358,123 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    if (item["more_options"] == true)
                       GestureDetector(
                         onTap: () {
-                          // TODO: Action for context menu (edit/delete)
+                          final productData = ProductData(
+                            id: item['id']?.toString() ?? '',
+                            name: item['name']?.toString() ?? '',
+                            price: item['price']?.toString() ?? '',
+                            rating: item['rating']?.toString() ?? '4.8',
+                            image: item['image']?.toString() ?? '',
+                            isLocalAsset: item['isLocalAsset'] == true,
+                          );
+                          showProductMoreSheet(
+                            context: context,
+                            product: productData,
+                            onFavoritePressed: () {},
+                            onSimilarPressed: () {},
+                            onNotInterestedPressed: () {},
+                            onReportPressed: () {},
+                            onEditPressed: () {
+                              final itemId = item['id']?.toString() ?? '';
+                              if (itemId.isEmpty) {
+                                showAppErrorSnack(context, 'Barang simulasi tidak dapat diedit.');
+                                return;
+                              }
+                              ItemModel? itemModel;
+                              try {
+                                String priceStr = item["price"].toString();
+                                String unit = "Hari";
+                                if (priceStr.toLowerCase().contains("hour") || priceStr.toLowerCase().contains("jam")) {
+                                  unit = "Jam";
+                                } else if (priceStr.toLowerCase().contains("week") || priceStr.toLowerCase().contains("minggu")) {
+                                  unit = "Minggu";
+                                }
+                                double parsedPrice = double.parse(priceStr.replaceAll(RegExp(r'[^0-9]'), ''));
+                                double computedPricePerHour = unit == "Jam" ? parsedPrice : (unit == "Minggu" ? parsedPrice / 168 : parsedPrice / 24);
+                                
+                                itemModel = ItemModel(
+                                  id: itemId,
+                                  ownerId: FirebaseAuth.instance.currentUser?.uid ?? '',
+                                  ownerName: item['owner']?.toString() ?? 'Owner',
+                                  ownerRating: 4.8,
+                                  categoryId: '',
+                                  categoryName: '',
+                                  name: item['name'],
+                                  description: '',
+                                  pricePerHour: computedPricePerHour,
+                                  price: parsedPrice,
+                                  priceUnit: unit,
+                                  status: 'available',
+                                  condition: 'fair',
+                                  photos: [item['image']],
+                                );
+                              } catch (_) {}
+                              
+                              if (itemModel == null) return;
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => AddProductScreen(
+                                    editItem: itemModel,
+                                  ),
+                                ),
+                              ).then((_) => _loadItems());
+                            },
+                            onDeletePressed: () async {
+                              final itemId = item['id']?.toString() ?? '';
+                              if (itemId.isEmpty) {
+                                showAppErrorSnack(context, 'Barang simulasi tidak dapat dihapus.');
+                                return;
+                              }
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: const Color(0xFFFFF8EF),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  title: const Text('Hapus Barang?', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                                  content: const Text('Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.', style: TextStyle(fontFamily: 'Poppins')),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context, false),
+                                      child: const Text('Batal', style: TextStyle(color: Color(0xFF585D59))),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFE33629),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      ),
+                                      onPressed: () => Navigator.pop(context, true),
+                                      child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+                                    ),
+                                  ],
+                                ),
+                              );
+
+                              if (confirm != true || !mounted) return;
+
+                              try {
+                                final token = await const AuthSessionService().getValidIdToken();
+                                final response = await http.delete(
+                                  Uri.parse('${ApiConfig.baseUrl}/items/$itemId'),
+                                  headers: {
+                                    'Authorization': 'Bearer $token',
+                                  },
+                                );
+                                if (response.statusCode == 200) {
+                                  if (!mounted) return;
+                                  showAppSuccessSnack(context, 'Barang berhasil dihapus!');
+                                  _loadItems();
+                                } else {
+                                  if (!mounted) return;
+                                  showAppErrorSnack(context, 'Gagal menghapus barang.');
+                                }
+                              } catch (e) {
+                                if (!mounted) return;
+                                showAppErrorSnack(context, 'Terjadi kesalahan: $e');
+                              }
+                            },
+                          );
                         },
                         child: const Icon(
                           Icons.more_vert_rounded,

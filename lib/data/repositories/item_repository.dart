@@ -158,4 +158,19 @@ class ItemRepository {
       return items;
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // OWNER ITEMS — fetch items by ownerId
+  // ---------------------------------------------------------------------------
+
+  /// Fetch semua item milik owner tertentu dengan status "available".
+  Stream<List<ItemModel>> watchItemsByOwner(String ownerId) {
+    return _itemsRef
+        .where('ownerId', isEqualTo: ownerId)
+        .where('status', isEqualTo: 'available')
+        .snapshots()
+        .map((snap) {
+      return snap.docs.map((doc) => ItemModel.fromFirestore(doc)).toList();
+    });
+  }
 }

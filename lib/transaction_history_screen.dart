@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'main_navigation_screen.dart';
+import 'data/models/transaction_model.dart';
+import 'data/repositories/transaction_repository.dart';
+import 'transaction_detail_screen.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -13,32 +17,51 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   int _selectedTabIndex = 0;
   final List<String> _tabs = ["Semua", "Aktif", "Selesai", "Dibatalkan"];
 
-  final List<Map<String, dynamic>> _dummyHistory = [
-    {
-      "name": "Sony Camera a6000",
-      "owner": "Han so Hee",
-      "date_range": "8 Apr - 10 Apr 2025",
-      "image": "assets/images/Iklan.jpg",
-    },
-    {
-      "name": "Sony Camera a6000",
-      "owner": "Han so Hee",
-      "date_range": "8 Mar - 10 Mar 2025",
-      "image": "assets/images/Iklan.jpg",
-    },
-    {
-      "name": "Sony Camera a6000",
-      "owner": "Han so Hee",
-      "date_range": "8 Jan - 10 Jan 2025",
-      "image": "assets/images/Iklan.jpg",
-    },
-    {
-      "name": "Sony Camera a6000",
-      "owner": "Han so Hee",
-      "date_range": "8 Jan - 10 Jan 2025",
-      "image": "assets/images/Iklan.jpg",
-    },
-  ];
+  final TransactionRepository _repository = TransactionRepository();
+  List<TransactionModel> _transactions = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTransactions();
+  }
+
+  Future<void> _loadTransactions() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final data = await _repository.fetchTransactions();
+      setState(() {
+        _transactions = data;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  List<TransactionModel> get _filteredTransactions {
+    if (_selectedTabIndex == 0) return _transactions;
+    if (_selectedTabIndex == 1) {
+      return _transactions.where((t) => 
+        t.status == 'pending' || t.status == 'approved' || t.status == 'ongoing'
+      ).toList();
+    }
+    if (_selectedTabIndex == 2) {
+      return _transactions.where((t) => t.status == 'completed').toList();
+    }
+    if (_selectedTabIndex == 3) {
+      return _transactions.where((t) => t.status == 'cancelled' || t.status == 'disputed').toList();
+    }
+    return _transactions;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,101 +158,149 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
 
           // ListView History
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
-              itemCount: _dummyHistory.length,
-              itemBuilder: (context, index) {
-                final item = _dummyHistory[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Container(
-                    padding: const EdgeInsets.all(12.0),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFFFFF),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        // Image Thumbnail
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            image: DecorationImage(
-                              image: AssetImage(item["image"]),
-                              fit: BoxFit.cover,
+            child: _isLoading 
+                ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
+                : _errorMessage != null
+                    ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+                    : _filteredTransactions.isEmpty
+                        ? const Center(
+                            child: Text(
+                              "Tidak ada riwayat transaksi.",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                color: Color(0xFF414844),
+                              ),
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadTransactions,
+                            color: const Color(0xFF1B4332),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
+                              itemCount: _filteredTransactions.length,
+                              itemBuilder: (context, index) {
+                                final item = _filteredTransactions[index];
+                                final detail = item.details.isNotEmpty ? item.details.first : null;
+                                final String itemName = detail?.itemNameSnapshot ?? "Transaksi ${item.id.substring(0, 5)}";
+                                final String itemImage = (detail != null && detail.itemPhotoUrlSnapshot.isNotEmpty) 
+                                    ? detail.itemPhotoUrlSnapshot 
+                                    : "";
+                                
+                                String dateRange = "";
+                                if (detail != null && detail.startDate != null && detail.endDate != null) {
+                                  dateRange = "${DateFormat('d MMM').format(detail.startDate!)} - ${DateFormat('d MMM yyyy').format(detail.endDate!)}";
+                                }
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 16.0),
+                                  child: InkWell(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => TransactionDetailScreen(transactionId: item.id),
+                                        ),
+                                      ).then((_) => _loadTransactions());
+                                    },
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(12.0),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFFFFFF),
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(alpha: 0.03),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          // Image Thumbnail
+                                          Container(
+                                            width: 80,
+                                            height: 80,
+                                            decoration: BoxDecoration(
+                                              borderRadius: BorderRadius.circular(15),
+                                              color: Colors.grey.shade200,
+                                              image: itemImage.isNotEmpty 
+                                                ? DecorationImage(
+                                                    image: NetworkImage(itemImage),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : const DecorationImage(
+                                                    image: AssetImage('assets/images/Iklan.jpg'),
+                                                    fit: BoxFit.cover,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          
+                                          // Details
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  itemName,
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Poppins',
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600, // Semibold
+                                                    color: Color(0xFF414844),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  "Pemilik: ${item.ownerName}",
+                                                  style: const TextStyle(
+                                                    fontFamily: 'Poppins',
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w400, // Regular
+                                                    color: Color(0xFF414844),
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.calendar_month_rounded,
+                                                      size: 14,
+                                                      color: Color(0xFF414844),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Expanded(
+                                                      child: Text(
+                                                        dateRange,
+                                                        style: const TextStyle(
+                                                          fontFamily: 'Poppins',
+                                                          fontSize: 12,
+                                                          fontWeight: FontWeight.w400, // Regular
+                                                          color: Color(0xFF414844),
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        
-                        // Details
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item["name"],
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600, // Semibold
-                                  color: Color(0xFF414844),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                "Pemilik: ${item['owner']}",
-                                style: const TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400, // Regular
-                                  color: Color(0xFF414844),
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.calendar_month_rounded,
-                                    size: 14,
-                                    color: Color(0xFF414844),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    item["date_range"],
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w400, // Regular
-                                      color: Color(0xFF414844),
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),

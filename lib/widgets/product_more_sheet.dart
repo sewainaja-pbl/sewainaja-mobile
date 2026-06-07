@@ -1,8 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/product.dart';
 import '../image_upload_service.dart';
+import '../add_product_screen.dart';
+import 'package:http/http.dart' as http;
+import '../api_config.dart';
+import '../auth_session_service.dart';
+import '../app_feedback.dart';
 
 /// Membuka Bottom Sheet gaya Tokopedia/Shopee untuk aksi tambahan pada kartu produk.
 void showProductMoreSheet({
@@ -13,6 +19,8 @@ void showProductMoreSheet({
   required VoidCallback onSimilarPressed,
   required VoidCallback onNotInterestedPressed,
   required VoidCallback onReportPressed,
+  VoidCallback? onEditPressed,
+  VoidCallback? onDeletePressed,
 }) {
   ImageProvider buildImageProvider(String imagePath) {
     if (product.isLocalAsset) {
@@ -24,6 +32,10 @@ void showProductMoreSheet({
     }
     return AssetImage(safeUrl);
   }
+
+  final String? currentUserId = FirebaseAuth.instance.currentUser?.uid;
+  final String? ownerId = product.originalItem?.ownerId;
+  final bool isOwnItem = currentUserId != null && ownerId == currentUserId;
 
   showModalBottomSheet(
     context: context,
@@ -145,6 +157,26 @@ void showProductMoreSheet({
                 onSimilarPressed();
               },
             ),
+            if (isOwnItem || onEditPressed != null)
+              _buildOptionItem(
+                context: context,
+                icon: Icons.edit_rounded,
+                iconColor: const Color(0xFF012D1D),
+                title: 'Edit Barang',
+                onTap: () {
+                  Navigator.pop(context);
+                  if (onEditPressed != null) {
+                    onEditPressed();
+                  } else if (product.originalItem != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AddProductScreen(editItem: product.originalItem!),
+                      ),
+                    );
+                  }
+                },
+              ),
             _buildOptionItem(
               context: context,
               icon: Icons.sentiment_dissatisfied_rounded,
@@ -158,17 +190,70 @@ void showProductMoreSheet({
             const SizedBox(height: 8),
             const Divider(height: 1, thickness: 0.5, color: Color(0xFFE0E0E0)),
             const SizedBox(height: 8),
-            _buildOptionItem(
-              context: context,
-              icon: Icons.report_problem_rounded,
-              iconColor: const Color(0xFFE33629),
-              title: 'Laporkan Barang',
-              isDanger: true,
-              onTap: () {
-                Navigator.pop(context);
-                onReportPressed();
-              },
-            ),
+            if (isOwnItem || onDeletePressed != null)
+              _buildOptionItem(
+                context: context,
+                icon: Icons.delete_outline_rounded,
+                iconColor: const Color(0xFFE33629),
+                title: 'Hapus Barang',
+                isDanger: true,
+                onTap: () async {
+                  Navigator.pop(context);
+                  if (onDeletePressed != null) {
+                    onDeletePressed();
+                  } else if (product.originalItem != null) {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: const Color(0xFFFFF8EF),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        title: const Text('Hapus Barang?', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                        content: const Text('Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.', style: TextStyle(fontFamily: 'Poppins')),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Batal', style: TextStyle(color: Color(0xFF585D59))),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFE33629),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      try {
+                        final token = await const AuthSessionService().getValidIdToken();
+                        final response = await http.delete(
+                          Uri.parse('${ApiConfig.baseUrl}/items/${product.id}'),
+                          headers: {'Authorization': 'Bearer $token'},
+                        );
+                        if (response.statusCode == 200) {
+                          if (!context.mounted) return;
+                          showAppSuccessSnack(context, 'Barang berhasil dihapus!');
+                        }
+                      } catch (_) {
+                      }
+                    }
+                  }
+                },
+              )
+            else
+              _buildOptionItem(
+                context: context,
+                icon: Icons.report_problem_rounded,
+                iconColor: const Color(0xFFE33629),
+                title: 'Laporkan Barang',
+                isDanger: true,
+                onTap: () {
+                  Navigator.pop(context);
+                  onReportPressed();
+                },
+              ),
           ],
         ),
       );

@@ -115,7 +115,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                   rating: 5,
                   text: "Julian was incredibly helpful and the equipment was in perfect condition. Highly recommend renting from him!",
                   helpfulCount: 2,
-                  itemImage: "assets/images/sony_camera.png",
+                  itemImage: null,
                 ),
                 _buildReviewCard(
                   name: "Ceazar",
@@ -123,7 +123,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                   rating: 4,
                   text: "Barang ori, kondisinya mulus banget pas disewa. Orangnya juga ramah dan responnya cepat.",
                   helpfulCount: 1,
-                  itemImage: "assets/images/ps5_controller.png",
+                  itemImage: null,
                 ),
                 _buildReviewCard(
                   name: "Budi Santoso",
@@ -139,7 +139,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                   rating: 4,
                   text: "Kameranya berfungsi dengan baik. Hanya saja ada sedikit lecet di bagian bawah, tapi tidak memengaruhi performa.",
                   helpfulCount: 5,
-                  itemImage: "assets/images/airpods_max.png",
+                  itemImage: null,
                 ),
               ]),
             ),

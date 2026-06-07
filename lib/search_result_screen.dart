@@ -112,13 +112,12 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
   }
 
   ProductData _toProductData(ItemModel item) => ProductData(
-        id: item.id,
         name: item.name,
-        price: item.formattedPricePerHour,
-        rating: item.ownerRating > 0
-            ? item.ownerRating.toStringAsFixed(1)
-            : '—',
+        price: item.formattedPricePerDay,
+        rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
         image: item.primaryPhoto,
+        isLocalAsset: !item.primaryPhoto.startsWith('http'),
+        originalItem: item,
       );
 
   void _navigateToDetail(ItemModel item) {

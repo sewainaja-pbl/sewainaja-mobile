@@ -630,9 +630,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       }
     }
     
-    if (dateTime == null) {
-      dateTime = _extractTimestampFromUrl(widget.imagePath);
-    }
+    dateTime ??= _extractTimestampFromUrl(widget.imagePath);
     
     if (dateTime == null) return "Baru saja";
     

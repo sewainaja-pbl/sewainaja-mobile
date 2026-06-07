@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 
 void showAppErrorSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  final height = MediaQuery.sizeOf(context).height;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.only(
+        bottom: height > 180 ? height - 180 : 16,
+        left: 16,
+        right: 16,
+      ),
+      dismissDirection: DismissDirection.up,
       content: _FeedbackCard(
         icon: Icons.error_outline_rounded,
         accent: const Color(0xFFD32F2F),
@@ -18,12 +25,19 @@ void showAppErrorSnack(BuildContext context, String message) {
 }
 
 void showAppSuccessSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).clearSnackBars();
+  final height = MediaQuery.sizeOf(context).height;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       behavior: SnackBarBehavior.floating,
       backgroundColor: Colors.transparent,
       elevation: 0,
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      margin: EdgeInsets.only(
+        bottom: height > 180 ? height - 180 : 16,
+        left: 16,
+        right: 16,
+      ),
+      dismissDirection: DismissDirection.up,
       content: _FeedbackCard(
         icon: Icons.check_circle_outline_rounded,
         accent: const Color(0xFF2F6743),
@@ -154,6 +168,21 @@ class _FeedbackCard extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: accent.withValues(alpha: 0.6),
+              ),
             ),
           ),
         ],

@@ -140,10 +140,10 @@ class SearchSheetState extends State<SearchSheet>
   ProductData _toProductData(ItemModel item) => ProductData(
         name: item.name,
         price: item.formattedPricePerDay,
-        rating: item.ownerRating > 0
-            ? item.ownerRating.toStringAsFixed(1)
-            : '—',
+        rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
         image: item.primaryPhoto,
+        isLocalAsset: !item.primaryPhoto.startsWith('http'),
+        originalItem: item,
       );
 
   // ── Close animation ────────────────────────────────────────────────────────
@@ -169,7 +169,7 @@ class SearchSheetState extends State<SearchSheet>
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final topOffset = MediaQuery.of(context).padding.top + 140.0;
+    final topOffset = MediaQuery.of(context).padding.top + 156.0;
 
     return Positioned(
       top: topOffset,

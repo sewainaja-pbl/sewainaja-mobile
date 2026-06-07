@@ -59,12 +59,22 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         // ==========================================
                         // ILLUSTRATION
                         // ==========================================
-                        Image.asset(
-                          'assets/images/otp_illustration.png',
-                          height:
-                              screenHeight *
-                              0.28, // Responsif: 28% dari tinggi layar agar gambar tetap besar tapi aman dari overflow
-                          fit: BoxFit.contain,
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          height: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? 0
+                              : screenHeight * 0.28,
+                          child: ClipRect(
+                            child: Align(
+                              alignment: Alignment.topCenter,
+                              heightFactor: MediaQuery.of(context).viewInsets.bottom > 0 ? 0.0 : 1.0,
+                              child: Image.asset(
+                                'assets/images/otp_illustration.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 16),
 

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'categories_tech_screen.dart';
 import 'categories_power_tools_screen.dart';
@@ -24,12 +25,21 @@ class CategoriesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // main_bg
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
+        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 80,
         titleSpacing: 24,
+        flexibleSpace: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              color: Colors.transparent,
+            ),
+          ),
+        ),
         title: Padding(
           padding: const EdgeInsets.only(top: 10),
           child: Row(
@@ -76,13 +86,17 @@ class CategoriesScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-        child: GridView.count(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.85,
+      body: GridView.count(
+        padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top + 80 + 16,
+          left: 24.0,
+          right: 24.0,
+          bottom: 120.0,
+        ),
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.85,
           children: [
             _CategoryCard(
               title: 'Tech',
@@ -208,7 +222,6 @@ class CategoriesScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

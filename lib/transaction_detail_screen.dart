@@ -1,11 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'api_config.dart';
-import 'auth_session_service.dart';
 import 'scan_qr_renter_screen.dart';
 import 'dispute_form_screen.dart';
+import 'data/models/transaction_model.dart';
+import 'data/repositories/transaction_repository.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String? transactionId;
@@ -16,10 +15,10 @@ class TransactionDetailScreen extends StatefulWidget {
 }
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  final TransactionRepository _repository = TransactionRepository();
   bool _isLoading = false;
   String? _errorMessage;
-  Map<String, dynamic>? _transactionData;
-  List<dynamic> _details = [];
+  TransactionModel? _transaction;
 
   @override
   void initState() {
@@ -30,12 +29,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Future<void> _fetchTransactionDetails() async {
     final tId = widget.transactionId;
     if (tId == null || tId.isEmpty) {
-      // Load fallback dummy data
       setState(() {
-        _transactionData = _getFallbackTransactionData();
-        _details = _getFallbackDetails();
-        _isLoading = false;
-        _errorMessage = null;
+        _errorMessage = "ID Transaksi tidak valid.";
       });
       return;
     }
@@ -46,64 +41,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     });
 
     try {
-      final token = await const AuthSessionService().getValidIdToken();
-      final headers = {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true && body['data'] != null) {
-          setState(() {
-            _transactionData = body['data'] as Map<String, dynamic>;
-            _details = _transactionData!['details'] as List? ?? [];
-            _isLoading = false;
-          });
-          return;
-        }
-      }
+      final transaction = await _repository.fetchTransactionById(tId);
       setState(() {
-        _errorMessage = 'Gagal memuat detail transaksi.';
+        _transaction = transaction;
         _isLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       setState(() {
-        _errorMessage = 'Terjadi kesalahan koneksi.';
+        _errorMessage = e.toString();
         _isLoading = false;
       });
     }
-  }
-
-  Map<String, dynamic> _getFallbackTransactionData() {
-    return {
-      'id': 'dummy_trans_123',
-      'renterId': 'dummy_renter_uid',
-      'ownerId': 'dummy_owner_uid',
-      'renterName': 'Aminah',
-      'ownerName': 'Han so Hee',
-      'status': 'approved',
-      'totalPrice': 1080000,
-      'createdAt': {'_seconds': 1744535520, '_nanoseconds': 0},
-      'approvedAt': {'_seconds': 1744555520, '_nanoseconds': 0},
-    };
-  }
-
-  List<dynamic> _getFallbackDetails() {
-    return [
-      {
-        'itemId': 'dummy_item_1',
-        'itemNameSnapshot': 'Sony ɑ6000 Body Only',
-        'itemPhotoUrlSnapshot': '',
-        'priceAtBooking': 15000.0,
-        'subtotal': 1080000,
-      }
-    ];
   }
 
   String _formatStatus(String status) {
@@ -163,18 +111,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
-  String _formatDate(dynamic timestamp) {
-    if (timestamp == null) return '';
-    DateTime? dt;
-    if (timestamp is Map) {
-      final sec = timestamp['_seconds'] ?? timestamp['seconds'];
-      if (sec is int) {
-        dt = DateTime.fromMillisecondsSinceEpoch(sec * 1000).toLocal();
-      }
-    } else if (timestamp is String) {
-      dt = DateTime.tryParse(timestamp)?.toLocal();
-    }
+  String _formatDate(dynamic dt) {
     if (dt == null) return '';
+    if (dt is! DateTime) return '';
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
       'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
@@ -186,9 +125,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final status = _transactionData?['status']?.toString() ?? 'pending';
+    final status = _transaction?.status ?? 'pending';
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final isRenter = _transactionData?['renterId'] == currentUserId || widget.transactionId == null;
+    final isRenter = _transaction?.renterId == currentUserId || widget.transactionId == null;
 
     if (_isLoading) {
       return const Scaffold(
@@ -241,16 +180,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       );
     }
 
-    if (_transactionData == null) {
+    if (_transaction == null) {
       return const Scaffold(
         backgroundColor: Color(0xFFFDF9F4),
         body: Center(child: Text('Data transaksi kosong.')),
       );
     }
 
-    final itemName = _details.isNotEmpty ? _details[0]['itemNameSnapshot']?.toString() ?? 'Barang Sewaan' : 'Barang Sewaan';
-    final itemPhoto = _details.isNotEmpty ? _details[0]['itemPhotoUrlSnapshot']?.toString() ?? '' : '';
-    final itemPrice = _details.isNotEmpty ? (_details[0]['priceAtBooking'] as num).toDouble() : 15000.0;
+    final detail = _transaction!.details.isNotEmpty ? _transaction!.details.first : null;
+    final itemName = detail?.itemNameSnapshot ?? 'Barang Sewaan';
+    final itemPhoto = detail?.itemPhotoUrlSnapshot ?? '';
+    final itemPrice = detail?.priceAtBooking ?? 0.0;
     final priceStr = "Rp. ${itemPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/jam";
 
     return Scaffold(
@@ -437,7 +377,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   const SizedBox(height: 24),
                   _buildTimelineStep(
                     title: 'Requested',
-                    time: _formatDate(_transactionData?['createdAt']),
+                    time: _formatDate(_transaction?.createdAt),
                     note: 'Transaksi diajukan oleh penyewa.',
                     badgeColor: const Color(0xFFC1ECD4),
                     isLast: false,
@@ -445,7 +385,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                   _buildTimelineStep(
                     title: 'Approved',
-                    time: _formatDate(_transactionData?['approvedAt']),
+                    time: _formatDate(_transaction?.updatedAt),
                     note: 'Transaksi disetujui oleh pemilik barang.',
                     badgeColor: status.toLowerCase() == 'pending'
                         ? const Color(0xFFC1C8C2)
@@ -456,7 +396,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   if (status.toLowerCase() == 'disputed') ...[
                     _buildTimelineStep(
                       title: 'Dalam Sengketa (Disputed)',
-                      time: _formatDate(_transactionData?['updatedAt']),
+                      time: _formatDate(_transaction?.updatedAt),
                       note: 'Sengketa diajukan. Sistem menangguhkan dana sewa sementara.',
                       badgeColor: const Color(0xFF7B5804),
                       isLast: true,
@@ -466,7 +406,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     _buildTimelineStep(
                       title: 'Sewa Berlangsung',
                       time: status.toLowerCase() == 'ongoing' || status.toLowerCase() == 'completed'
-                          ? _formatDate(_transactionData?['checkinAt'])
+                          ? _formatDate(_transaction?.checkinAt)
                           : '',
                       note: '',
                       badgeColor: status.toLowerCase() == 'ongoing'
@@ -480,7 +420,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     _buildTimelineStep(
                       title: 'Sewa Selesai',
                       time: status.toLowerCase() == 'completed'
-                          ? _formatDate(_transactionData?['checkoutAt'])
+                          ? _formatDate(_transaction?.checkoutAt)
                           : '',
                       note: '',
                       badgeColor: status.toLowerCase() == 'completed'
@@ -542,7 +482,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                         builder: (context) => ScanQRRenterScreen(
                           itemData: {
                             'title': itemName,
-                            'owner': 'Pemilik: ${_transactionData?['ownerName'] ?? 'Owner'}',
+                            'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
                             'date': 'Detail Transaksi',
                             'image': itemPhoto,
                           },

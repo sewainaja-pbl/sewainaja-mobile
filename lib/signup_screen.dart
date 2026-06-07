@@ -282,6 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     Widget? rightLabel,
     TextInputType? keyboardType,
     bool enabled = true,
+    EdgeInsets scrollPadding = const EdgeInsets.all(20.0),
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -303,6 +304,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         ),
         const SizedBox(height: 8),
         TextField(
+          scrollPadding: scrollPadding,
           controller: controller,
           obscureText: isPassword,
           keyboardType: keyboardType,
@@ -342,16 +344,30 @@ class _SignUpScreenState extends State<SignUpScreen>
     final authController = context.watch<AuthController>();
     final isGoogleLoading = authController.status == AuthStatus.loading;
     final isAnyLoading = _isLoading || isGoogleLoading;
+    final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
       backgroundColor: const Color(0xFF012D1D),
       body: Stack(
         children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Positioned.fill(
+            child: Container(
+              color: const Color(0xFF012D1D).withValues(alpha: 0.7),
+            ),
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: SlideTransition(
               position: _slideAnimation,
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 width: double.infinity,
                 decoration: const BoxDecoration(
                   color: Color(
@@ -362,18 +378,37 @@ class _SignUpScreenState extends State<SignUpScreen>
                     topRight: Radius.circular(24),
                   ),
                 ),
-                padding: const EdgeInsets.only(
-                  left: 32,
-                  right: 32,
-                  top: 24,
-                  bottom: 40,
+                padding: EdgeInsets.only(
+                  top: isKeyboardOpen ? 16 : 24,
                 ),
-                child: SingleChildScrollView(
-                  child: Column(
+                child: ShaderMask(
+                  shaderCallback: (Rect rect) {
+                    return const LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black,
+                        Colors.transparent,
+                      ],
+                      stops: [0.95, 1.0],
+                    ).createShader(rect);
+                  },
+                  blendMode: BlendMode.dstIn,
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: 32,
+                      right: 32,
+                      bottom: isKeyboardOpen ? 16 : 40,
+                    ),
+                    child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const SizedBox(height: 40),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 16 : 40,
+                      ),
                       // Header - Go back to Login
                       Align(
                         alignment: Alignment.centerLeft,
@@ -390,31 +425,46 @@ class _SignUpScreenState extends State<SignUpScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 8 : 16,
+                      ),
 
-                      const Text(
-                        "Sign up",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 48,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF012D1D),
-                          height: 1.0,
-                        ),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: isKeyboardOpen
+                            ? const SizedBox(width: double.infinity)
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text(
+                                    "Sign up",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 48,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF012D1D),
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    "Daftar akun anda melanjutkan\npenjelajahan.",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF414844),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 32),
+                                ],
+                              ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "Daftar akun anda melanjutkan\npenjelajahan.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          color: Color(0xFF414844),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
 
                       // Inputs
                       _buildInputField(
@@ -424,7 +474,11 @@ class _SignUpScreenState extends State<SignUpScreen>
                         keyboardType: TextInputType.name,
                         enabled: !isAnyLoading,
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
                       _buildInputField(
                         label: "Nomor Telepom",
                         hint: "8xx xxxx xxxx",
@@ -451,7 +505,11 @@ class _SignUpScreenState extends State<SignUpScreen>
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
                       _buildInputField(
                         label: "Email", 
                         hint: "nama@email.com",
@@ -459,15 +517,24 @@ class _SignUpScreenState extends State<SignUpScreen>
                         keyboardType: TextInputType.emailAddress,
                         enabled: !isAnyLoading,
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
                       _buildInputField(
                         label: "Password",
                         hint: "Masukkan password",
                         controller: _passwordController,
                         isPassword: true,
                         enabled: !isAnyLoading,
+                        scrollPadding: const EdgeInsets.only(bottom: 180),
                       ),
-                      const SizedBox(height: 32),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 16 : 32,
+                      ),
 
                       // Sign Up Button
                       SizedBox(
@@ -504,7 +571,11 @@ class _SignUpScreenState extends State<SignUpScreen>
                                 ),
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
 
                       // Divider
                       Row(
@@ -529,7 +600,11 @@ class _SignUpScreenState extends State<SignUpScreen>
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        height: isKeyboardOpen ? 12 : 24,
+                      ),
 
                       // Social Login (Google)
                       SizedBox(
@@ -595,6 +670,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                       SizedBox(height: MediaQuery.of(context).padding.bottom),
                     ],
                   ),
+                ),
                 ),
               ),
             ),
