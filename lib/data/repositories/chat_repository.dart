@@ -165,6 +165,21 @@ class ChatRepository {
         'deletedAt': null,
       });
 
+      // Create notification for the partner
+      final newNotificationRef = _db.collection('notifications').doc();
+      batch.set(newNotificationRef, {
+        'userId': partnerId,
+        'type': 'reminder',
+        'title': 'Pesan baru dari $currentUserName',
+        'body': messageType == 'image' ? '📷 Foto' : messageText,
+        'isRead': false,
+        'isSent': false, // Cloud Function trigger akan set true setelah kirim FCM
+        'transactionId': null,
+        'scheduledAt': null,
+        'createdAt': now,
+        'updatedAt': now,
+      });
+
       await batch.commit();
       return roomId;
     } catch (e) {
@@ -225,7 +240,7 @@ class ChatRepository {
     }
   }
 
-  /// Get unread message count for a specific room
+  /// Get unread message count for a specific room (one-time fetch)
   Future<int> getUnreadCount(String roomId) async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return 0;
@@ -247,5 +262,26 @@ class ChatRepository {
     } catch (e) {
       return 0;
     }
+  }
+
+  /// Stream real-time unread message count for a specific room
+  Stream<int> watchUnreadCount(String roomId) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) return Stream.value(0);
+
+    return _chatRoomsRef
+        .doc(roomId)
+        .collection('messages')
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) {
+      int count = 0;
+      for (var doc in snapshot.docs) {
+        if (doc.data()['senderId'] != currentUserId) {
+          count++;
+        }
+      }
+      return count;
+    });
   }
 }

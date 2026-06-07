@@ -9,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'data/models/chat_model.dart';
 import 'data/repositories/chat_repository.dart';
 import 'image_upload_service.dart';
+import 'notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 
@@ -47,13 +48,18 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   String? _actualPartnerName;
   String? _actualPartnerAvatarUrl;
   bool _isUploadingImage = false;
+  double? _itemPricePerHour;
+  late bool _wasChatAreaActive;
 
   @override
   void initState() {
     super.initState();
+    _wasChatAreaActive = NotificationService.instance.isChatAreaActive;
+    NotificationService.instance.setChatAreaActive(true);
     _actualPartnerName = widget.partnerName;
     _actualPartnerAvatarUrl = widget.partnerAvatarUrl;
     _fetchPartnerProfile();
+    _fetchItemPrice();
     _roomId = widget.initialRoomId;
     if (_roomId == null) {
       _checkExistingRoom();
@@ -98,6 +104,22 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   }
 
 
+
+  Future<void> _fetchItemPrice() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('items').doc(widget.itemId).get();
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        if (data != null && data['pricePerHour'] != null) {
+          setState(() {
+            _itemPricePerHour = (data['pricePerHour'] as num).toDouble();
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching item price: $e');
+    }
+  }
 
   Future<void> _checkExistingRoom() async {
     final existingRoomId = await _chatRepository.findRoom(widget.partnerId, widget.itemId);
@@ -396,6 +418,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
   @override
   void dispose() {
+    NotificationService.instance.setChatAreaActive(_wasChatAreaActive);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -635,8 +658,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                 ),
                 SizedBox(height: 4),
                 Text(
-                  "Rp. 15.000,00/jam", // ID: '214:1960'
-                  style: TextStyle(
+                  _itemPricePerHour != null
+                      ? 'Rp. ${_itemPricePerHour!.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}/jam'
+                      : 'Loading...',
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
                     fontWeight: FontWeight.w500, // Poppins Medium
