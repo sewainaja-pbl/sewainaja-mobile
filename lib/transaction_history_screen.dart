@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'main_navigation_screen.dart';
 
 class TransactionHistoryScreen extends StatefulWidget {
   const TransactionHistoryScreen({super.key});
@@ -71,52 +72,58 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           ),
         ),
       ),
-      body: Column(
+      extendBody: true,
+      body: Stack(
+        children: [
+          Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Filter Tabs
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
             child: Row(
               children: _tabs.asMap().entries.map((entry) {
                 int index = entry.key;
                 String label = entry.value;
                 bool isActive = index == _selectedTabIndex;
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedTabIndex = index;
-                    });
-                  },
-                  behavior: HitTestBehavior.opaque,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: 24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: isActive
-                                ? const Color(0xFF1B4332)
-                                : const Color(0xFF000000),
-                          ),
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedTabIndex = index;
+                      });
+                    },
+                    behavior: HitTestBehavior.opaque,
+                    child: Center(
+                      child: IntrinsicWidth(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                                color: isActive
+                                    ? const Color(0xFF1B4332)
+                                    : const Color(0xFF828282),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            if (isActive)
+                              Container(
+                                height: 2,
+                                color: const Color(0xFF1B4332),
+                              )
+                            else
+                              const SizedBox(height: 2), // Hindari layout melompat
+                          ],
                         ),
-                        const SizedBox(height: 6),
-                        if (isActive)
-                          Container(
-                            height: 2,
-                            width: label.length * 8.0, // Indikator garis bawah
-                            color: const Color(0xFF1B4332),
-                          )
-                        else
-                          const SizedBox(height: 2), // Hindari layout melompat
-                      ],
+                      ),
                     ),
                   ),
                 );
@@ -129,7 +136,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           // ListView History
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
               itemCount: _dummyHistory.length,
               itemBuilder: (context, index) {
                 final item = _dummyHistory[index];
@@ -225,6 +232,87 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             ),
           ),
         ],
+      ),
+          _buildBottomNavigationBar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomNavigationBar() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SafeArea(
+        child: Container(
+          height: 75,
+          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF012D1D),
+            borderRadius: BorderRadius.circular(40),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(index: 0, activeIcon: Icons.home_rounded, inactiveIcon: Icons.home_outlined),
+              _buildNavItem(index: 1, activeIcon: Icons.grid_view_rounded, inactiveIcon: Icons.grid_view_outlined),
+              _buildNavItem(index: 2, activeIcon: Icons.add_box_rounded, inactiveIcon: Icons.add_box_outlined),
+              _buildNavItem(index: 3, activeIcon: Icons.chat_bubble_rounded, inactiveIcon: Icons.chat_bubble_outline_rounded),
+              _buildNavItem(index: 4, activeIcon: Icons.person_rounded, inactiveIcon: Icons.person_outline_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({required int index, required IconData activeIcon, required IconData inactiveIcon}) {
+    final bool isActive = 4 == index; // Profile is always active
+
+    return GestureDetector(
+      onTap: () {
+        if (index == 4) {
+          Navigator.pop(context); // Go back to profile screen
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => MainNavigationScreen(initialIndex: index),
+            ),
+            (route) => false,
+          );
+        }
+      },
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        width: 55,
+        height: 55,
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFFFFF8EF) : const Color(0xFF1B4332),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            transitionBuilder: (child, animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child: Icon(
+              isActive ? activeIcon : inactiveIcon,
+              key: ValueKey<bool>(isActive),
+              color: isActive ? const Color(0xFF012D1D) : const Color(0xFFFFF8EF),
+              size: 24,
+            ),
+          ),
+        ),
       ),
     );
   }
