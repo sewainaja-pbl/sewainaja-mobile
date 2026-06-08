@@ -88,7 +88,10 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => OwnerVerifyEvidenceScreen(itemData: widget.itemData),
+          builder: (_) => OwnerVerifyEvidenceScreen(
+            itemData: widget.itemData,
+            transactionId: widget.transactionId,
+          ),
         ),
       );
     });
@@ -267,34 +270,28 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3CD),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFFFC107), width: 1),
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
-                          SizedBox(height: 2),
-                          Text(
-                            'DUMMY\n(NO API)',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF856404),
-                              height: 1.1,
-                            ),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12.0),
+                    child: widget.itemData['image'] != null && widget.itemData['image']!.isNotEmpty
+                        ? (widget.itemData['image']!.startsWith('http')
+                            ? Image.network(
+                                widget.itemData['image']!,
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                widget.itemData['image']!,
+                                width: 64,
+                                height: 64,
+                                fit: BoxFit.cover,
+                              ))
+                        : Container(
+                            width: 64,
+                            height: 64,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image, color: Colors.grey),
                           ),
-                        ],
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

@@ -1,17 +1,24 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'scan_qr_renter_screen.dart';
 import 'dispute_form_screen.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
 import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
+import 'handover_show_qr_screen.dart';
+import 'return_item_scan_screen.dart';
+import 'owner_return_show_qr_screen.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String? transactionId;
   const TransactionDetailScreen({super.key, this.transactionId});
 
   @override
-  State<TransactionDetailScreen> createState() => _TransactionDetailScreenState();
+  State<TransactionDetailScreen> createState() =>
+      _TransactionDetailScreenState();
 }
 
 class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
@@ -52,6 +59,106 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _approveTransaction() async {
+    final tId = widget.transactionId;
+    if (tId == null) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.patch(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/approve'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Permintaan sewa disetujui!'), backgroundColor: Color(0xFF1B4332)),
+          );
+          _fetchTransactionDetails();
+          return;
+        }
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal menyetujui permintaan sewa.'), backgroundColor: Colors.red),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _cancelTransaction() async {
+    final tId = widget.transactionId;
+    if (tId == null) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.patch(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/cancel'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Transaksi dibatalkan.'), backgroundColor: Color(0xFF1B4332)),
+          );
+          _fetchTransactionDetails();
+          return;
+        }
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal membatalkan transaksi.'), backgroundColor: Colors.red),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Map<String, dynamic> _getFallbackTransactionData() {
+    return {
+      'id': 'dummy_trans_123',
+      'renterId': 'dummy_renter_uid',
+      'ownerId': 'dummy_owner_uid',
+      'renterName': 'Aminah',
+      'ownerName': 'Han so Hee',
+      'status': 'approved',
+      'totalPrice': 1080000,
+      'createdAt': {'_seconds': 1744535520, '_nanoseconds': 0},
+      'approvedAt': {'_seconds': 1744555520, '_nanoseconds': 0},
+    };
+  }
+
+  List<dynamic> _getFallbackDetails() {
+    return [
+      {
+        'itemId': 'dummy_item_1',
+        'itemNameSnapshot': 'Sony ɑ6000 Body Only',
+        'itemPhotoUrlSnapshot': '',
+        'priceAtBooking': 15000.0,
+        'subtotal': 1080000,
+      },
+    ];
   }
 
   String _formatStatus(String status) {
@@ -115,8 +222,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     if (dt == null) return '';
     if (dt is! DateTime) return '';
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'Mei',
+      'Jun',
+      'Jul',
+      'Agu',
+      'Sep',
+      'Okt',
+      'Nov',
+      'Des',
     ];
     final hourStr = dt.hour.toString().padLeft(2, '0');
     final minStr = dt.minute.toString().padLeft(2, '0');
@@ -127,7 +244,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget build(BuildContext context) {
     final status = _transaction?.status ?? 'pending';
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    final isRenter = _transaction?.renterId == currentUserId || widget.transactionId == null;
+    final isRenter =
+        _transaction?.renterId == currentUserId || widget.transactionId == null;
 
     if (_isLoading) {
       return const Scaffold(
@@ -187,11 +305,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       );
     }
 
-    final detail = _transaction!.details.isNotEmpty ? _transaction!.details.first : null;
+    final detail = _transaction!.details.isNotEmpty
+        ? _transaction!.details.first
+        : null;
     final itemName = detail?.itemNameSnapshot ?? 'Barang Sewaan';
     final itemPhoto = detail?.itemPhotoUrlSnapshot ?? '';
     final itemPrice = detail?.priceAtBooking ?? 0.0;
-    final priceStr = "Rp. ${itemPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/jam";
+    final priceStr =
+        "Rp. ${itemPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/jam";
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
@@ -228,10 +349,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2),
-            height: 1.0,
-          ),
+          child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
         ),
       ),
       body: SingleChildScrollView(
@@ -298,10 +416,13 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
                       image: DecorationImage(
-                        image: itemPhoto.isNotEmpty && (itemPhoto.startsWith('http') || itemPhoto.startsWith('assets/'))
+                        image:
+                            itemPhoto.isNotEmpty &&
+                                (itemPhoto.startsWith('http') ||
+                                    itemPhoto.startsWith('assets/'))
                             ? (itemPhoto.startsWith('http')
-                                ? NetworkImage(itemPhoto)
-                                : AssetImage(itemPhoto) as ImageProvider)
+                                  ? NetworkImage(itemPhoto)
+                                  : AssetImage(itemPhoto) as ImageProvider)
                             : const AssetImage('assets/images/Iklan.jpg'),
                         fit: BoxFit.cover,
                       ),
@@ -397,7 +518,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     _buildTimelineStep(
                       title: 'Dalam Sengketa (Disputed)',
                       time: _formatDate(_transaction?.updatedAt),
-                      note: 'Sengketa diajukan. Sistem menangguhkan dana sewa sementara.',
+                      note:
+                          'Sengketa diajukan. Sistem menangguhkan dana sewa sementara.',
                       badgeColor: const Color(0xFF7B5804),
                       isLast: true,
                       isCurrent: true,
@@ -405,15 +527,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ] else ...[
                     _buildTimelineStep(
                       title: 'Sewa Berlangsung',
-                      time: status.toLowerCase() == 'ongoing' || status.toLowerCase() == 'completed'
+                      time:
+                          status.toLowerCase() == 'ongoing' ||
+                              status.toLowerCase() == 'completed'
                           ? _formatDate(_transaction?.checkinAt)
                           : '',
                       note: '',
                       badgeColor: status.toLowerCase() == 'ongoing'
                           ? const Color(0xFF012D1D)
                           : (status.toLowerCase() == 'completed'
-                              ? const Color(0xFFC1ECD4)
-                              : const Color(0xFFC1C8C2)),
+                                ? const Color(0xFFC1ECD4)
+                                : const Color(0xFFC1C8C2)),
                       isLast: false,
                       isCurrent: status.toLowerCase() == 'ongoing',
                     ),
@@ -470,53 +594,280 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: status.toLowerCase() == 'approved' && isRenter
-          ? SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ScanQRRenterScreen(
-                          itemData: {
-                            'title': itemName,
-                            'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
-                            'date': 'Detail Transaksi',
-                            'image': itemPhoto,
-                          },
-                          transactionId: widget.transactionId,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.handshake, color: Colors.white),
-                  label: const Text(
-                    'Mulai Serah Terima',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF7B5804),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            )
-          : null,
+      bottomNavigationBar: _buildBottomNavigationBar(status, isRenter, itemName, itemPhoto),
     );
   }
 
-  Widget _buildDisputeActionButtons(String status, bool isRenter, String itemName) {
+  Widget? _buildBottomNavigationBar(String status, bool isRenter, String itemName, String itemPhoto) {
+    status = status.toLowerCase();
+    
+    if (status == 'pending') {
+      if (!isRenter) {
+        // Owner pending view
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _cancelTransaction,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFBA1A1A),
+                      side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                    ),
+                    child: const Text(
+                      'Tolak',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _approveTransaction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF012D1D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Setujui',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        // Renter pending view
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: OutlinedButton(
+              onPressed: _cancelTransaction,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFBA1A1A),
+                side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+              ),
+              child: const Text(
+                'Batalkan Permintaan',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    
+    if (status == 'approved') {
+      if (isRenter) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ScanQRRenterScreen(
+                      itemData: {
+                        'title': itemName,
+                        'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
+                        'date': 'Detail Transaksi',
+                        'image': itemPhoto,
+                      },
+                      transactionId: widget.transactionId,
+                    ),
+                  ),
+                ).then((_) => _fetchTransactionDetails());
+              },
+              icon: const Icon(Icons.handshake, color: Colors.white),
+              label: const Text(
+                'Mulai Serah Terima',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B5804),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Owner approved: show QR code
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => HandoverShowQRScreen(
+                      itemData: {
+                        'title': itemName,
+                        'owner': 'Penyewa: ${_transaction?.renterName ?? 'Renter'}',
+                        'date': 'Detail Transaksi',
+                        'image': itemPhoto,
+                      },
+                      transactionId: widget.transactionId,
+                    ),
+                  ),
+                ).then((_) => _fetchTransactionDetails());
+              },
+              icon: const Icon(Icons.qr_code, color: Colors.white),
+              label: const Text(
+                'Tampilkan QR Serah Terima',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF012D1D),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    
+    if (status == 'ongoing') {
+      if (isRenter) {
+        // Renter ongoing: Return Item (opens OwnerReturnShowQRScreen)
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OwnerReturnShowQRScreen(
+                      itemData: {
+                        'title': itemName,
+                        'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
+                        'date': 'Detail Transaksi',
+                        'image': itemPhoto,
+                      },
+                      transactionId: widget.transactionId,
+                    ),
+                  ),
+                ).then((_) => _fetchTransactionDetails());
+              },
+              icon: const Icon(Icons.assignment_return_outlined, color: Colors.white),
+              label: const Text(
+                'Kembalikan Barang',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B5804),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      } else {
+        // Owner ongoing: Scan QR return (opens ReturnItemScanScreen)
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReturnItemScanScreen(
+                      transactionId: widget.transactionId,
+                      itemName: itemName,
+                    ),
+                  ),
+                ).then((_) => _fetchTransactionDetails());
+              },
+              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+              label: const Text(
+                'Scan QR Pengembalian',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF012D1D),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    
+    return null;
+  }
+
+  Widget _buildDisputeActionButtons(
+    String status,
+    bool isRenter,
+    String itemName,
+  ) {
     if (!isRenter) return const SizedBox.shrink();
 
     if (status.toLowerCase() == 'approved') {
@@ -524,11 +875,15 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OutlinedButton.icon(
-            onPressed: () => _navigateToDispute(context, 'handover_rejection', itemName),
+            onPressed: () =>
+                _navigateToDispute(context, 'handover_rejection', itemName),
             icon: const Icon(Icons.gpp_bad_outlined, color: Colors.red),
             label: const Text(
               'Barang Rusak saat COD (Tolak Terima)',
-              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
@@ -546,11 +901,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OutlinedButton.icon(
-            onPressed: () => _navigateToDispute(context, 'ongoing_damage', itemName),
-            icon: const Icon(Icons.report_problem_outlined, color: Colors.orange),
+            onPressed: () =>
+                _navigateToDispute(context, 'ongoing_damage', itemName),
+            icon: const Icon(
+              Icons.report_problem_outlined,
+              color: Colors.orange,
+            ),
             label: const Text(
               'Laporkan Kerusakan Barang (Sewa Berjalan)',
-              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+              ),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.orange,
@@ -567,7 +929,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     return const SizedBox.shrink();
   }
 
-  void _navigateToDispute(BuildContext context, String category, String itemName) async {
+  void _navigateToDispute(
+    BuildContext context,
+    String category,
+    String itemName,
+  ) async {
     final tId = widget.transactionId ?? 'dummy_trans_123';
     final result = await Navigator.push(
       context,
@@ -605,15 +971,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 decoration: BoxDecoration(
                   color: badgeColor,
                   shape: BoxShape.circle,
-                  border: isCurrent ? Border.all(color: const Color(0xFF012D1D), width: 3) : null,
+                  border: isCurrent
+                      ? Border.all(color: const Color(0xFF012D1D), width: 3)
+                      : null,
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    color: const Color(0xFFC1C8C2),
-                  ),
+                  child: Container(width: 2, color: const Color(0xFFC1C8C2)),
                 ),
             ],
           ),

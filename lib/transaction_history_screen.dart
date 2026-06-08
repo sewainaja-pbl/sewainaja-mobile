@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'main_navigation_screen.dart';
 import 'data/models/transaction_model.dart';
@@ -61,6 +62,75 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       return _transactions.where((t) => t.status == 'cancelled' || t.status == 'disputed').toList();
     }
     return _transactions;
+  }
+
+  String _getPartnerName(TransactionModel trans) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (trans.renterId == currentUid) {
+      return 'Pemilik: ${trans.ownerName}';
+    } else {
+      return 'Penyewa: ${trans.renterName}';
+    }
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color bgColor;
+    Color textColor;
+    String label;
+
+    switch (status.toLowerCase()) {
+      case 'pending':
+        bgColor = const Color(0xFFFFF4DB);
+        textColor = const Color(0xFFB8860B);
+        label = 'Menunggu';
+        break;
+      case 'approved':
+        bgColor = const Color(0xFFE8F0EB);
+        textColor = const Color(0xFF2D5C44);
+        label = 'Disetujui';
+        break;
+      case 'ongoing':
+        bgColor = const Color(0xFFD0E1D4);
+        textColor = const Color(0xFF1A3C2E);
+        label = 'Berlangsung';
+        break;
+      case 'completed':
+        bgColor = const Color(0xFFD1F2E5);
+        textColor = const Color(0xFF10B981);
+        label = 'Selesai';
+        break;
+      case 'cancelled':
+        bgColor = const Color(0xFFFDE8E8);
+        textColor = const Color(0xFFF04438);
+        label = 'Batal';
+        break;
+      case 'disputed':
+        bgColor = const Color(0xFFFFF4DB);
+        textColor = const Color(0xFFF59E0B);
+        label = 'Sengketa';
+        break;
+      default:
+        bgColor = const Color(0xFFEEEEEE);
+        textColor = const Color(0xFF6B6B6B);
+        label = status.toUpperCase();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Poppins',
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: textColor,
+        ),
+      ),
+    );
   }
 
   @override
@@ -243,20 +313,29 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  itemName,
-                                                  style: const TextStyle(
-                                                    fontFamily: 'Poppins',
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600, // Semibold
-                                                    color: Color(0xFF414844),
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        itemName,
+                                                        style: const TextStyle(
+                                                          fontFamily: 'Poppins',
+                                                          fontSize: 16,
+                                                          fontWeight: FontWeight.w600, // Semibold
+                                                          color: Color(0xFF414844),
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    _buildStatusBadge(item.status),
+                                                  ],
                                                 ),
                                                 const SizedBox(height: 6),
                                                 Text(
-                                                  "Pemilik: ${item.ownerName}",
+                                                  _getPartnerName(item),
                                                   style: const TextStyle(
                                                     fontFamily: 'Poppins',
                                                     fontSize: 12,
