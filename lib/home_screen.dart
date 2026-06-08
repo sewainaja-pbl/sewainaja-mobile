@@ -97,7 +97,8 @@ class _HomeScreenState extends State<HomeScreen>
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
+    );
+    _updateShimmerControllerStatus();
     _loadDefaultLocationLabel();
     _loadCategories();
     _listenToNewArrivals();
@@ -115,20 +116,37 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _updateShimmerControllerStatus() {
+    if (_isLoadingNewArrivals || _isLoadingTrustedNearby) {
+      if (!_shimmerController.isAnimating) {
+        _shimmerController.repeat(reverse: true);
+      }
+    } else {
+      if (_shimmerController.isAnimating) {
+        _shimmerController.stop();
+      }
+    }
+  }
+
   void _listenToNewArrivals() {
     _newArrivalsSub?.cancel();
     setState(() {
       _isLoadingNewArrivals = true;
+      _updateShimmerControllerStatus();
     });
     _newArrivalsSub = _itemRepo.watchNewArrivals(limit: 5).listen((items) {
       if (!mounted) return;
       setState(() {
         _newArrivals = items;
         _isLoadingNewArrivals = false;
+        _updateShimmerControllerStatus();
       });
     }, onError: (_) {
       if (!mounted) return;
-      setState(() => _isLoadingNewArrivals = false);
+      setState(() {
+        _isLoadingNewArrivals = false;
+        _updateShimmerControllerStatus();
+      });
     });
   }
 
@@ -136,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen>
     _trustedNearbySub?.cancel();
     setState(() {
       _isLoadingTrustedNearby = true;
+      _updateShimmerControllerStatus();
     });
     _trustedNearbySub = _itemRepo.watchAvailableItems(
       categoryName: selectedCategory == 'All' ? null : selectedCategory,
@@ -144,10 +163,14 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() {
         _trustedNearby = items;
         _isLoadingTrustedNearby = false;
+        _updateShimmerControllerStatus();
       });
     }, onError: (_) {
       if (!mounted) return;
-      setState(() => _isLoadingTrustedNearby = false);
+      setState(() {
+        _isLoadingTrustedNearby = false;
+        _updateShimmerControllerStatus();
+      });
     });
   }
 
