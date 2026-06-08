@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
 import 'item_detail_screen.dart';
 import 'room_chat_screen.dart';
 import 'widgets/product_card.dart';
+import 'widgets/subtle_fade_in.dart';
 import 'widgets/product_more_sheet.dart';
 import 'search_result_screen.dart';
 import 'models/product.dart';
@@ -782,9 +782,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                       isLocalAsset: !itemModel.primaryPhoto.startsWith('http'),
                                       originalItem: itemModel,
                                     );
-                                    return FadeInUp(
-                                      duration: const Duration(milliseconds: 400),
-                                      delay: Duration(milliseconds: 50 * index),
+                                    return SubtleFadeIn(
                                       child: GestureDetector(
                                         onTap: () {
                                           Navigator.push(

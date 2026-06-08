@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'address_service.dart';
@@ -13,6 +12,7 @@ import 'map_explore_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
 import 'widgets/product_more_sheet.dart';
+import 'widgets/subtle_fade_in.dart';
 import 'favorite_service.dart';
 import 'widgets/report_dialog.dart';
 import 'new_arrivals_screen.dart';
@@ -71,6 +71,9 @@ class _HomeScreenState extends State<HomeScreen>
   final GlobalKey _trustedSectionKey = GlobalKey();
   bool _isMapCardPressed = false;
 
+  // Single shared animation controller for all skeleton shimmers to optimize performance
+  late AnimationController _shimmerController;
+
   /// Kategori yang ditampilkan di filter chip: "All" + kategori dari Firestore.
   List<String> get categories {
     if (_firestoreCategories.isEmpty) {
@@ -91,6 +94,11 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _updateShimmerControllerStatus();
     _loadDefaultLocationLabel();
     _loadCategories();
     _listenToNewArrivals();
@@ -99,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void dispose() {
+    _shimmerController.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
     _scrollController.dispose();
@@ -107,20 +116,37 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
+  void _updateShimmerControllerStatus() {
+    if (_isLoadingNewArrivals || _isLoadingTrustedNearby) {
+      if (!_shimmerController.isAnimating) {
+        _shimmerController.repeat(reverse: true);
+      }
+    } else {
+      if (_shimmerController.isAnimating) {
+        _shimmerController.stop();
+      }
+    }
+  }
+
   void _listenToNewArrivals() {
     _newArrivalsSub?.cancel();
     setState(() {
       _isLoadingNewArrivals = true;
+      _updateShimmerControllerStatus();
     });
     _newArrivalsSub = _itemRepo.watchNewArrivals(limit: 5).listen((items) {
       if (!mounted) return;
       setState(() {
         _newArrivals = items;
         _isLoadingNewArrivals = false;
+        _updateShimmerControllerStatus();
       });
     }, onError: (_) {
       if (!mounted) return;
-      setState(() => _isLoadingNewArrivals = false);
+      setState(() {
+        _isLoadingNewArrivals = false;
+        _updateShimmerControllerStatus();
+      });
     });
   }
 
@@ -128,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen>
     _trustedNearbySub?.cancel();
     setState(() {
       _isLoadingTrustedNearby = true;
+      _updateShimmerControllerStatus();
     });
     _trustedNearbySub = _itemRepo.watchAvailableItems(
       categoryName: selectedCategory == 'All' ? null : selectedCategory,
@@ -136,10 +163,14 @@ class _HomeScreenState extends State<HomeScreen>
       setState(() {
         _trustedNearby = items;
         _isLoadingTrustedNearby = false;
+        _updateShimmerControllerStatus();
       });
     }, onError: (_) {
       if (!mounted) return;
-      setState(() => _isLoadingTrustedNearby = false);
+      setState(() {
+        _isLoadingTrustedNearby = false;
+        _updateShimmerControllerStatus();
+      });
     });
   }
 
@@ -1087,8 +1118,7 @@ class _HomeScreenState extends State<HomeScreen>
             image: item.primaryPhoto,
             originalItem: item,
           );
-          return FadeInUp(
-            delay: Duration(milliseconds: 80 * index),
+          return SubtleFadeIn(
             child: GestureDetector(
               onTap: () => Navigator.push(
                 context,
@@ -1122,7 +1152,11 @@ class _HomeScreenState extends State<HomeScreen>
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,
         separatorBuilder: (_, __) => const SizedBox(width: 16),
-        itemBuilder: (_, __) => _buildShimmerCard(width: 160, height: 210),
+        itemBuilder: (_, __) => ProductCardSkeleton(
+          width: 160,
+          height: 210,
+          animation: _shimmerController,
+        ),
       ),
     );
   }
@@ -1159,9 +1193,10 @@ class _HomeScreenState extends State<HomeScreen>
             childAspectRatio: 0.65,
           ),
           delegate: SliverChildBuilderDelegate(
-            (_, __) => _buildShimmerCard(
+            (_, __) => ProductCardSkeleton(
               width: double.infinity,
               height: double.infinity,
+              animation: _shimmerController,
             ),
             childCount: 4,
           ),
@@ -1223,11 +1258,10 @@ class _HomeScreenState extends State<HomeScreen>
                   : '—',
               image: item.primaryPhoto,
             );
-            return FadeInUp(
+            return SubtleFadeIn(
               key: ValueKey(
                 '${selectedCategory}_${item.id}_$index',
               ),
-              delay: Duration(milliseconds: 50 * (index % 4)),
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -1320,61 +1354,85 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // SHIMMER PLACEHOLDER CARD saat loading Firestore
-  // ---------------------------------------------------------------------------
-
-  Widget _buildShimmerCard({required double width, required double height}) {
-    return _ShimmerCard(width: width, height: height);
-  }
 }
 
-/// Widget shimmer sederhana untuk state loading.
-class _ShimmerCard extends StatefulWidget {
+/// Widget skeleton loading terstruktur yang meniru layout ProductCard vertikal
+/// menggunakan satu controller animasi bersama dari parent.
+class ProductCardSkeleton extends StatelessWidget {
   final double width;
   final double height;
+  final Animation<double> animation;
 
-  const _ShimmerCard({required this.width, required this.height});
-
-  @override
-  State<_ShimmerCard> createState() => _ShimmerCardState();
-}
-
-class _ShimmerCardState extends State<_ShimmerCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _anim;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-    _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
+  const ProductCardSkeleton({
+    super.key,
+    required this.width,
+    required this.height,
+    required this.animation,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _anim,
-      builder: (_, __) {
+      animation: animation,
+      builder: (context, child) {
+        final shimmerColor = Color.lerp(
+          const Color(0xFFE8E4DC),
+          const Color(0xFFF5F1E8),
+          animation.value,
+        )!;
         return Container(
-          width: widget.width,
-          height: widget.height,
+          width: width,
+          height: height,
           decoration: BoxDecoration(
+            color: const Color(0xFFFFFFFF),
             borderRadius: BorderRadius.circular(15),
-            color: Color.lerp(
-              const Color(0xFFE8E4DC),
-              const Color(0xFFF5F1E8),
-              _anim.value,
+            border: Border.all(color: const Color(0xFF2F6743), width: 0.5),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Area Gambar (Placeholder)
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: shimmerColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Area Nama/Judul Barang (Placeholder)
+                Container(
+                  width: double.infinity,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  width: 100,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Area Harga Barang (Placeholder)
+                Container(
+                  width: 70,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: shimmerColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
             ),
           ),
         );

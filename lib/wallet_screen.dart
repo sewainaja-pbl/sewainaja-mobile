@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'widgets/subtle_fade_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -429,9 +430,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           itemBuilder: (context, index) {
                             final log = _history[index];
                             final isEarning = log['type'] == 'earning';
-                            return FadeInUp(
-                              duration: const Duration(milliseconds: 300),
-                              delay: Duration(milliseconds: 50 * index),
+                            return SubtleFadeIn(
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
