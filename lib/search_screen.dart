@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
 import 'package:fuzzy/fuzzy.dart';
 import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'item_detail_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'widgets/subtle_fade_in.dart';
 
 // ---------------------------------------------------------------------------
 // Suggestions list — tetap dipertahankan untuk saat query kosong
@@ -363,9 +363,7 @@ class SearchSheetState extends State<SearchSheet>
             itemBuilder: (context, index) {
               final item = _results[index];
               final product = _toProductData(item);
-              return FadeInUp(
-                duration: const Duration(milliseconds: 200),
-                delay: Duration(milliseconds: 40 * index),
+              return SubtleFadeIn(
                 child: GestureDetector(
                   onTap: () => _navigateToDetail(item),
                   child: ProductCard(product: product, isHorizontal: true),

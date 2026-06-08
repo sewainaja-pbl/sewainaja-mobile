@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
+import 'widgets/subtle_fade_in.dart';
 import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
 
@@ -218,9 +219,7 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
                         rating: 4.5,
                       );
                       
-                      return FadeInUp(
-                        duration: const Duration(milliseconds: 300),
-                        delay: Duration(milliseconds: 30 * index),
+                      return SubtleFadeIn(
                         child: GestureDetector(
                           onTap: () => _navigateToDetail(pMap),
                           child: ProductCard(

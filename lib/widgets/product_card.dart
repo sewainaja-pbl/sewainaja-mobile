@@ -30,7 +30,7 @@ class ProductCard extends StatelessWidget {
     final safeUrl = getSafeImageUrl(imagePath);
     if (safeUrl.startsWith('http://') || safeUrl.startsWith('https://')) {
       return ResizeImage(
-        NetworkImage(safeUrl),
+        CachedNetworkImageProvider(safeUrl),
         width: 200, // Optimize memory for horizontal card preview
       );
     }
