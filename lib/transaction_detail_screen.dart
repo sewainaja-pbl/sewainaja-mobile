@@ -11,6 +11,7 @@ import 'data/repositories/transaction_repository.dart';
 import 'handover_show_qr_screen.dart';
 import 'return_item_scan_screen.dart';
 import 'owner_return_show_qr_screen.dart';
+import 'payment_screen.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String? transactionId;
@@ -26,11 +27,44 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   TransactionModel? _transaction;
+  bool _isPaid = false;
 
   @override
   void initState() {
     super.initState();
     _fetchTransactionDetails();
+  }
+
+  Future<void> _fetchPaymentStatus() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) return;
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/payments/$tId'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          final payments = body['data'] as List<dynamic>;
+          final hasPaid = payments.any((p) => p['status'] == 'paid');
+          if (mounted) {
+            setState(() {
+              _isPaid = hasPaid;
+            });
+          }
+          return;
+        }
+      }
+    } catch (_) {
+      // Silently ignore
+    }
   }
 
   Future<void> _fetchTransactionDetails() async {
@@ -49,6 +83,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     try {
       final transaction = await _repository.fetchTransactionById(tId);
+      
+      final statusLower = transaction.status.toLowerCase();
+      if (statusLower != 'pending' && statusLower != 'cancelled') {
+        await _fetchPaymentStatus();
+      } else {
+        setState(() {
+          _isPaid = false;
+        });
+      }
+
       setState(() {
         _transaction = transaction;
         _isLoading = false;
@@ -462,6 +506,36 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                             color: Color(0xFF7B5804),
                           ),
                         ),
+                        if (status.toLowerCase() != 'pending' && status.toLowerCase() != 'cancelled') ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _isPaid ? const Color(0xFFD0E1D4) : const Color(0xFFFFF2F2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isPaid ? Icons.check_circle : Icons.error_outline,
+                                  size: 14,
+                                  color: _isPaid ? const Color(0xFF012D1D) : Colors.red,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _isPaid ? 'Pembayaran: Lunas' : 'Pembayaran: Belum Bayar',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: _isPaid ? const Color(0xFF012D1D) : Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -688,6 +762,51 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     
     if (status == 'approved') {
       if (isRenter) {
+        if (!_isPaid) {
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PaymentScreen(
+                        transactionId: widget.transactionId ?? '',
+                        totalPrice: _transaction?.totalPrice ?? 0.0,
+                        itemName: itemName,
+                        itemPhoto: itemPhoto,
+                        ownerName: _transaction?.ownerName ?? 'Owner',
+                      ),
+                    ),
+                  ).then((value) {
+                    if (value == true) {
+                      _fetchTransactionDetails();
+                    }
+                  });
+                },
+                icon: const Icon(Icons.payment, color: Colors.white),
+                label: const Text(
+                  'Bayar Sekarang',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B5804),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          );
+        }
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
@@ -719,7 +838,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF7B5804),
+                backgroundColor: const Color(0xFF012D1D),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(9999),
