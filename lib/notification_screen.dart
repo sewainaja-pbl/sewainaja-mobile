@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'notification_service.dart';
 import 'rental_request_screen.dart';
+import 'transaction_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -12,21 +13,6 @@ class NotificationScreen extends StatefulWidget {
 }
 
 class _NotificationScreenState extends State<NotificationScreen> {
-  static const AppNotification _pinnedDummyNotification = AppNotification(
-    id: 'dummy-feature-placeholder',
-    title: 'Permintaan sewa baru',
-    message:
-        'Aminah mengajukan sewa untuk Sony a6000 pada 14-16 Juni. Dummy ini sengaja dipin di atas buat jalur fitur yang nanti dilanjutin temanmu.',
-    timeLabel: 'Baru saja',
-    category: 'Sewa',
-    initials: 'AM',
-    isRead: false,
-    highlight: true,
-    isDummy: true,
-    isPinned: true,
-    type: 'request',
-  );
-
   @override
   void initState() {
     super.initState();
@@ -42,12 +28,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget build(BuildContext context) {
     return Consumer<NotificationService>(
       builder: (context, notificationService, _) {
-        final allItems = [
-          _pinnedDummyNotification,
-          ...notificationService.notifications,
-        ];
+        final allItems = notificationService.notifications;
         final unreadItems = allItems
-            .where((item) => item.isDummy || !item.isRead)
+            .where((item) => !item.isRead)
             .toList();
 
         return Scaffold(
@@ -157,11 +140,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Future<void> _handleNotificationTap(AppNotification item) async {
-    if (!item.isDummy && !item.isRead) {
+    if (!item.isRead) {
       await context.read<NotificationService>().markAsRead(item.id);
     }
 
     if (!mounted) {
+      return;
+    }
+
+    if (item.transactionId != null && item.transactionId!.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TransactionDetailScreen(transactionId: item.transactionId!),
+        ),
+      );
       return;
     }
 
@@ -170,11 +163,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         context,
         MaterialPageRoute(builder: (context) => const RentalRequestScreen()),
       );
-      return;
-    }
-
-    if (item.isDummy) {
-      _showDummyDetail(context, item);
       return;
     }
 

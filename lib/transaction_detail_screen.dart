@@ -12,6 +12,8 @@ import 'handover_show_qr_screen.dart';
 import 'return_item_scan_screen.dart';
 import 'owner_return_show_qr_screen.dart';
 import 'payment_screen.dart';
+import 'rental_deadline_screen.dart';
+
 
 class TransactionDetailScreen extends StatefulWidget {
   final String? transactionId;
@@ -179,6 +181,88 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
+  Future<void> _confirmManualPayment() async {
+    final tId = widget.transactionId;
+    if (tId == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFFF8EF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Konfirmasi Pembayaran COD',
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D)),
+        ),
+        content: Text(
+          "Apakah Anda yakin telah menerima pembayaran tunai (COD) sebesar Rp. ${_transaction?.totalPrice != null ? _transaction!.totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.') : '0'} dari penyewa?",
+          style: const TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF012D1D),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            ),
+            child: const Text('Ya, Konfirmasi', style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'transactionId': tId,
+          'method': 'cash',
+          'amount': _transaction?.totalPrice ?? 0.0,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Pembayaran COD berhasil dikonfirmasi!'),
+              backgroundColor: Color(0xFF1B4332),
+            ),
+          );
+          if (mounted) {
+            setState(() {
+              _isPaid = true;
+            });
+          }
+          _fetchTransactionDetails();
+          return;
+        }
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal mengonfirmasi pembayaran.'), backgroundColor: Colors.red),
+      );
+    } catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Map<String, dynamic> _getFallbackTransactionData() {
     return {
       'id': 'dummy_trans_123',
@@ -283,6 +367,33 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final minStr = dt.minute.toString().padLeft(2, '0');
     return '${dt.day} ${months[dt.month - 1]}, ${dt.year} • $hourStr:$minStr';
   }
+
+  String _formatDateShort(dynamic dt) {
+    if (dt == null) return '';
+    if (dt is! DateTime) return '';
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  String _formatDateRange(DateTime? start, DateTime? end) {
+    if (start == null || end == null) return 'Detail Transaksi';
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    if (start.year == end.year) {
+      if (start.month == end.month) {
+        return '${start.day} - ${end.day} ${months[start.month - 1]} ${start.year}';
+      } else {
+        return '${start.day} ${months[start.month - 1]} - ${end.day} ${months[end.month - 1]} ${start.year}';
+      }
+    }
+    return '${start.day} ${months[start.month - 1]} ${start.year} - ${end.day} ${months[end.month - 1]} ${end.year}';
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -391,13 +502,24 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             color: Color(0xFF012D1D),
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+            tooltip: 'Segarkan',
+            onPressed: _fetchTransactionDetails,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      body: RefreshIndicator(
+        onRefresh: _fetchTransactionDetails,
+        color: const Color(0xFF012D1D),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -437,6 +559,78 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            if (status.toLowerCase() == 'ongoing') ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8EF),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFF012D1D), width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, color: Color(0xFF012D1D), size: 28),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Pelacakan Waktu & Tenggat',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF012D1D),
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Lihat hitung mundur sisa waktu sewa dan status pengembalian.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              color: Color(0xFF414844),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RentalDeadlineScreen(
+                              transactionId: widget.transactionId,
+                            ),
+                          ),
+                        ).then((_) => _fetchTransactionDetails());
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF012D1D),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      ),
+                      child: const Text(
+                        'Lihat',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+
 
             // ITEM DETAILS CARD
             Container(
@@ -541,6 +735,85 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 24),
+
+            // Rincian Sewa Card
+            Builder(
+              builder: (context) {
+                String durationText = "-";
+                if (detail?.startDate != null && detail?.endDate != null) {
+                  final diff = detail!.endDate!.difference(detail.startDate!);
+                  final hours = diff.inHours;
+                  if (hours >= 24) {
+                    final days = (hours / 24).ceil();
+                    durationText = "$days Hari ($hours Jam)";
+                  } else {
+                    durationText = "$hours Jam";
+                  }
+                }
+
+                return Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'RINCIAN SEWA',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildSummaryRow('Penyewa', _transaction?.renterName ?? '-'),
+                      _buildSummaryRow('Pemilik', _transaction?.ownerName ?? '-'),
+                      const Divider(height: 24, thickness: 1, color: Color(0xFFE8E4DE)),
+                      _buildSummaryRow('Tanggal Mulai', _formatDate(detail?.startDate)),
+                      _buildSummaryRow('Tanggal Selesai', _formatDate(detail?.endDate)),
+                      _buildSummaryRow('Durasi Sewa', durationText),
+                      _buildSummaryRow('Jumlah Unit', '${_transaction?.totalItems ?? 1} barang'),
+                      const Divider(height: 24, thickness: 1, color: Color(0xFFE8E4DE)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Total Pembayaran',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF414844),
+                            ),
+                          ),
+                          Text(
+                            "Rp. ${_transaction != null ? _transaction!.totalPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.') : '0'}",
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF7B5804),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }
             ),
             const SizedBox(height: 24),
 
@@ -668,12 +941,17 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ],
         ),
       ),
+    ),
       bottomNavigationBar: _buildBottomNavigationBar(status, isRenter, itemName, itemPhoto),
     );
   }
 
   Widget? _buildBottomNavigationBar(String status, bool isRenter, String itemName, String itemPhoto) {
     status = status.toLowerCase();
+    
+    final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
+    final startDate = detail?.startDate;
+    final endDate = detail?.endDate;
     
     if (status == 'pending') {
       if (!isRenter) {
@@ -819,7 +1097,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       itemData: {
                         'title': itemName,
                         'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
-                        'date': 'Detail Transaksi',
+                        'date': _formatDateRange(startDate, endDate),
                         'image': itemPhoto,
                       },
                       transactionId: widget.transactionId,
@@ -849,45 +1127,75 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ),
         );
       } else {
-        // Owner approved: show QR code
+        // Owner approved: show QR code and COD confirmation if unpaid
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-            child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => HandoverShowQRScreen(
-                      itemData: {
-                        'title': itemName,
-                        'owner': 'Penyewa: ${_transaction?.renterName ?? 'Renter'}',
-                        'date': 'Detail Transaksi',
-                        'image': itemPhoto,
-                      },
-                      transactionId: widget.transactionId,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!_isPaid) ...[
+                  ElevatedButton.icon(
+                    onPressed: _confirmManualPayment,
+                    icon: const Icon(Icons.monetization_on, color: Colors.white),
+                    label: const Text(
+                      'Konfirmasi Terima Uang (COD)',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF7B5804),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      elevation: 0,
                     ),
                   ),
-                ).then((_) => _fetchTransactionDetails());
-              },
-              icon: const Icon(Icons.qr_code, color: Colors.white),
-              label: const Text(
-                'Tampilkan QR Serah Terima',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  const SizedBox(height: 12),
+                ],
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HandoverShowQRScreen(
+                          itemData: {
+                            'title': itemName,
+                            'owner': 'Penyewa: ${_transaction?.renterName ?? 'Renter'}',
+                            'date': _formatDateRange(startDate, endDate),
+                            'image': itemPhoto,
+                          },
+                          transactionId: widget.transactionId,
+                        ),
+                      ),
+                    ).then((_) => _fetchTransactionDetails());
+                  },
+                  icon: const Icon(Icons.qr_code, color: Colors.white),
+                  label: const Text(
+                    'Tampilkan QR Serah Terima',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9999),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF012D1D),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(9999),
-                ),
-                elevation: 0,
-              ),
+              ],
             ),
           ),
         );
@@ -909,7 +1217,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       itemData: {
                         'title': itemName,
                         'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
-                        'date': 'Detail Transaksi',
+                        'date': _formatDateRange(startDate, endDate),
                         'image': itemPhoto,
                       },
                       transactionId: widget.transactionId,
@@ -1068,6 +1376,40 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     if (result == true) {
       _fetchTransactionDetails();
     }
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF717973),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTimelineStep({

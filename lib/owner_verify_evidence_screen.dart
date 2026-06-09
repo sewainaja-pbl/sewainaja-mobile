@@ -101,6 +101,12 @@ class _OwnerVerifyEvidenceScreenState extends State<OwnerVerifyEvidenceScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+            onPressed: _fetchEvidences,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(

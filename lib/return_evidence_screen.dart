@@ -24,6 +24,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
   final List<ProcessedImageFile> _selectedImages = [];
   Map<String, dynamic>? _transactionData;
   List<dynamic> _details = [];
+  bool _canPop = false;
 
   @override
   void initState() {
@@ -417,35 +418,105 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
+  Future<bool> _showExitConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
         title: const Text(
-          'Serah Terima',
+          'Keluar dari Halaman?',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332),
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012D1D),
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2),
-            height: 1.0,
+        content: const Text(
+          'Anda belum menyelesaikan pengisian bukti serah terima/pengembalian dan rating. Jika Anda keluar sekarang, data bukti sewa Anda tidak akan tersimpan secara lengkap. Yakin ingin keluar?',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            color: Color(0xFF414844),
           ),
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1B4332),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: _canPop,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog();
+        if (shouldPop) {
+          setState(() {
+            _canPop = true;
+          });
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFDF9F4),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFFFDF9F4),
+          centerTitle: true,
+          title: const Text(
+            'Serah Terima',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 30,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1B4332),
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+              onPressed: _fetchTransactionDetails,
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(
+              color: const Color(0xFFC1C8C2),
+              height: 1.0,
+            ),
+          ),
+        ),
       body: _isSubmitting
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
@@ -774,6 +845,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                 ],
               ),
             ),
+      ),
     );
   }
 }

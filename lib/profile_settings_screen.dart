@@ -20,6 +20,10 @@ import 'transaction_history_screen.dart';
 import 'profile_view_screen.dart';
 import 'ktp_upload_screen.dart';
 import 'wallet_screen.dart';
+import 'data/models/transaction_model.dart';
+import 'data/repositories/transaction_repository.dart';
+import 'transaction_detail_screen.dart';
+import 'package:intl/intl.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -42,12 +46,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   int _listingCount = 0;
   double _userRating = 0.0;
 
+  final TransactionRepository _transactionRepository = TransactionRepository();
+  List<TransactionModel> _realActiveTransactions = [];
+  bool _isLoadingTransactions = false;
+
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadUserStats();
+    _loadActiveTransactions();
     ProfileSyncService.profileRevision.addListener(
       _handleProfileRevisionChanged,
     );
@@ -64,6 +73,34 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   void _handleProfileRevisionChanged() {
     _loadUserData();
     _loadUserStats();
+    _loadActiveTransactions();
+  }
+
+  Future<void> _loadActiveTransactions() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoadingTransactions = true;
+    });
+    try {
+      final txs = await _transactionRepository.fetchTransactions();
+      final active = txs.where((t) =>
+        t.status == 'pending' || t.status == 'approved' || t.status == 'ongoing'
+      ).toList();
+
+      if (mounted) {
+        setState(() {
+          _realActiveTransactions = active;
+          _isLoadingTransactions = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading active transactions: $e");
+      if (mounted) {
+        setState(() {
+          _isLoadingTransactions = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -83,7 +120,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           _defaultLocation = cachedLocation;
         });
       }
-      final synced = await _profileSyncService.syncProfileFromApi();
+      final synced = await _profileSyncService.syncProfileFromApi(notify: false);
       if (synced == null || !mounted) return;
       setState(() {
         _name = synced.displayName;
@@ -490,45 +527,6 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   // SECTION 2: SEDANG BERLANGSUNG
   // ─────────────────────────────────────────────
 
-  static const List<Map<String, String>> _activeRentals = [
-    {
-      'image': 'assets/images/camera_canon.jpg',
-      'title': 'Canon EOS 5D Mark IV',
-      'owner': 'Penyewa: Andini Larasati',
-      'date': '8 Jan - 10 Jan 2025',
-      'status':
-          'OwnerPending', // Status untuk membedakan dengan penyewa (karena saat ini kita sbg pemilik)
-    },
-    {
-      'image': 'assets/images/camera_sony.jpg',
-      'title': 'Sony Camera a6000',
-      'owner': 'Penyewa: Andini Larasati',
-      'date': '8 Jan - 10 Jan 2025',
-      'status': 'Selesai', // Owner returning
-    },
-    {
-      'image': 'assets/images/camera_sony.jpg',
-      'title': 'Sony Camera a6000',
-      'owner': 'Pemilik: Han so Hee',
-      'date': '8 Jan - 10 Jan 2025',
-      'status': 'Aktif',
-    },
-    {
-      'image': 'assets/images/airpods_max.png',
-      'title': 'Apple AirPods Max',
-      'owner': 'Pemilik: Budi Santoso',
-      'date': '10 Jan - 12 Jan 2025',
-      'status': 'Aktif',
-    },
-    {
-      'image': 'assets/images/ps5_controller.png',
-      'title': 'PS5 Controller',
-      'owner': 'Pemilik: Rina Wijaya',
-      'date': '11 Jan - 13 Jan 2025',
-      'status': 'Pending',
-    },
-  ];
-
   Widget _buildActiveRentalSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -549,7 +547,12 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TransactionHistoryScreen()),
+                  );
+                },
                 child: const Text(
                   'More',
                   style: TextStyle(
@@ -566,185 +569,220 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
 
         const SizedBox(height: 12),
 
-        // Horizontal slider
+        // Dynamic slider/content
         SizedBox(
           height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _activeRentals.length,
-            itemBuilder: (context, index) {
-              final item = _activeRentals[index];
-              final isActive = item['status'] == 'Aktif';
-              return GestureDetector(
-                onTap: () {
-                  if (item['status'] == 'Pending') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ScanQRRenterScreen(itemData: item),
-                      ),
-                    );
-                  } else if (item['status'] == 'OwnerPending') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => HandoverShowQRScreen(itemData: item),
-                      ),
-                    );
-                  } else if (item['status'] == 'Selesai') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const OwnerReturnShowQRScreen(),
-                      ),
-                    );
-                  } else {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RentalDeadlineScreen(),
-                      ),
-                    );
-                  }
-                },
-                child: Container(
-                  width: 280,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Product image
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: getSafeImageUrl(item['image']!).startsWith('http')
-                            ? Image.network(
-                                getSafeImageUrl(item['image']!),
-                                width: 64,
-                                height: 64,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                      width: 64,
-                                      height: 64,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE0E0E0),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.image_outlined,
-                                        color: Color(0xFF9E9E9E),
-                                      ),
-                                    ),
-                              )
-                            : Image.asset(
-                                item['image']!,
-                                width: 64,
-                                height: 64,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Container(
-                                      width: 64,
-                                      height: 64,
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFE0E0E0),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: const Icon(
-                                        Icons.image_outlined,
-                                        color: Color(0xFF9E9E9E),
-                                      ),
-                                    ),
-                              ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Product details
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              item['title']!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF414844),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item['owner']!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF414844),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              item['date']!,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF414844),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Status badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? const Color(0xFFF87400)
-                              : item['status'] == 'Selesai'
-                              ? const Color(0xFFC1ECD4)
-                              : const Color(0xFFE0E0E0),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          item['status']!,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: item['status'] == 'Selesai'
-                                ? const Color(0xFF1B4332)
-                                : const Color(0xFF000000),
+          child: _isLoadingTransactions
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+                )
+              : _realActiveTransactions.isEmpty
+                  ? Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.info_outline_rounded, color: Colors.grey.shade400, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Tidak ada penyewaan berlangsung.',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _realActiveTransactions.length,
+                      itemBuilder: (context, index) {
+                        final item = _realActiveTransactions[index];
+                        final detail = item.details.isNotEmpty ? item.details.first : null;
+                        final String itemName = detail?.itemNameSnapshot ?? "Transaksi ${item.id.substring(0, 5)}";
+                        final String itemImage = detail?.itemPhotoUrlSnapshot ?? "";
+                        
+                        String dateRange = "";
+                        if (detail != null && detail.startDate != null && detail.endDate != null) {
+                          dateRange = "${DateFormat('d MMM').format(detail.startDate!)} - ${DateFormat('d MMM yyyy').format(detail.endDate!)}";
+                        }
+
+                        // Determine partner description
+                        final currentUid = FirebaseAuth.instance.currentUser?.uid;
+                        final partnerLabel = item.renterId == currentUid
+                            ? 'Pemilik: ${item.ownerName}'
+                            : 'Penyewa: ${item.renterName}';
+
+                        // Map status
+                        String displayStatus = 'Pending';
+                        Color badgeColor = const Color(0xFFE0E0E0);
+                        Color textColor = Colors.black;
+                        switch (item.status.toLowerCase()) {
+                          case 'pending':
+                            displayStatus = 'Pending';
+                            badgeColor = const Color(0xFFFFF4DB);
+                            textColor = const Color(0xFF9A6700);
+                            break;
+                          case 'approved':
+                            displayStatus = 'Disetujui';
+                            badgeColor = const Color(0xFFD0E1D4);
+                            textColor = const Color(0xFF012D1D);
+                            break;
+                          case 'ongoing':
+                            displayStatus = 'Aktif';
+                            badgeColor = const Color(0xFFF87400);
+                            textColor = Colors.white;
+                            break;
+                        }
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TransactionDetailScreen(transactionId: item.id),
+                              ),
+                            ).then((_) {
+                              _loadActiveTransactions();
+                              _loadUserStats();
+                            });
+                          },
+                          child: Container(
+                            width: 280,
+                            margin: const EdgeInsets.only(right: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                // Product image
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: itemImage.isNotEmpty && itemImage.startsWith('http')
+                                      ? Image.network(
+                                          itemImage,
+                                          width: 64,
+                                          height: 64,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) =>
+                                              Container(
+                                                width: 64,
+                                                height: 64,
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFFE0E0E0),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: const Icon(
+                                                  Icons.image_outlined,
+                                                  color: Color(0xFF9E9E9E),
+                                                ),
+                                              ),
+                                        )
+                                      : Image.asset(
+                                          'assets/images/Iklan.jpg',
+                                          width: 64,
+                                          height: 64,
+                                          fit: BoxFit.cover,
+                                        ),
+                                ),
+                                const SizedBox(width: 12),
+                                // Product details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        itemName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF414844),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        partnerLabel,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xFF414844),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        dateRange,
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w400,
+                                          color: Color(0xFF414844),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                // Status badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: badgeColor,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    displayStatus,
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
         ),
       ],
     );

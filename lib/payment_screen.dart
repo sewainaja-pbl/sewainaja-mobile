@@ -59,12 +59,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
         final redirectUrl = body['data']['redirect_url']?.toString();
         if (redirectUrl != null && redirectUrl.isNotEmpty) {
           final Uri url = Uri.parse(redirectUrl);
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url, mode: LaunchMode.externalApplication);
-            if (mounted) {
-              _showPaidConfirmationDialog();
+          try {
+            final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+            if (launched) {
+              if (mounted) {
+                _showPaidConfirmationDialog();
+              }
+            } else {
+              _showErrorSnackBar('Tidak dapat membuka link pembayaran.');
             }
-          } else {
+          } catch (e) {
             _showErrorSnackBar('Tidak dapat membuka link pembayaran.');
           }
         } else {
@@ -85,15 +89,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
     try {
       final token = await const AuthSessionService().getValidIdToken();
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
+        Uri.parse('${ApiConfig.baseUrl}/payments/initiate-cash'),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'transactionId': widget.transactionId,
-          'method': 'cash',
-          'amount': widget.totalPrice,
         }),
       );
 
@@ -101,7 +103,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       setState(() => _isLoading = false);
 
       if (response.statusCode == 200 && body['success'] == true) {
-        _showSuccessDialog('Pembayaran Tunai (COD) berhasil dikonfirmasi! Silakan lakukan serah terima barang.');
+        _showSuccessDialog('Permintaan Pembayaran Tunai (COD) berhasil dikirim! Silakan lakukan pembayaran tunai ke pemilik barang saat serah terima.');
       } else {
         _showErrorSnackBar(body['error']?['message'] ?? 'Gagal memproses pembayaran tunai.');
       }
