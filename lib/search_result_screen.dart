@@ -10,6 +10,9 @@ import 'widgets/product_more_sheet.dart';
 import 'favorite_service.dart';
 import 'item_detail_screen.dart';
 import 'widgets/report_dialog.dart';
+import 'widgets/subtle_fade_in.dart';
+import 'widgets/pressable_scale.dart';
+import 'widgets/skeleton_loader.dart';
 
 enum SortOption { relevance, lowestPrice, highestPrice, highestRating }
 
@@ -126,6 +129,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailScreen(
+          itemId: item.id,
           itemName: item.name,
           pricePerHour: item.pricePerHour,
           imagePath: item.primaryPhoto,
@@ -144,7 +148,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
         backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 80,
+        toolbarHeight: 60,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -154,9 +158,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
             ),
           ),
         ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
+        title: Row(
             children: [
               GestureDetector(
                 onTap: () => Navigator.maybePop(context),
@@ -180,7 +182,6 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               const SizedBox(width: 28),
             ],
           ),
-        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -208,7 +209,7 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               // Search Input Box
               SliverPadding(
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 80 + 16,
+                  top: MediaQuery.of(context).padding.top + 60 + 12,
                   left: 24,
                   right: 24,
                   bottom: 16,
@@ -318,8 +319,20 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
 
               // Loading / Empty / Results Data
               if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator(color: Color(0xFF012D1D))),
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16.0,
+                      mainAxisSpacing: 16.0,
+                      childAspectRatio: 0.65,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) => const ProductCardSkeleton(),
+                      childCount: 4,
+                    ),
+                  ),
                 )
               else if (_results.isEmpty)
                 SliverFillRemaining(
@@ -351,17 +364,20 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                       childAspectRatio: 0.65,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final item = _results[index];
-                        final product = _toProductData(item);
-                        return GestureDetector(
-                          onTap: () => _navigateToDetail(item),
-                          child: ProductCard(
-                            product: product,
-                            onMorePressed: () => _showProductOptions(context, item, product),
-                          ),
-                        );
-                      },
+                       (context, index) {
+                         final item = _results[index];
+                         final product = _toProductData(item);
+                         return SubtleFadeIn(
+                           delay: Duration(milliseconds: index * 45),
+                           child: PressableScale(
+                             onTap: () => _navigateToDetail(item),
+                             child: ProductCard(
+                               product: product,
+                               onMorePressed: () => _showProductOptions(context, item, product),
+                             ),
+                           ),
+                         );
+                       },
                       childCount: _results.length,
                     ),
                   ),

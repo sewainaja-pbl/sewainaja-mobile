@@ -10,6 +10,9 @@ import 'widgets/product_more_sheet.dart';
 import 'item_detail_screen.dart';
 import 'favorite_service.dart';
 import 'widgets/report_dialog.dart';
+import 'widgets/subtle_fade_in.dart';
+import 'widgets/pressable_scale.dart';
+import 'widgets/skeleton_loader.dart';
 
 class CategoryDetailScreen extends StatefulWidget {
   final CategoryModel category;
@@ -58,6 +61,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
   }
 
   ProductData _toProductData(ItemModel item) => ProductData(
+        id: item.id,
         name: item.name,
         price: item.formattedPricePerDay,
         rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
@@ -71,6 +75,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailScreen(
+          itemId: item.id,
           itemName: item.name,
           pricePerHour: item.pricePerHour,
           imagePath: item.primaryPhoto,
@@ -127,7 +132,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 80,
+        toolbarHeight: 60,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -137,9 +142,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
             ),
           ),
         ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
+        title: Row(
             children: [
               GestureDetector(
                 onTap: () => Navigator.maybePop(context),
@@ -163,7 +166,6 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
               const SizedBox(width: 28),
             ],
           ),
-        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -184,7 +186,22 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)))
+          ? GridView.builder(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 60 + 12,
+                left: 16.0,
+                right: 16.0,
+                bottom: 16.0,
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                childAspectRatio: 0.65,
+              ),
+              itemCount: 4,
+              itemBuilder: (context, index) => const ProductCardSkeleton(),
+            )
           : _results.isEmpty
               ? Center(
                   child: Column(
@@ -204,7 +221,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                 )
               : GridView.builder(
                   padding: EdgeInsets.only(
-                    top: MediaQuery.of(context).padding.top + 80 + 16,
+                    top: MediaQuery.of(context).padding.top + 60 + 12,
                     left: 16.0,
                     right: 16.0,
                     bottom: 16.0,
@@ -219,11 +236,14 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   itemBuilder: (context, index) {
                     final item = _results[index];
                     final product = _toProductData(item);
-                    return GestureDetector(
-                      onTap: () => _navigateToDetail(item),
-                      child: ProductCard(
-                        product: product,
-                        onMorePressed: () => _showProductOptions(context, item, product),
+                    return SubtleFadeIn(
+                      delay: Duration(milliseconds: index * 45),
+                      child: PressableScale(
+                        onTap: () => _navigateToDetail(item),
+                        child: ProductCard(
+                          product: product,
+                          onMorePressed: () => _showProductOptions(context, item, product),
+                        ),
                       ),
                     );
                   },

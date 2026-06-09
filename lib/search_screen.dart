@@ -158,6 +158,7 @@ class SearchSheetState extends State<SearchSheet>
       context,
       MaterialPageRoute(
         builder: (_) => ItemDetailScreen(
+          itemId: item.id,
           itemName: item.name,
           pricePerHour: item.pricePerHour,
           imagePath: item.primaryPhoto,

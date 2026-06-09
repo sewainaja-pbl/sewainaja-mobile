@@ -5,6 +5,7 @@ import 'add_product_screen.dart';
 import 'chat_screen.dart';
 import 'profile_settings_screen.dart';
 import 'notification_service.dart';
+import 'widgets/pressable_scale.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -51,12 +52,23 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       extendBody: true, // Allows content to flow underneath the transparent bottom navigation area
       body: Stack(
         children: [
-          // 1. MAIN CONTENT AREA (IndexedStack keeps state alive for all screens)
-          IndexedStack(
-            index: _selectedIndex,
+          // 1. MAIN CONTENT AREA (Stack with smooth cross-fade tab transitions)
+          Stack(
             children: List.generate(
               _screens.length,
-              (index) => _screens[index] ?? const SizedBox.shrink(),
+              (index) {
+                final screen = _screens[index];
+                if (screen == null) return const SizedBox.shrink();
+                final bool isActive = _selectedIndex == index;
+                return IgnorePointer(
+                  ignoring: !isActive,
+                  child: TabScreenWrapper(
+                    isActive: isActive,
+                    duration: const Duration(milliseconds: 240),
+                    child: screen,
+                  ),
+                );
+              },
             ),
           ),
 
@@ -238,11 +250,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }) {
     final bool isActive = _selectedIndex == index;
 
-    return GestureDetector(
+    return PressableScale(
       onTap: () {
         _changeTab(index);
       },
-      behavior: HitTestBehavior.opaque, // Ensures the entire bounding box is clickable
+      scaleFactor: 0.90, // Bounces slightly more than card items for satisfying tap feel
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
@@ -307,5 +319,62 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           },
         );
     }
+  }
+}
+
+/// Widget wrapper khusus yang menonaktifkan Ticker (animasi) dan melompati Layout/Paint
+/// untuk tab screen yang sedang tidak aktif di background menggunakan TickerMode & Offstage.
+/// Transisi fade-out tetap berjalan lancar hingga selesai sebelum Offstage diaktifkan.
+class TabScreenWrapper extends StatefulWidget {
+  final Widget child;
+  final bool isActive;
+  final Duration duration;
+
+  const TabScreenWrapper({
+    super.key,
+    required this.child,
+    required this.isActive,
+    required this.duration,
+  });
+
+  @override
+  State<TabScreenWrapper> createState() => _TabScreenWrapperState();
+}
+
+class _TabScreenWrapperState extends State<TabScreenWrapper> {
+  late bool _visible;
+
+  @override
+  void initState() {
+    super.initState();
+    _visible = widget.isActive;
+  }
+
+  @override
+  void didUpdateWidget(TabScreenWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive) {
+      _visible = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Offstage(
+      offstage: !_visible,
+      child: AnimatedOpacity(
+        opacity: widget.isActive ? 1.0 : 0.0,
+        duration: widget.duration,
+        curve: Curves.easeInOut,
+        onEnd: () {
+          if (!widget.isActive && mounted) {
+            setState(() {
+              _visible = false;
+            });
+          }
+        },
+        child: widget.child,
+      ),
+    );
   }
 }

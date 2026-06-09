@@ -199,7 +199,7 @@ class _WalletScreenState extends State<WalletScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // --- 1. MAIN CARD WALLET ---
-                  FadeInDown(
+                  SubtleFadeIn(
                     duration: const Duration(milliseconds: 500),
                     child: Container(
                       width: double.infinity,
@@ -296,7 +296,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 20),
 
                   // --- 2. ESCROW CARD (SALDO TERTAHAN) ---
-                  FadeInUp(
+                  SubtleFadeIn(
                     duration: const Duration(milliseconds: 500),
                     child: Container(
                       padding: const EdgeInsets.all(20),

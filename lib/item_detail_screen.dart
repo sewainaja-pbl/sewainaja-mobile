@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:animate_do/animate_do.dart';
+
+import 'widgets/subtle_fade_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
@@ -24,6 +25,7 @@ import 'help_center_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/report_dialog.dart';
 import 'room_chat_screen.dart';
+import 'widgets/skeleton_loader.dart';
 
 
 class ItemDetailScreen extends StatefulWidget {
@@ -194,51 +196,54 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Stack(
                 children: [
                   // Image Slider (PageView)
-                  SizedBox(
-                    height: screenHeight * heroImageHeightFactor,
-                    child: PageView.builder(
-                      itemCount: photos.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentImageIndex = index;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        final photoPath = photos[index];
-                        final isUrl = photoPath.startsWith('http://') || photoPath.startsWith('https://');
-                        final isAsset = photoPath.startsWith('assets/');
-                        final isLocal = photoPath.isNotEmpty && !isUrl && !isAsset;
-                        
-                        if (isLocal && !isAsset) {
-                          return Image.file(
-                            File(photoPath),
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                          );
-                        } else if (isUrl) {
-                          return CachedNetworkImage(
-                            imageUrl: photoPath,
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                            placeholder: (context, url) => const Center(
-                              child: CircularProgressIndicator(
-                                color: Color(0xFF012D1D),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Image.asset(
-                              'assets/images/Iklan.jpg',
+                  Hero(
+                    tag: 'product-image-${widget.itemId ?? widget.item?.id}',
+                    child: SizedBox(
+                      height: screenHeight * heroImageHeightFactor,
+                      child: PageView.builder(
+                        itemCount: photos.length,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentImageIndex = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final photoPath = photos[index];
+                          final isUrl = photoPath.startsWith('http://') || photoPath.startsWith('https://');
+                          final isAsset = photoPath.startsWith('assets/');
+                          final isLocal = photoPath.isNotEmpty && !isUrl && !isAsset;
+                          
+                          if (isLocal && !isAsset) {
+                            return Image.file(
+                              File(photoPath),
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
-                            ),
-                          );
-                        } else {
-                          return Image.asset(
-                            photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
-                            fit: BoxFit.cover,
-                            alignment: Alignment.center,
-                          );
-                        }
-                      },
+                            );
+                          } else if (isUrl) {
+                            return CachedNetworkImage(
+                              imageUrl: photoPath,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                              memCacheWidth: 600, // Optimize memory decoding size for detail slider
+                              placeholder: (context, url) => const ShimmerContainer(
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                              errorWidget: (context, url, error) => Image.asset(
+                                'assets/images/Iklan.jpg',
+                                fit: BoxFit.cover,
+                                alignment: Alignment.center,
+                              ),
+                            );
+                          } else {
+                            return Image.asset(
+                              photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
+                              fit: BoxFit.cover,
+                              alignment: Alignment.center,
+                            );
+                          }
+                        },
+                      ),
                     ),
                   ),
                   // Indicator dots
@@ -281,7 +286,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       SizedBox(height: (screenHeight * heroImageHeightFactor) - 30),
 
                       // ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
-                      FadeInUp(
+                      SubtleFadeIn(
                         duration: const Duration(milliseconds: 600),
                         child: Container(
                           width: double.infinity,

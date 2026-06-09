@@ -60,25 +60,28 @@ class ProductCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(15),
+            Hero(
+              tag: 'product-image-${product.id ?? product.name}',
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: const BorderRadius.horizontal(
+                    left: Radius.circular(15),
+                  ),
+                  image: product.image.isNotEmpty
+                      ? DecorationImage(
+                          image: _buildImageProvider(product.image),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                image: product.image.isNotEmpty
-                    ? DecorationImage(
-                        image: _buildImageProvider(product.image),
-                        fit: BoxFit.cover,
-                      )
+                child: product.image.isEmpty
+                    ? const Icon(Icons.image_not_supported_outlined,
+                        color: Color(0xFFB0B0B0))
                     : null,
               ),
-              child: product.image.isEmpty
-                  ? const Icon(Icons.image_not_supported_outlined,
-                      color: Color(0xFFB0B0B0))
-                  : null,
             ),
             Expanded(
               child: Padding(
@@ -169,62 +172,66 @@ class ProductCard extends StatelessWidget {
             Expanded(
               child: Stack(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD9D9D9),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: product.image.isEmpty
-                          ? const Center(
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: Color(0xFFB0B0B0),
-                                size: 32,
-                              ),
-                            )
-                          : isNetworkImage
-                          ? CachedNetworkImage(
-                              imageUrl: safeImage,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              memCacheWidth: 300,
-                              placeholder: (context, url) => const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation(
-                                      Color(0xFF012D1D),
+                  Hero(
+                    tag: 'product-image-${product.id ?? product.name}',
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: product.image.isEmpty
+                            ? const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Color(0xFFB0B0B0),
+                                  size: 32,
+                                ),
+                              )
+                            : isNetworkImage
+                            ? CachedNetworkImage(
+                                imageUrl: safeImage,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                memCacheWidth: 300,
+                                placeholder: (context, url) => const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation(
+                                        Color(0xFF012D1D),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              errorWidget: (context, url, error) => const Center(
-                                child: Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: Color(0xFFB0B0B0),
-                                  size: 32,
+                                errorWidget: (context, url, error) => const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Color(0xFFB0B0B0),
+                                    size: 32,
+                                  ),
+                                ),
+                              )
+                            : Image.asset(
+                                product.image,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                cacheWidth: 350,
+                                errorBuilder: (context, error, stackTrace) => const Center(
+                                  child: Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Color(0xFFB0B0B0),
+                                    size: 32,
+                                  ),
                                 ),
                               ),
-                            )
-                          : Image.asset(
-                              product.image,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) => const Center(
-                                child: Icon(
-                                  Icons.image_not_supported_outlined,
-                                  color: Color(0xFFB0B0B0),
-                                  size: 32,
-                                ),
-                              ),
-                            ),
+                      ),
                     ),
                   ),
                   Positioned(

@@ -8,6 +8,8 @@ import 'widgets/product_more_sheet.dart';
 import 'search_result_screen.dart';
 import 'item_detail_screen.dart';
 import 'widgets/report_dialog.dart';
+import 'widgets/subtle_fade_in.dart';
+import 'widgets/pressable_scale.dart';
 
 class NewArrivalsScreen extends StatelessWidget {
   const NewArrivalsScreen({super.key});
@@ -23,7 +25,7 @@ class NewArrivalsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 80,
+        toolbarHeight: 60,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -33,9 +35,7 @@ class NewArrivalsScreen extends StatelessWidget {
             ),
           ),
         ),
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
+        title: Row(
             children: [
               GestureDetector(
                 onTap: () => Navigator.maybePop(context),
@@ -59,7 +59,6 @@ class NewArrivalsScreen extends StatelessWidget {
               const SizedBox(width: 28),
             ],
           ),
-        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
@@ -101,7 +100,7 @@ class NewArrivalsScreen extends StatelessWidget {
 
           return GridView.builder(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 80 + 16,
+              top: MediaQuery.of(context).padding.top + 60 + 12,
               left: 16.0,
               right: 16.0,
               bottom: 16.0,
@@ -124,20 +123,22 @@ class NewArrivalsScreen extends StatelessWidget {
                 isLocalAsset: !item.primaryPhoto.startsWith('http'),
                 originalItem: item,
               );
-              return GestureDetector(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ItemDetailScreen(
-                      itemId: item.id,
-                      item: item,
-                      itemName: item.name,
-                      pricePerHour: item.pricePerHour,
-                      imagePath: item.primaryPhoto,
+              return SubtleFadeIn(
+                delay: Duration(milliseconds: index * 45),
+                child: PressableScale(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemId: item.id,
+                        item: item,
+                        itemName: item.name,
+                        pricePerHour: item.pricePerHour,
+                        imagePath: item.primaryPhoto,
+                      ),
                     ),
                   ),
-                ),
-                child: ProductCard(
+                  child: ProductCard(
                   product: product,
                   onMorePressed: () {
                     showProductMoreSheet(
@@ -198,8 +199,9 @@ class NewArrivalsScreen extends StatelessWidget {
                     );
                   },
                 ),
-              );
-            },
+              ),
+            );
+          },
           );
         },
       ),
@@ -209,7 +211,7 @@ class NewArrivalsScreen extends StatelessWidget {
   Widget _buildLoadingGrid(BuildContext context) {
     return GridView.builder(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 80 + 16,
+        top: MediaQuery.of(context).padding.top + 60 + 12,
         left: 16.0,
         right: 16.0,
         bottom: 16.0,
