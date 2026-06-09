@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'notification_service.dart';
 import 'presentation/controllers/auth_controller.dart';
+import 'presentation/controllers/category_controller.dart';
 import 'animated_splash_screen.dart';
 
 void main() async {
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthController()),
+        ChangeNotifierProvider(create: (_) => CategoryController()),
         ChangeNotifierProvider<NotificationService>.value(
           value: NotificationService.instance,
         ),
