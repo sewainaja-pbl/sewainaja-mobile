@@ -300,11 +300,17 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
                                                     image: NetworkImage(itemImage),
                                                     fit: BoxFit.cover,
                                                   )
-                                                : const DecorationImage(
-                                                    image: AssetImage('assets/images/Iklan.jpg'),
-                                                    fit: BoxFit.cover,
-                                                  ),
+                                                : null,
                                             ),
+                                            child: itemImage.isEmpty
+                                                ? const Center(
+                                                    child: Icon(
+                                                      Icons.image_outlined,
+                                                      color: Color(0xFF828282),
+                                                      size: 32,
+                                                    ),
+                                                  )
+                                                : null,
                                           ),
                                           const SizedBox(width: 16),
                                           

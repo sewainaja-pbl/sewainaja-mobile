@@ -801,13 +801,17 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
                           children: [
                             const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF414844)),
                             const SizedBox(width: 4),
-                            Text(
-                              dateRange,
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF414844),
+                            Expanded(
+                              child: Text(
+                                dateRange,
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF414844),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
