@@ -16,7 +16,7 @@ class TransactionHistoryScreen extends StatefulWidget {
 
 class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   int _selectedTabIndex = 0;
-  final List<String> _tabs = ["Semua", "Aktif", "Selesai", "Dibatalkan"];
+  final List<String> _tabs = ["Penyewa", "Pemilik"];
 
   final TransactionRepository _repository = TransactionRepository();
   List<TransactionModel> _transactions = [];
@@ -71,17 +71,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   List<TransactionModel> get _filteredTransactions {
-    if (_selectedTabIndex == 0) return _transactions;
-    if (_selectedTabIndex == 1) {
-      return _transactions.where((t) => 
-        t.status == 'pending' || t.status == 'approved' || t.status == 'ongoing'
-      ).toList();
-    }
-    if (_selectedTabIndex == 2) {
-      return _transactions.where((t) => t.status == 'completed').toList();
-    }
-    if (_selectedTabIndex == 3) {
-      return _transactions.where((t) => t.status == 'cancelled' || t.status == 'disputed').toList();
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (_selectedTabIndex == 0) {
+      return _transactions.where((t) => t.renterId == currentUid).toList();
+    } else if (_selectedTabIndex == 1) {
+      return _transactions.where((t) => t.ownerId == currentUid).toList();
     }
     return _transactions;
   }
