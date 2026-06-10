@@ -58,14 +58,24 @@ class TransactionModel {
   static DateTime? _parseDate(dynamic val) {
     if (val == null) return null;
     if (val is String) {
-      return DateTime.tryParse(val);
+      return DateTime.tryParse(val)?.toLocal();
     }
     if (val is Timestamp) {
-      return val.toDate();
+      return val.toDate().toLocal();
     }
     if (val is int) {
       // Assuming milliseconds since epoch if it's a number
-      return DateTime.fromMillisecondsSinceEpoch(val);
+      return DateTime.fromMillisecondsSinceEpoch(val).toLocal();
+    }
+    if (val is Map) {
+      final seconds = val['_seconds'] ?? val['seconds'];
+      if (seconds != null && seconds is num) {
+        return DateTime.fromMillisecondsSinceEpoch(seconds.toInt() * 1000).toLocal();
+      }
+      final millis = val['_milliseconds'] ?? val['milliseconds'];
+      if (millis != null && millis is num) {
+        return DateTime.fromMillisecondsSinceEpoch(millis.toInt()).toLocal();
+      }
     }
     return null;
   }

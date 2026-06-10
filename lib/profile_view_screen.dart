@@ -776,7 +776,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                     final product = ProductData(
                                       id: itemModel.id,
                                       name: itemModel.name,
-                                      price: itemModel.formattedPricePerDay,
+                                      price: itemModel.formattedPrice,
                                       rating: itemModel.ownerRating > 0 ? itemModel.ownerRating.toDouble() : 4.5,
                                       image: itemModel.primaryPhoto,
                                       isLocalAsset: !itemModel.primaryPhoto.startsWith('http'),

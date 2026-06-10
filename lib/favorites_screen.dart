@@ -233,7 +233,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      item.formattedPricePerDay,
+                                      item.formattedPrice,
                                       style: const TextStyle(
                                         fontFamily: 'Poppins',
                                         fontSize: 13,

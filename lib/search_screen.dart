@@ -138,8 +138,9 @@ class SearchSheetState extends State<SearchSheet>
 
   // ── Convert ItemModel → ProductData (untuk ProductCard) ───────────────────
   ProductData _toProductData(ItemModel item) => ProductData(
+        id: item.id,
         name: item.name,
-        price: item.formattedPricePerDay,
+        price: item.formattedPrice,
         rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
         image: item.primaryPhoto,
         isLocalAsset: !item.primaryPhoto.startsWith('http'),

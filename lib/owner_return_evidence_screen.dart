@@ -1,7 +1,13 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'api_config.dart';
+import 'auth_session_service.dart';
 
 class OwnerReturnEvidenceScreen extends StatefulWidget {
-  const OwnerReturnEvidenceScreen({super.key});
+  final String? transactionId;
+  final String? itemName;
+  const OwnerReturnEvidenceScreen({super.key, this.transactionId, this.itemName});
 
   @override
   State<OwnerReturnEvidenceScreen> createState() => _OwnerReturnEvidenceScreenState();
@@ -10,8 +16,144 @@ class OwnerReturnEvidenceScreen extends StatefulWidget {
 class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
   int _rating = 0;
   final TextEditingController _reviewController = TextEditingController();
+  bool _isSubmitting = false;
 
-  void _submit() {
+  bool _isLoadingEvidences = false;
+  Map<String, dynamic>? _transactionData;
+  List<dynamic> _details = [];
+  List<dynamic> _afterEvidences = [];
+  String? _evidencesError;
+  bool _canPop = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetailsAndEvidences();
+  }
+
+  Future<void> _fetchDetailsAndEvidences() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') return;
+
+    setState(() {
+      _isLoadingEvidences = true;
+      _evidencesError = null;
+    });
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      // 1. Fetch transaction details
+      final detailsResp = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId'),
+        headers: headers,
+      );
+
+      if (detailsResp.statusCode == 200) {
+        final body = jsonDecode(detailsResp.body);
+        if (body['success'] == true && body['data'] != null) {
+          setState(() {
+            _transactionData = body['data'] as Map<String, dynamic>;
+            _details = _transactionData!['details'] as List? ?? [];
+          });
+        }
+      }
+    } catch (_) {
+    }
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      // 2. Fetch evidences
+      final evidenceResp = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
+        headers: headers,
+      );
+
+      if (evidenceResp.statusCode == 200) {
+        final body = jsonDecode(evidenceResp.body);
+        if (body['success'] == true && body['data'] != null) {
+          final allEvidences = body['data'] as List<dynamic>;
+          setState(() {
+            _afterEvidences = allEvidences.where((e) => e['type'] == 'after').toList();
+          });
+        } else {
+          setState(() {
+            _evidencesError = body['message'] ?? 'Gagal memuat bukti.';
+          });
+        }
+      } else {
+        setState(() {
+          _evidencesError = 'Server error: ${evidenceResp.statusCode}';
+        });
+      }
+    } catch (_) {
+      setState(() {
+        _evidencesError = 'Kesalahan koneksi.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingEvidences = false;
+        });
+      }
+    }
+  }
+
+  String _formatDateRange() {
+    if (_details.isEmpty) return '8 Jan - 10 Jan 2025';
+    final detail = _details[0];
+    final start = detail['startDate'];
+    final end = detail['endDate'];
+    if (start == null || end == null) return '8 Jan - 10 Jan 2025';
+    
+    final sDt = _parseTimestamp(start);
+    final eDt = _parseTimestamp(end);
+    if (sDt == null || eDt == null) return '8 Jan - 10 Jan 2025';
+
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    return '${sDt.day} ${months[sDt.month - 1]} - ${eDt.day} ${months[eDt.month - 1]} ${eDt.year}';
+  }
+
+  DateTime? _parseTimestamp(dynamic ts) {
+    if (ts == null) return null;
+    if (ts is Map) {
+      final sec = ts['_seconds'] ?? ts['seconds'];
+      if (sec is int) {
+        return DateTime.fromMillisecondsSinceEpoch(sec * 1000).toLocal();
+      }
+    } else if (ts is String) {
+      return DateTime.tryParse(ts)?.toLocal();
+    }
+    return null;
+  }
+
+  ImageProvider _getImageProvider() {
+    if (_details.isNotEmpty) {
+      final url = _details[0]['itemPhotoUrlSnapshot']?.toString();
+      if (url != null && url.isNotEmpty) {
+        if (url.startsWith('http')) {
+          return NetworkImage(url);
+        } else if (url.startsWith('assets/')) {
+          return AssetImage(url);
+        }
+      }
+    }
+    return const AssetImage('assets/images/Iklan.jpg');
+  }
+
+  Future<void> _submit() async {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -22,13 +164,98 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
       return;
     }
     
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') {
+      // Simulasi mode mock jika transactionId kosong atau dummy
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return _OwnerReturnSuccessModal(
+            itemName: widget.itemName ?? 'Sony Camera a6000',
+            dateRange: '8 Jan - 10 Jan 2025',
+            imageProvider: const AssetImage('assets/images/Iklan.jpg'),
+          );
+        },
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    // Tampilkan loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const _OwnerReturnSuccessModal();
-      },
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+      ),
     );
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/ratings'),
+        headers: headers,
+        body: jsonEncode({
+          'transactionId': tId,
+          'ratedAs': 'renter',
+          'score': _rating,
+          'comment': _reviewController.text.trim(),
+        }),
+      );
+
+      if (mounted) Navigator.pop(context); // Tutup loading dialog
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (BuildContext context) {
+                return _OwnerReturnSuccessModal(
+                  itemName: _details.isNotEmpty
+                      ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang'
+                      : widget.itemName ?? 'Sony Camera a6000',
+                  dateRange: _formatDateRange(),
+                  imageProvider: _getImageProvider(),
+                );
+              },
+            );
+          }
+        } else {
+          throw Exception(body['message'] ?? 'Gagal mengirim ulasan.');
+        }
+      } else {
+        final body = jsonDecode(response.body);
+        throw Exception(body['message'] ?? 'Gagal mengirim ulasan.');
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Tutup loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -37,32 +264,102 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
+  Future<bool> _showExitConfirmationDialog() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
         title: const Text(
-          'Serah Terima',
+          'Keluar dari Halaman?',
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332),
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012D1D),
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
+        content: const Text(
+          'Anda belum menyelesaikan pengisian bukti serah terima/pengembalian dan rating. Jika Anda keluar sekarang, data bukti sewa Anda tidak akan tersimpan secara lengkap. Yakin ingin keluar?',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            color: Color(0xFF414844),
+          ),
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text(
+              'Batal',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1B4332),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Keluar',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                color: Colors.red,
+              ),
+            ),
+          ),
+        ],
       ),
+    );
+    return result ?? false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: _canPop,
+      onPopInvokedWithResult: (bool didPop, Object? result) async {
+        if (didPop) return;
+        final shouldPop = await _showExitConfirmationDialog();
+        if (shouldPop) {
+          setState(() {
+            _canPop = true;
+          });
+          if (context.mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFDF9F4),
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: const Color(0xFFFDF9F4),
+          centerTitle: true,
+          title: const Text(
+            'Serah Terima',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 30,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1B4332),
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+              onPressed: _fetchDetailsAndEvidences,
+            ),
+          ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(1.0),
+            child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
+          ),
+        ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -82,7 +379,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
               ),
             ),
 
-            // --- ITEM CARD --- (Based on Screenshot)
+            // --- ITEM CARD ---
             Container(
               margin: const EdgeInsets.only(top: 16.0, left: 20.0, right: 20.0),
               padding: const EdgeInsets.all(12.0),
@@ -103,59 +400,45 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3CD),
                       borderRadius: BorderRadius.circular(15),
-                      border: Border.all(color: const Color(0xFFFFC107), width: 1),
-                    ),
-                    child: const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
-                          SizedBox(height: 2),
-                          Text(
-                            'DUMMY\n(NO API)',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF856404),
-                              height: 1.1,
-                            ),
-                          ),
-                        ],
+                      image: DecorationImage(
+                        image: _getImageProvider(),
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sony Camera a6000',
-                          style: TextStyle(
+                          _details.isNotEmpty
+                              ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
+                              : widget.itemName ?? 'Sony Camera a6000',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Color(0xFF414844),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          'Penyewa: Andini Larasati',
-                          style: TextStyle(
+                          _transactionData != null
+                              ? 'Penyewa: ${_transactionData!['renterName'] ?? 'Penyewa'}'
+                              : 'Penyewa: Andini Larasati',
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
                             color: Color(0xFF414844),
                           ),
                         ),
-                        SizedBox(height: 2),
+                        const SizedBox(height: 2),
                         Text(
-                          '8 Jan - 10 Jan 2025',
-                          style: TextStyle(
+                          _formatDateRange(),
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
@@ -199,43 +482,67 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                         ),
                       ],
                     ),
-                    child: Wrap(
-                      spacing: 12.0,
-                      runSpacing: 12.0,
-                      children: List.generate(5, (index) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(11.0),
-                            child: Container(
-                              width: 70,
-                              height: 70,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF3CD),
-                                borderRadius: BorderRadius.circular(11),
-                                border: Border.all(color: const Color(0xFFFFC107), width: 1),
-                              ),
-                              child: const Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 14),
-                                    SizedBox(height: 2),
-                                    Text(
-                                      'MOCK',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontFamily: 'Poppins',
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF856404),
+                    child: _isLoadingEvidences
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+                            ),
+                          )
+                        : _evidencesError != null
+                            ? Center(child: Text(_evidencesError!))
+                            : _afterEvidences.isEmpty
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20),
+                                      child: Text(
+                                        'Tidak ada foto bukti pengembalian.',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 12,
+                                          color: Color(0xFF717973),
+                                        ),
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        );
-                      }),
-                    ),
+                                  )
+                                : Wrap(
+                                    spacing: 12.0,
+                                    runSpacing: 12.0,
+                                    children: List.generate(_afterEvidences.length, (index) {
+                                      final url = _afterEvidences[index]['mediaUrl']?.toString() ?? '';
+                                      return GestureDetector(
+                                        onTap: () {
+                                          if (url.isNotEmpty) {
+                                            showDialog(
+                                              context: context,
+                                              builder: (_) => Dialog(
+                                                child: Image.network(url),
+                                              ),
+                                            );
+                                          }
+                                        },
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(11.0),
+                                          child: Container(
+                                            width: 70,
+                                            height: 70,
+                                            color: const Color(0xFFFFF3CD),
+                                            child: url.startsWith('http')
+                                                ? Image.network(
+                                                    url,
+                                                    width: 70,
+                                                    height: 70,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Icon(
+                                                    Icons.image,
+                                                    color: const Color(0xFF012D1D).withOpacity(0.3),
+                                                  ),
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                  ),
                   ),
                 ],
               ),
@@ -330,7 +637,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
 
             // --- 4. ACTION BUTTON ---
             GestureDetector(
-              onTap: _submit,
+              onTap: _isSubmitting ? null : _submit,
               child: Container(
                 margin: const EdgeInsets.only(top: 40.0, bottom: 40.0, left: 20.0, right: 20.0),
                 width: double.infinity,
@@ -355,12 +662,20 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
           ],
         ),
       ),
-    );
+    ),
+   );
   }
 }
 
 class _OwnerReturnSuccessModal extends StatelessWidget {
-  const _OwnerReturnSuccessModal();
+  final String itemName;
+  final String dateRange;
+  final ImageProvider imageProvider;
+  const _OwnerReturnSuccessModal({
+    required this.itemName,
+    required this.dateRange,
+    required this.imageProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -448,38 +763,20 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3CD),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFC107), width: 1),
-                      ),
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 20),
-                            SizedBox(height: 2),
-                            Text(
-                              'DUMMY\n(NO API)',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF856404),
-                                height: 1.1,
-                              ),
-                            ),
-                          ],
+                        image: DecorationImage(
+                          image: imageProvider,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'RINCIAN SEWA',
                           style: TextStyle(
                             fontFamily: 'Poppins',
@@ -489,28 +786,32 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
                             letterSpacing: 1.0,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Sony Camera a6000',
-                          style: TextStyle(
+                          itemName,
+                          style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             color: Color(0xFF012D1D),
                           ),
                         ),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
-                            Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF414844)),
-                            SizedBox(width: 4),
-                            Text(
-                              '8 Jan - 10 Jan',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF414844),
+                            const Icon(Icons.calendar_today_outlined, size: 12, color: Color(0xFF414844)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                dateRange,
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF414844),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],

@@ -1,9 +1,84 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'api_config.dart';
+import 'auth_session_service.dart';
 
-class OwnerVerifyEvidenceScreen extends StatelessWidget {
+class OwnerVerifyEvidenceScreen extends StatefulWidget {
   final Map<String, String> itemData;
+  final String? transactionId;
 
-  const OwnerVerifyEvidenceScreen({super.key, required this.itemData});
+  const OwnerVerifyEvidenceScreen({
+    super.key,
+    required this.itemData,
+    this.transactionId,
+  });
+
+  @override
+  State<OwnerVerifyEvidenceScreen> createState() => _OwnerVerifyEvidenceScreenState();
+}
+
+class _OwnerVerifyEvidenceScreenState extends State<OwnerVerifyEvidenceScreen> {
+  List<dynamic> _beforeEvidences = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvidences();
+  }
+
+  Future<void> _fetchEvidences() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) {
+      setState(() {
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] != null) {
+          final allEvidences = body['data'] as List<dynamic>;
+          setState(() {
+            _beforeEvidences = allEvidences
+                .where((e) => e['type'] == 'before')
+                .toList();
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+      setState(() {
+        _errorMessage = 'Gagal mengambil bukti foto.';
+        _isLoading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan koneksi.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +101,12 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+            onPressed: _fetchEvidences,
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1.0),
           child: Container(
@@ -73,12 +154,26 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(15.0),
-                    child: Image.asset(
-                      itemData['image'] ?? 'assets/images/placeholder.png',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
-                    ),
+                    child: widget.itemData['image'] != null && widget.itemData['image']!.isNotEmpty
+                        ? (widget.itemData['image']!.startsWith('http')
+                            ? Image.network(
+                                widget.itemData['image']!,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              )
+                            : Image.asset(
+                                widget.itemData['image']!,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
+                              ))
+                        : Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[200],
+                            child: const Icon(Icons.image, color: Colors.grey),
+                          ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -86,7 +181,7 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          itemData['title'] ?? 'Sony Camera a6000',
+                          widget.itemData['title'] ?? 'Sony Camera a6000',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 16,
@@ -96,7 +191,7 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          itemData['owner'] ?? 'Penyewa: Andini Larasati',
+                          widget.itemData['owner'] ?? 'Penyewa: Andini Larasati',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -105,7 +200,7 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          itemData['date'] ?? '8 Jan - 10 Jan 2025',
+                          widget.itemData['date'] ?? '8 Jan - 10 Jan 2025',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -150,25 +245,63 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Wrap(
-                      spacing: 12.0,
-                      runSpacing: 12.0,
-                      children: List.generate(
-                        6, // Contoh 6 foto yang diunggah penyewa
-                        (index) => ClipRRect(
-                          borderRadius: BorderRadius.circular(11.0),
-                          child: Container(
-                            width: 70,
-                            height: 70,
-                            color: const Color(0xFFC1ECD4), // Hijau mint pudar placeholder
-                            child: Icon(
-                              Icons.image,
-                              color: const Color(0xFF012D1D).withOpacity(0.3),
+                    child: _isLoading
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 20),
+                              child: CircularProgressIndicator(color: Color(0xFF012D1D)),
                             ),
-                          ),
-                        ),
-                      ),
-                    ),
+                          )
+                        : _errorMessage != null
+                            ? Center(child: Text(_errorMessage!))
+                            : _beforeEvidences.isEmpty
+                                ? const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20),
+                                      child: Text('Tidak ada foto bukti.'),
+                                    ),
+                                  )
+                                : Wrap(
+                                    spacing: 12.0,
+                                    runSpacing: 12.0,
+                                    children: List.generate(
+                                      _beforeEvidences.length,
+                                      (index) {
+                                        final url = _beforeEvidences[index]['mediaUrl']?.toString() ?? '';
+                                        return GestureDetector(
+                                          onTap: () {
+                                            if (url.isNotEmpty) {
+                                              showDialog(
+                                                context: context,
+                                                builder: (_) => Dialog(
+                                                  child: Image.network(url),
+                                                ),
+                                              );
+                                            }
+                                          },
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(11.0),
+                                            child: Container(
+                                              width: 70,
+                                              height: 70,
+                                              color: const Color(0xFFC1ECD4),
+                                              child: url.startsWith('http')
+                                                  ? Image.network(
+                                                      url,
+                                                      width: 70,
+                                                      height: 70,
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : Icon(
+                                                      Icons.image,
+                                                      color: const Color(0xFF012D1D).withOpacity(0.3),
+                                                    ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
                   ),
                 ],
               ),
@@ -177,10 +310,6 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
             // --- 4. ACTION BUTTON ---
             GestureDetector(
               onTap: () {
-                // TODO: Logika konfirmasi selesai
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Konfirmasi serah terima berhasil!')),
-                );
                 Navigator.popUntil(context, (route) => route.isFirst);
               },
               child: Container(
@@ -193,7 +322,7 @@ class OwnerVerifyEvidenceScreen extends StatelessWidget {
                 ),
                 child: const Center(
                   child: Text(
-                    'Konfirmasi',
+                    'Konfirmasi Selesai',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,

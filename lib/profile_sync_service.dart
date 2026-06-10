@@ -69,6 +69,7 @@ class ProfileSyncService {
 
   Future<CachedUserProfile?> syncProfileFromApi({
     bool forceRefreshToken = true,
+    bool notify = true,
   }) async {
     final token = await _authSessionService.getValidIdToken(
       forceRefresh: forceRefreshToken,
@@ -96,7 +97,7 @@ class ProfileSyncService {
     }
 
     final profile = CachedUserProfile.fromJson(data);
-    await saveProfileToCache(profile, notify: true);
+    await saveProfileToCache(profile, notify: notify);
     return profile;
   }
 

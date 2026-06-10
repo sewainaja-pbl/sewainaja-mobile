@@ -157,13 +157,17 @@ class SuccessRentalModal extends StatelessWidget {
                               color: Color(0xFF414844),
                             ),
                             SizedBox(width: 6),
-                            Text(
-                              "12 Oct - 15 Oct",
-                              style: TextStyle(
-                                fontFamily: 'Plus Jakarta Sans', // Fallback to Poppins or default if not registered
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400, // Regular
-                                color: Color(0xFF414844),
+                            Expanded(
+                              child: Text(
+                                "12 Oct - 15 Oct",
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans', // Fallback to Poppins or default if not registered
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400, // Regular
+                                  color: Color(0xFF414844),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
