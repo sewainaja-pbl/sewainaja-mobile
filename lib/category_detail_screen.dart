@@ -152,17 +152,20 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   size: 28,
                 ),
               ),
-              const Spacer(),
-              Text(
-                widget.category.category,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF012D1D),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    widget.category.category,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 28,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
                 ),
               ),
-              const Spacer(),
               const SizedBox(width: 28),
             ],
           ),
