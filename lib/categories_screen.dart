@@ -5,6 +5,9 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'presentation/controllers/category_controller.dart';
 import 'category_detail_screen.dart';
 import 'models/category_model.dart';
+import 'widgets/subtle_fade_in.dart';
+import 'widgets/pressable_scale.dart';
+import 'widgets/skeleton_loader.dart';
 
 class CategoriesScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -100,8 +103,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       body: Consumer<CategoryController>(
         builder: (context, controller, child) {
           if (controller.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+            return GridView.builder(
+              padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+                left: 20.0,
+                right: 20.0,
+                bottom: 120.0,
+              ),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.7,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) => const CategoryCardSkeleton(),
             );
           }
 
@@ -153,7 +169,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
           return GridView.builder(
             padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + kToolbarHeight + 20,
+              top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
               left: 20.0,
               right: 20.0,
               bottom: 120.0,
@@ -179,24 +195,27 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               
               final color = colors[index % colors.length];
 
-              return _CategoryCard(
-                title: cat.category,
-                fontSize: 32, // Ukuran teks diperkecil agar kata panjang seperti KAMERA & LENSA tidak terpotong
-                photoUrl: cat.photoUrl,
-                gradientOverlay: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    color, 
-                    color.withValues(alpha: 0.5), 
-                    color.withValues(alpha: 0.0), 
-                  ],
-                  stops: const [0.0, 0.2, 1.0],
-                ),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CategoryDetailScreen(category: cat),
+              return SubtleFadeIn(
+                delay: Duration(milliseconds: index * 40),
+                child: _CategoryCard(
+                  title: cat.category,
+                  fontSize: 32, // Ukuran teks diperkecil agar kata panjang seperti KAMERA & LENSA tidak terpotong
+                  photoUrl: cat.photoUrl,
+                  gradientOverlay: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      color, 
+                      color.withValues(alpha: 0.5), 
+                      color.withValues(alpha: 0.0), 
+                    ],
+                    stops: const [0.0, 0.2, 1.0],
+                  ),
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CategoryDetailScreen(category: cat),
+                    ),
                   ),
                 ),
               );
@@ -225,7 +244,7 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
@@ -241,8 +260,10 @@ class _CategoryCard extends StatelessWidget {
                   child: CachedNetworkImage(
                     imageUrl: photoUrl!,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+                    memCacheWidth: 250, // Optimize memory for category card thumbnails
+                    placeholder: (context, url) => const ShimmerContainer(
+                      width: double.infinity,
+                      height: double.infinity,
                     ),
                     errorWidget: (context, url, error) => const Icon(Icons.error),
                   ),

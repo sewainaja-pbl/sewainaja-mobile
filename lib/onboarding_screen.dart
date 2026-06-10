@@ -112,6 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 return Image.asset(
                   _onboardingItems[index].imagePath,
                   fit: BoxFit.cover,
+                  cacheWidth: 600,
                   color: Colors.black.withValues(alpha: 0.4),
                   colorBlendMode: BlendMode.darken,
                 );

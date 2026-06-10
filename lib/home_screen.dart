@@ -468,8 +468,8 @@ class _HomeScreenState extends State<HomeScreen>
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 image: DecorationImage(
-                  image: _profilePhotoUrl.trim().isEmpty
-                      ? const AssetImage('assets/images/profile_user.png')
+                  image: (!_profilePhotoUrl.startsWith('http://') && !_profilePhotoUrl.startsWith('https://'))
+                      ? const ResizeImage(AssetImage('assets/images/profile_user.png'), width: 90)
                       : _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 90),
                   fit: BoxFit.cover,
                 ),
@@ -977,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen>
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           image: const DecorationImage(
-            image: AssetImage('assets/images/Iklan.jpg'),
+            image: ResizeImage(AssetImage('assets/images/Iklan.jpg'), width: 600),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
               Colors

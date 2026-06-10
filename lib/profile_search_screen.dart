@@ -213,6 +213,7 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
                     itemBuilder: (context, index) {
                       final pMap = _filteredProducts[index];
                       final product = ProductData(
+                        id: pMap["id"]?.toString(),
                         name: pMap["name"],
                         price: "Rp. ${pMap["price"].toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}",
                         image: pMap["image"],
