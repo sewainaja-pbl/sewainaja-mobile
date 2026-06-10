@@ -251,7 +251,30 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
       final respData = jsonDecode(response.body);
       if (response.statusCode == 200 && respData['success'] == true) {
         if (!mounted) return;
-        SuccessRentalModal.show(context);
+        final name = widget.itemData?['name']?.toString() ?? 'Barang Sewa';
+        final photos = widget.itemData?['photos'] as List? ?? [];
+        final photoUrl = photos.isNotEmpty ? photos.first.toString() : '';
+        final startDateTime = DateTime(
+          _startDate!.year,
+          _startDate!.month,
+          _startDate!.day,
+          _startTime!.hour,
+          _startTime!.minute,
+        );
+        final endDateTime = DateTime(
+          _endDate!.year,
+          _endDate!.month,
+          _endDate!.day,
+          _endTime!.hour,
+          _endTime!.minute,
+        );
+        SuccessRentalModal.show(
+          context,
+          itemName: name,
+          itemImage: photoUrl,
+          startDate: startDateTime,
+          endDate: endDateTime,
+        );
       } else {
         final errMsg = respData['error']?['message']?.toString() ?? 'Gagal mengajukan sewa';
         if (!mounted) return;
@@ -759,13 +782,23 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             height: 100,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
-              image: DecorationImage(
-                image: photos.isEmpty
-                    ? const AssetImage('assets/images/Iklan.jpg')
-                    : _imageUploadService.buildImageProvider(photos.first.toString(), targetWidth: 200),
-                fit: BoxFit.cover,
-              ),
+              color: Colors.grey.shade200,
+              image: photos.isNotEmpty
+                  ? DecorationImage(
+                      image: _imageUploadService.buildImageProvider(photos.first.toString(), targetWidth: 200),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
+            child: photos.isEmpty
+                ? const Center(
+                    child: Icon(
+                      Icons.image_outlined,
+                      color: Color(0xFF828282),
+                      size: 32,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 16),
           // Text Details

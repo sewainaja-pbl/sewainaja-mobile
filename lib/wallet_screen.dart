@@ -389,14 +389,36 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 28),
 
                   // --- 3. TRANSACTION HISTORY SECTION ---
-                  const Text(
-                    'Riwayat Transaksi Dompet',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF012D1D),
-                    ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Riwayat Transaksi Dompet',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFECEB),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFF04438), width: 0.5),
+                        ),
+                        child: const Text(
+                          'DUMMY',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF04438),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
                   _history.isEmpty

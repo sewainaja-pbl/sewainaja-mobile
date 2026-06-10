@@ -653,18 +653,29 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     height: 80,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(
-                        image:
-                            itemPhoto.isNotEmpty &&
-                                (itemPhoto.startsWith('http') ||
-                                    itemPhoto.startsWith('assets/'))
-                            ? (itemPhoto.startsWith('http')
+                      color: Colors.grey.shade200,
+                      image: itemPhoto.isNotEmpty &&
+                              (itemPhoto.startsWith('http') ||
+                                  itemPhoto.startsWith('assets/'))
+                          ? DecorationImage(
+                              image: itemPhoto.startsWith('http')
                                   ? NetworkImage(itemPhoto)
-                                  : AssetImage(itemPhoto) as ImageProvider)
-                            : const AssetImage('assets/images/Iklan.jpg'),
-                        fit: BoxFit.cover,
-                      ),
+                                  : AssetImage(itemPhoto) as ImageProvider,
+                              fit: BoxFit.cover,
+                            )
+                          : null,
                     ),
+                    child: (itemPhoto.isEmpty ||
+                            (!itemPhoto.startsWith('http') &&
+                                !itemPhoto.startsWith('assets/')))
+                        ? const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: Color(0xFF828282),
+                              size: 32,
+                            ),
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 16),
                   Expanded(

@@ -37,22 +37,25 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
         "name": "Sony W830 with 8x Optical Zoom",
         "price": "Rp.120.000/Day",
         "rating": "4.8(292)",
-        "image": "assets/images/Iklan.jpg",
+        "image": "",
         "more_options": true,
+        "isDummy": true,
       },
       {
         "name": "Sony Dual-Sense PS5",
         "price": "Rp.45.000/Day",
         "rating": "4.8(292)",
-        "image": "assets/images/Iklan.jpg",
+        "image": "",
         "more_options": true,
+        "isDummy": true,
       },
       {
         "name": "Sony Dual-Sense PS5 (Baris Baru)",
         "price": "Rp.45.000/Day",
         "rating": "4.8(292)",
-        "image": "assets/images/Iklan.jpg",
+        "image": "",
         "more_options": true,
+        "isDummy": true,
       },
     ];
 
@@ -208,11 +211,15 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   }
 
   Widget _buildItemCard(Map<String, dynamic> item) {
-    // Check if the image is a local file or asset
     final isLocalAsset = item['isLocalAsset'] == true;
-    final imageProvider = isLocalAsset 
-        ? FileImage(File(item["image"])) as ImageProvider
-        : AssetImage(item["image"]);
+    final hasImage = item["image"] != null && item["image"].toString().isNotEmpty;
+    final isDummy = item['isDummy'] == true;
+
+    final imageProvider = hasImage
+        ? (isLocalAsset 
+            ? FileImage(File(item["image"])) as ImageProvider
+            : AssetImage(item["image"]))
+        : null;
 
     return GestureDetector(
       onTap: () {
@@ -281,12 +288,46 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(10),
-                      image: DecorationImage(
-                        image: imageProvider,
-                        fit: BoxFit.cover,
+                      color: Colors.grey.shade200,
+                      image: imageProvider != null
+                          ? DecorationImage(
+                              image: imageProvider,
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: imageProvider == null
+                        ? const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              color: Color(0xFF828282),
+                              size: 36,
+                            ),
+                          )
+                        : null,
+                  ),
+                  if (isDummy)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFECEB),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFF04438), width: 0.5),
+                        ),
+                        child: const Text(
+                          'DUMMY',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF04438),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
                   // Rating Badge
                   Positioned(
                     bottom: 8,

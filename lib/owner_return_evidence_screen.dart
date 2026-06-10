@@ -165,6 +165,10 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
     }
     
     final tId = widget.transactionId;
+    final detail = _details.isNotEmpty ? _details.first : null;
+    final itemImage = (detail != null && detail['itemPhotoUrlSnapshot'] != null)
+        ? detail['itemPhotoUrlSnapshot'].toString()
+        : '';
     if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') {
       // Simulasi mode mock jika transactionId kosong atau dummy
       showDialog(
@@ -174,7 +178,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
           return _OwnerReturnSuccessModal(
             itemName: widget.itemName ?? 'Sony Camera a6000',
             dateRange: '8 Jan - 10 Jan 2025',
-            imageProvider: const AssetImage('assets/images/Iklan.jpg'),
+            itemImage: itemImage,
           );
         },
       );
@@ -227,7 +231,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                       ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang'
                       : widget.itemName ?? 'Sony Camera a6000',
                   dateRange: _formatDateRange(),
-                  imageProvider: _getImageProvider(),
+                  itemImage: itemImage,
                 );
               },
             );
@@ -396,32 +400,77 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      image: DecorationImage(
-                        image: _getImageProvider(),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final imageUrl = _details.isNotEmpty ? _details[0]['itemPhotoUrlSnapshot']?.toString() : null;
+                      final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(15),
+                          color: Colors.grey.shade200,
+                          image: hasImage
+                              ? DecorationImage(
+                                  image: imageUrl.startsWith('http')
+                                      ? NetworkImage(imageUrl)
+                                      : AssetImage(imageUrl) as ImageProvider,
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: !hasImage
+                            ? const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: Color(0xFF828282),
+                                  size: 24,
+                                ),
+                              )
+                            : null,
+                      );
+                    },
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _details.isNotEmpty
-                              ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
-                              : widget.itemName ?? 'Sony Camera a6000',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF414844),
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _details.isNotEmpty
+                                    ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
+                                    : widget.itemName ?? 'Sony Camera a6000',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF414844),
+                                ),
+                              ),
+                            ),
+                            if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123')
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFECEB),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: const Color(0xFFF04438), width: 0.5),
+                                ),
+                                child: const Text(
+                                  'DUMMY',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFF04438),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -670,11 +719,11 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
 class _OwnerReturnSuccessModal extends StatelessWidget {
   final String itemName;
   final String dateRange;
-  final ImageProvider imageProvider;
+  final String itemImage;
   const _OwnerReturnSuccessModal({
     required this.itemName,
     required this.dateRange,
-    required this.imageProvider,
+    required this.itemImage,
   });
 
   @override
@@ -764,11 +813,23 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
                       height: 80,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        image: DecorationImage(
-                          image: imageProvider,
-                          fit: BoxFit.cover,
-                        ),
+                        color: Colors.grey.shade200,
+                        image: itemImage.isNotEmpty && itemImage.startsWith('http')
+                            ? DecorationImage(
+                                image: NetworkImage(itemImage),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
+                      child: (itemImage.isEmpty || !itemImage.startsWith('http'))
+                          ? const Center(
+                              child: Icon(
+                                Icons.image_outlined,
+                                color: Color(0xFF828282),
+                                size: 32,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 16),

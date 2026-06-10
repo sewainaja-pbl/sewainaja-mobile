@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
 import 'widgets/subtle_fade_in.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
@@ -26,7 +25,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/report_dialog.dart';
 import 'room_chat_screen.dart';
 import 'widgets/skeleton_loader.dart';
-
 
 class ItemDetailScreen extends StatefulWidget {
   final ItemModel? item;
@@ -103,7 +101,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       setState(() => _isLoading = _itemData == null);
     }
     try {
-      final response = await http.get(Uri.parse('${ApiConfig.baseUrl}/items/$itemId'));
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/items/$itemId'),
+      );
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
         if (body['success'] == true && body['data'] != null) {
@@ -128,9 +128,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final lowerCond = condition.toLowerCase();
     if (lowerCond == 'new' || lowerCond.contains('excellent')) {
       return const Color(0xFF1B4332); // deep green
-    } else if (lowerCond.contains('like-new') || lowerCond.contains('like_new') || lowerCond.contains('sangat baik')) {
+    } else if (lowerCond.contains('like-new') ||
+        lowerCond.contains('like_new') ||
+        lowerCond.contains('sangat baik')) {
       return const Color(0xFF00796B); // teal
-    } else if (lowerCond.contains('good') || lowerCond.contains('baik') || lowerCond.contains('fair') || lowerCond.contains('cukup')) {
+    } else if (lowerCond.contains('good') ||
+        lowerCond.contains('baik') ||
+        lowerCond.contains('fair') ||
+        lowerCond.contains('cukup')) {
       return const Color(0xFF7B5804); // gold/accent brown
     } else if (lowerCond.contains('poor') || lowerCond.contains('buruk')) {
       return const Color(0xFFE33629); // danger red
@@ -143,7 +148,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final lowerCond = condition.toLowerCase();
     if (lowerCond == 'new') {
       return 'Baru';
-    } else if (lowerCond.contains('like-new') || lowerCond.contains('like_new') || lowerCond.contains('sangat baik')) {
+    } else if (lowerCond.contains('like-new') ||
+        lowerCond.contains('like_new') ||
+        lowerCond.contains('sangat baik')) {
       return 'Sangat Baik';
     } else if (lowerCond.contains('good') || lowerCond.contains('baik')) {
       return 'Baik';
@@ -176,11 +183,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         }
       }
     }
-    if (photos.isEmpty && widget.imagePath != null && widget.imagePath!.isNotEmpty) {
+    if (photos.isEmpty &&
+        widget.imagePath != null &&
+        widget.imagePath!.isNotEmpty) {
       photos.add(widget.imagePath!);
-    }
-    if (photos.isEmpty) {
-      photos.add('assets/images/Iklan.jpg');
     }
 
     return Scaffold(
@@ -196,54 +202,56 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Stack(
                 children: [
                   // Image Slider (PageView)
-                  Hero(
-                    tag: 'product-image-${widget.itemId ?? widget.item?.id}',
-                    child: SizedBox(
-                      height: screenHeight * heroImageHeightFactor,
-                      child: PageView.builder(
-                        itemCount: photos.length,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentImageIndex = index;
-                          });
-                        },
-                        itemBuilder: (context, index) {
-                          final photoPath = photos[index];
-                          final isUrl = photoPath.startsWith('http://') || photoPath.startsWith('https://');
-                          final isAsset = photoPath.startsWith('assets/');
-                          final isLocal = photoPath.isNotEmpty && !isUrl && !isAsset;
-                          
-                          if (isLocal && !isAsset) {
-                            return Image.file(
-                              File(photoPath),
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                            );
-                          } else if (isUrl) {
-                            return CachedNetworkImage(
-                              imageUrl: photoPath,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              memCacheWidth: 600, // Optimize memory decoding size for detail slider
-                              placeholder: (context, url) => const ShimmerContainer(
-                                width: double.infinity,
-                                height: double.infinity,
+                  SizedBox(
+                    height: screenHeight * heroImageHeightFactor,
+                    child: PageView.builder(
+                      itemCount: photos.length,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentImageIndex = index;
+                        });
+                      },
+                      itemBuilder: (context, index) {
+                        final photoPath = photos[index];
+                        final isUrl =
+                            photoPath.startsWith('http://') ||
+                            photoPath.startsWith('https://');
+                        final isAsset = photoPath.startsWith('assets/');
+                        final isLocal =
+                            photoPath.isNotEmpty && !isUrl && !isAsset;
+
+                        if (isLocal && !isAsset) {
+                          return Image.file(
+                            File(photoPath),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                          );
+                        } else if (isUrl) {
+                          return CachedNetworkImage(
+                            imageUrl: photoPath,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                            placeholder: (context, url) => const Center(
+                              child: CircularProgressIndicator(
+                                color: Color(0xFF012D1D),
                               ),
-                              errorWidget: (context, url, error) => Image.asset(
-                                'assets/images/Iklan.jpg',
-                                fit: BoxFit.cover,
-                                alignment: Alignment.center,
-                              ),
-                            );
-                          } else {
-                            return Image.asset(
-                              photoPath.isEmpty ? 'assets/images/Iklan.jpg' : photoPath,
+                            ),
+                            errorWidget: (context, url, error) => Image.asset(
+                              'assets/images/Iklan.jpg',
                               fit: BoxFit.cover,
                               alignment: Alignment.center,
-                            );
-                          }
-                        },
-                      ),
+                            ),
+                          );
+                        } else {
+                          return Image.asset(
+                            photoPath.isEmpty
+                                ? 'assets/images/Iklan.jpg'
+                                : photoPath,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.center,
+                          );
+                        }
+                      },
                     ),
                   ),
                   // Indicator dots
@@ -283,7 +291,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   Column(
                     children: [
                       // Spacer Transparan agar sheet tidak menutupi gambar secara default di atas
-                      SizedBox(height: (screenHeight * heroImageHeightFactor) - 30),
+                      SizedBox(
+                        height: (screenHeight * heroImageHeightFactor) - 30,
+                      ),
 
                       // ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
                       SubtleFadeIn(
@@ -407,7 +417,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 color: const Color(0xFFFDF9F4),
                 child: const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF012D1D),
+                    ),
                   ),
                 ),
               ),
@@ -443,18 +455,25 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   // 2A. MAIN INFO
   Widget _buildTitleAndBadges() {
     final itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
-    final priceUnit = _itemData?['priceUnit']?.toString() ?? widget.item?.priceUnit ?? "Jam";
-    final priceRaw = _itemData?['price'] ?? widget.item?.price ?? widget.pricePerHour ?? 15000.0;
+    final priceUnit =
+        _itemData?['priceUnit']?.toString() ?? widget.item?.priceUnit ?? "Jam";
+    final priceRaw =
+        _itemData?['price'] ??
+        widget.item?.price ??
+        widget.pricePerHour ??
+        15000.0;
     final priceVal = (priceRaw as num).toDouble();
     final unitLabel = priceUnit.toLowerCase();
-    final double displayPrice = (_itemData?['price'] != null || widget.item?.price != null)
+    final double displayPrice =
+        (_itemData?['price'] != null || widget.item?.price != null)
         ? priceVal
         : (unitLabel == 'hari' ? priceVal * 24 : priceVal);
-    final itemPrice = "Rp. ${displayPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/$unitLabel";
-    
+    final itemPrice =
+        "Rp. ${displayPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}/$unitLabel";
+
     final cond = _itemData?['condition']?.toString();
     final hasCondition = cond != null && cond.trim().isNotEmpty;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -500,7 +519,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   messenger.showSnackBar(
                     SnackBar(
                       content: Text(
-                        nowFav ? '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} disimpan ke Favorit!' : '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} dihapus dari Favorit!',
+                        nowFav
+                            ? '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} disimpan ke Favorit!'
+                            : '${widget.itemName ?? _itemData?['name'] ?? 'Barang'} dihapus dari Favorit!',
                         style: const TextStyle(fontFamily: 'Poppins'),
                       ),
                       backgroundColor: const Color(0xFF012D1D),
@@ -512,7 +533,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               child: Container(
                 margin: const EdgeInsets.only(top: 4),
                 child: Icon(
-                  _isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  _isFavorite
+                      ? Icons.favorite_rounded
+                      : Icons.favorite_border_rounded,
                   size: 28,
                   color: const Color(0xFFE33629), // Color_Danger_Red
                 ),
@@ -526,7 +549,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             // Badge Condition
             if (hasCondition)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: _getConditionColor(cond),
                   borderRadius: BorderRadius.circular(13),
@@ -587,7 +613,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     if (url == null || url.isEmpty) return null;
     try {
       final decodedUrl = Uri.decodeComponent(url);
-      final regex = RegExp(r'(\d{10,13})_\d+\.(?:jpg|jpeg|png|webp|gif)', caseSensitive: false);
+      final regex = RegExp(
+        r'(\d{10,13})_\d+\.(?:jpg|jpeg|png|webp|gif)',
+        caseSensitive: false,
+      );
       final match = regex.firstMatch(decodedUrl);
       if (match != null) {
         final tsStr = match.group(1);
@@ -608,7 +637,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   String _formatTimeAgo(dynamic createdAt) {
     DateTime? dateTime = _parseTimestamp(createdAt);
-    
+
     if (dateTime == null) {
       final photos = _itemData?['photos'] as List?;
       if (photos != null && photos.isNotEmpty) {
@@ -621,7 +650,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         }
       }
     }
-    
+
     if (dateTime == null) {
       final photos = widget.item?.photos;
       if (photos != null && photos.isNotEmpty) {
@@ -634,11 +663,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         }
       }
     }
-    
+
     dateTime ??= _extractTimestampFromUrl(widget.imagePath);
-    
+
     if (dateTime == null) return "Baru saja";
-    
+
     final diff = DateTime.now().difference(dateTime);
     if (diff.inSeconds < 60) {
       return "Baru saja";
@@ -654,23 +683,27 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   String _getDynamicDescription(String? itemName) {
-    if (itemName == null || itemName.trim().isEmpty) return "Barang sewaan berkualitas dengan kondisi yang masih sangat baik. Sangat cocok digunakan untuk berbagai keperluan Anda.";
-    
+    if (itemName == null || itemName.trim().isEmpty)
+      return "Barang sewaan berkualitas dengan kondisi yang masih sangat baik. Sangat cocok digunakan untuk berbagai keperluan Anda. (Dummy)";
+
     final lowerName = itemName.toLowerCase();
     if (lowerName.contains("sony a6000")) {
-      return "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan.";
+      return "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan. (Dummy)";
     } else if (lowerName.contains("airpods")) {
-      return "Apple AirPods Max 2 memberikan pengalaman mendengarkan audio yang tak tertandingi dengan Active Noise Cancellation terdepan di industri. Bantalan telinga sangat nyaman dipakai berjam-jam. Kondisi mulus 99%, baterai awet, lengkap dengan Smart Case bawaan.";
-    } else if (lowerName.contains("ps5") || lowerName.contains("dual-sense") || lowerName.contains("controller")) {
-      return "Controller Sony DualSense PS5 original, kondisi fisik mulus dan fungsi tombol serta analog 100% normal tanpa drift. Haptic feedback dan adaptive triggers berfungsi sempurna. Cocok untuk mabar bersama teman atau sekadar bermain solo.";
-    } else if (lowerName.contains("sony w830") || lowerName.contains("cybershot")) {
-      return "Kamera digital saku Sony W830 20.1 MP. Kamera yang sangat praktis dibawa kemana saja, hasil foto tajam khas Sony dengan 8x optical zoom. Cocok untuk mengabadikan momen casual dan street photography. Termasuk memory card 32GB dan pouch.";
+      return "Apple AirPods Max 2 memberikan pengalaman mendengarkan audio yang tak tertandingi dengan Active Noise Cancellation terdepan di industri. Bantalan telinga sangat nyaman dipakai berjam-jam. Kondisi mulus 99%, baterai awet, lengkap dengan Smart Case bawaan. (Dummy)";
+    } else if (lowerName.contains("ps5") ||
+        lowerName.contains("dual-sense") ||
+        lowerName.contains("controller")) {
+      return "Controller Sony DualSense PS5 original, kondisi fisik mulus dan fungsi tombol serta analog 100% normal tanpa drift. Haptic feedback dan adaptive triggers berfungsi sempurna. Cocok untuk mabar bersama teman atau sekadar bermain solo. (Dummy)";
+    } else if (lowerName.contains("sony w830") ||
+        lowerName.contains("cybershot")) {
+      return "Kamera digital saku Sony W830 20.1 MP. Kamera yang sangat praktis dibawa kemana saja, hasil foto tajam khas Sony dengan 8x optical zoom. Cocok untuk mengabadikan momen casual dan street photography. Termasuk memory card 32GB dan pouch. (Dummy)";
     } else if (lowerName.contains("tenda")) {
-      return "Tenda camping kapasitas 4 orang dengan bahan double layer tahan air (waterproof). Frame kokoh dan mudah dirakit, sangat cocok untuk kegiatan outdoor atau hiking bersama teman dan keluarga.";
+      return "Tenda camping kapasitas 4 orang dengan bahan double layer tahan air (waterproof). Frame kokoh dan mudah dirakit, sangat cocok untuk kegiatan outdoor atau hiking bersama teman dan keluarga. (Dummy)";
     } else if (lowerName.contains("bor") || lowerName.contains("drill")) {
-      return "Mesin bor listrik bertenaga dengan berbagai kecepatan. Lengkap dengan set mata bor untuk kayu, besi, dan beton. Kondisi terawat dan siap digunakan untuk kebutuhan pertukangan Anda.";
+      return "Mesin bor listrik bertenaga dengan berbagai kecepatan. Lengkap dengan set mata bor untuk kayu, besi, dan beton. Kondisi terawat dan siap digunakan untuk kebutuhan pertukangan Anda. (Dummy)";
     } else {
-      return "$itemName merupakan barang sewaan berkualitas yang kami tawarkan dengan kondisi fisik dan fungsi terbaik. Barang selalu dirawat secara rutin sehingga dapat berfungsi dengan optimal untuk menunjang aktivitas Anda. Jangan ragu untuk menyewa atau menghubungi *owner* jika ada pertanyaan lebih lanjut mengenai spesifikasi detail barang ini.";
+      return "$itemName merupakan barang sewaan berkualitas yang kami tawarkan dengan kondisi fisik dan fungsi terbaik. Barang selalu dirawat secara rutin sehingga dapat berfungsi dengan optimal untuk menunjang aktivitas Anda. Jangan ragu untuk menyewa atau menghubungi *owner* jika ada pertanyaan lebih lanjut mengenai spesifikasi detail barang ini. (Dummy)";
     }
   }
 
@@ -678,7 +711,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Widget _buildDescription() {
     final String descFromApi = _itemData?['description'] as String? ?? '';
     final String descFromWidget = widget.item?.description ?? '';
-    final String fallbackDesc = _getDynamicDescription(widget.itemName ?? _itemData?['name']);
+    final String fallbackDesc = _getDynamicDescription(
+      widget.itemName ?? _itemData?['name'],
+    );
     final String fullDescription = descFromApi.isNotEmpty
         ? descFromApi
         : (descFromWidget.isNotEmpty ? descFromWidget : fallbackDesc);
@@ -753,11 +788,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2B. SELLER PROFILE CARD
   Widget _buildSellerProfileCard() {
-    final String sellerName = _itemData?['ownerName'] as String? ?? widget.item?.ownerName ?? 'Han Soo Hee';
-    final double ratingRaw = ((_itemData?['ownerRating'] ?? widget.item?.ownerRating ?? 4.9) as num).toDouble();
+    final String sellerName =
+        _itemData?['ownerName'] as String? ??
+        widget.item?.ownerName ??
+        'Han Soo Hee (Dummy)';
+    final double ratingRaw =
+        ((_itemData?['ownerRating'] ?? widget.item?.ownerRating ?? 4.9) as num)
+            .toDouble();
     final String ratingStr = ratingRaw > 0 ? ratingRaw.toStringAsFixed(1) : "—";
-    final String? addressLabel = _itemData?['address']?['label']?.toString() ?? _itemData?['address']?['fullAddress']?.toString();
-    final String sellerLoc = addressLabel ?? widget.sellerLocation ?? "Tembalang, Banyumanik";
+    final String? addressLabel =
+        _itemData?['address']?['label']?.toString() ??
+        _itemData?['address']?['fullAddress']?.toString();
+    final String sellerLoc =
+        addressLabel ?? widget.sellerLocation ?? "Tembalang, Banyumanik (Dummy)";
 
     return GestureDetector(
       onTap: () {
@@ -848,13 +891,20 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             // Chat Action Button
             GestureDetector(
               onTap: () {
-                final String partnerId = _itemData?['ownerId']?.toString() ?? widget.item?.ownerId ?? "";
-                final String partnerName = _itemData?['ownerName']?.toString() ?? "User";
-                final String partnerAvatarUrl = ""; // Fetch from users collection or leave empty
+                final String partnerId =
+                    _itemData?['ownerId']?.toString() ??
+                    widget.item?.ownerId ??
+                    "";
+                final String partnerName =
+                    _itemData?['ownerName']?.toString() ?? "User";
+                final String partnerAvatarUrl =
+                    ""; // Fetch from users collection or leave empty
                 final String itemId = widget.itemId ?? widget.item?.id ?? "";
-                final String itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
-                final String itemPhotoUrl = (_itemData?['photos'] as List?)?.isNotEmpty == true 
-                    ? _itemData!['photos'][0].toString() 
+                final String itemName =
+                    _itemData?['name']?.toString() ?? widget.itemName ?? "";
+                final String itemPhotoUrl =
+                    (_itemData?['photos'] as List?)?.isNotEmpty == true
+                    ? _itemData!['photos'][0].toString()
                     : (widget.imagePath ?? "");
 
                 if (partnerId.isNotEmpty && itemId.isNotEmpty) {
@@ -933,7 +983,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               radiusKm: 1.5,
               interactive: false,
               markers: [MapMarkerData(point: _itemCenter, highlighted: true)],
-              overlayLabel: 'Estimasi jangkauan 1.5 km dari titik barang (Tap untuk detail)',
+              overlayLabel:
+                  'Estimasi jangkauan 1.5 km dari titik barang (Tap untuk detail)',
               borderRadius: BorderRadius.circular(25),
               height: 180,
             ),
@@ -945,10 +996,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   // 2E. RECOMMENDATION SLIDER (Horizontal Scroll)
   Widget _buildRecommendationSlider() {
-    final String? activeCategory = _itemData?['categoryName']?.toString() ?? widget.item?.categoryName;
+    final String? activeCategory =
+        _itemData?['categoryName']?.toString() ?? widget.item?.categoryName;
     final String? currentItemId = widget.itemId ?? widget.item?.id;
 
-    final Stream<List<ItemModel>> primaryStream = (activeCategory != null && activeCategory.isNotEmpty)
+    final Stream<List<ItemModel>> primaryStream =
+        (activeCategory != null && activeCategory.isNotEmpty)
         ? _itemRepository.watchAvailableItems(categoryName: activeCategory)
         : _itemRepository.watchAvailableItems(categoryName: 'All');
 
@@ -973,7 +1026,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF012D1D),
+                    ),
                   ),
                 );
               }
@@ -988,12 +1043,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               if (recommended.isEmpty) {
                 // Fallback to all available items
                 return StreamBuilder<List<ItemModel>>(
-                  stream: _itemRepository.watchAvailableItems(categoryName: 'All'),
+                  stream: _itemRepository.watchAvailableItems(
+                    categoryName: 'All',
+                  ),
                   builder: (context, fallbackSnapshot) {
-                    if (fallbackSnapshot.connectionState == ConnectionState.waiting) {
+                    if (fallbackSnapshot.connectionState ==
+                        ConnectionState.waiting) {
                       return const Center(
                         child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Color(0xFF012D1D),
+                          ),
                         ),
                       );
                     }
@@ -1018,7 +1078,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       );
                     }
 
-                    return _buildRecommendationList(fallbackRecommended.take(10).toList());
+                    return _buildRecommendationList(
+                      fallbackRecommended.take(10).toList(),
+                    );
                   },
                 );
               }
@@ -1048,7 +1110,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     return {
       'id': widget.itemId ?? widget.item?.id ?? '',
       'name': widget.itemName ?? widget.item?.name ?? '',
-      'pricePerHour': widget.pricePerHour ?? widget.item?.pricePerHour ?? 15000.0,
+      'pricePerHour':
+          widget.pricePerHour ?? widget.item?.pricePerHour ?? 15000.0,
       'categoryName': widget.item?.categoryName ?? 'Camera',
       'photos': widget.item?.photos ?? (_itemData?['photos'] ?? []),
       'ownerName': widget.item?.ownerName ?? '',
@@ -1085,17 +1148,27 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             if (!isOwnItem) ...[
               GestureDetector(
                 onTap: () {
-                  final String partnerId = _itemData?['ownerId']?.toString() ?? widget.item?.ownerId ?? "";
-                  final String partnerName = _itemData?['ownerName']?.toString() ?? widget.item?.ownerName ?? "User";
-                  final String partnerAvatarUrl = ""; // Fetch from users collection or leave empty
+                  final String partnerId =
+                      _itemData?['ownerId']?.toString() ??
+                      widget.item?.ownerId ??
+                      "";
+                  final String partnerName =
+                      _itemData?['ownerName']?.toString() ??
+                      widget.item?.ownerName ??
+                      "User";
+                  final String partnerAvatarUrl =
+                      ""; // Fetch from users collection or leave empty
                   final String itemId = widget.itemId ?? widget.item?.id ?? "";
-                  final String itemName = _itemData?['name']?.toString() ?? widget.itemName ?? "";
-                  final List<dynamic>? apiPhotos = _itemData?['photos'] as List<dynamic>?;
-                  final String itemPhotoUrl = (apiPhotos != null && apiPhotos.isNotEmpty)
+                  final String itemName =
+                      _itemData?['name']?.toString() ?? widget.itemName ?? "";
+                  final List<dynamic>? apiPhotos =
+                      _itemData?['photos'] as List<dynamic>?;
+                  final String itemPhotoUrl =
+                      (apiPhotos != null && apiPhotos.isNotEmpty)
                       ? apiPhotos.first.toString()
                       : (widget.item?.photos.isNotEmpty == true
-                          ? widget.item!.photos.first
-                          : (widget.imagePath ?? ""));
+                            ? widget.item!.photos.first
+                            : (widget.imagePath ?? ""));
 
                   if (partnerId.isNotEmpty && itemId.isNotEmpty) {
                     Navigator.push(
@@ -1118,7 +1191,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   width: 56,
                   decoration: BoxDecoration(
                     color: Colors.white, // Frame putih melingkar
-                    border: Border.all(color: const Color(0xFF012D1D), width: 1.5),
+                    border: Border.all(
+                      color: const Color(0xFF012D1D),
+                      width: 1.5,
+                    ),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -1147,9 +1223,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AddProductScreen(
-                          editItem: _getEditItemModel(),
-                        ),
+                        builder: (context) =>
+                            AddProductScreen(editItem: _getEditItemModel()),
                       ),
                     ).then((value) {
                       if (value == true) {
@@ -1213,7 +1288,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       name: data['name']?.toString() ?? '',
       description: data['description']?.toString() ?? '',
       pricePerHour: (data['pricePerHour'] as num?)?.toDouble() ?? 0.0,
-      price: (data['price'] as num?)?.toDouble() ?? ((data['pricePerHour'] as num?)?.toDouble() ?? 0.0) * 24,
+      price:
+          (data['price'] as num?)?.toDouble() ??
+          ((data['pricePerHour'] as num?)?.toDouble() ?? 0.0) * 24,
       priceUnit: data['priceUnit']?.toString() ?? 'Hari',
       status: data['status']?.toString() ?? 'available',
       condition: data['condition']?.toString() ?? 'fair',
@@ -1221,28 +1298,42 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-
   Future<void> _deleteItem() async {
     final itemId = widget.itemId ?? widget.item?.id;
     if (itemId == null) return;
-    
+
     // Confirm dialog
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFFFF8EF),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Hapus Barang?', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
-        content: const Text('Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.', style: TextStyle(fontFamily: 'Poppins')),
+        title: const Text(
+          'Hapus Barang?',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012D1D),
+          ),
+        ),
+        content: const Text(
+          'Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.',
+          style: TextStyle(fontFamily: 'Poppins'),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal', style: TextStyle(color: Color(0xFF585D59))),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Color(0xFF585D59)),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE33629),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus', style: TextStyle(color: Colors.white)),
@@ -1258,14 +1349,15 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       final token = await const AuthSessionService().getValidIdToken();
       final response = await http.delete(
         Uri.parse('${ApiConfig.baseUrl}/items/$itemId'),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+        headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
         if (!mounted) return;
         showAppSuccessSnack(context, 'Barang berhasil dihapus!');
-        Navigator.pop(context, true); // Pop back to catalog with success indicator
+        Navigator.pop(
+          context,
+          true,
+        ); // Pop back to catalog with success indicator
       } else {
         if (!mounted) return;
         showAppErrorSnack(context, 'Gagal menghapus barang.');
@@ -1330,8 +1422,16 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         final itemId = widget.item?.id ?? widget.itemId ?? '';
-                        Clipboard.setData(ClipboardData(text: 'https://sewainaja-b4834.web.app/items/$itemId'));
-                        showAppSuccessSnack(context, 'Link berhasil disalin ke clipboard!');
+                        Clipboard.setData(
+                          ClipboardData(
+                            text:
+                                'https://sewainaja-b4834.web.app/items/$itemId',
+                          ),
+                        );
+                        showAppSuccessSnack(
+                          context,
+                          'Link berhasil disalin ke clipboard!',
+                        );
                       },
                     ),
                     _buildShareOption(
@@ -1374,9 +1474,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Center(
-              child: icon,
-            ),
+            child: Center(child: icon),
           ),
           const SizedBox(height: 8),
           Text(
@@ -1421,16 +1519,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               const SizedBox(height: 16),
               if (isOwnItem) ...[
                 ListTile(
-                  leading: const Icon(Icons.edit_outlined, color: Color(0xFF012D1D)),
-                  title: const Text('Edit Barang', style: TextStyle(fontFamily: 'Poppins')),
+                  leading: const Icon(
+                    Icons.edit_outlined,
+                    color: Color(0xFF012D1D),
+                  ),
+                  title: const Text(
+                    'Edit Barang',
+                    style: TextStyle(fontFamily: 'Poppins'),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AddProductScreen(
-                          editItem: _getEditItemModel(),
-                        ),
+                        builder: (context) =>
+                            AddProductScreen(editItem: _getEditItemModel()),
                       ),
                     ).then((value) {
                       if (value == true) {
@@ -1440,8 +1543,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE33629)),
-                  title: const Text('Hapus Barang', style: TextStyle(fontFamily: 'Poppins', color: Color(0xFFE33629))),
+                  leading: const Icon(
+                    Icons.delete_outline_rounded,
+                    color: Color(0xFFE33629),
+                  ),
+                  title: const Text(
+                    'Hapus Barang',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Color(0xFFE33629),
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _deleteItem();
@@ -1449,16 +1561,31 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
               ] else ...[
                 ListTile(
-                  leading: const Icon(Icons.report_problem_outlined, color: Color(0xFFE33629)),
-                  title: const Text('Laporkan Barang', style: TextStyle(fontFamily: 'Poppins', color: Color(0xFFE33629))),
+                  leading: const Icon(
+                    Icons.report_problem_outlined,
+                    color: Color(0xFFE33629),
+                  ),
+                  title: const Text(
+                    'Laporkan Barang',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Color(0xFFE33629),
+                    ),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showReportDialog();
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.help_outline_rounded, color: Color(0xFF012D1D)),
-                  title: const Text('Bantuan SewainAja', style: TextStyle(fontFamily: 'Poppins')),
+                  leading: const Icon(
+                    Icons.help_outline_rounded,
+                    color: Color(0xFF012D1D),
+                  ),
+                  title: const Text(
+                    'Bantuan SewainAja',
+                    style: TextStyle(fontFamily: 'Poppins'),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(
@@ -1479,9 +1606,14 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   }
 
   void _showReportDialog() {
-    final reportedId = widget.item?.ownerId ?? _itemData?['ownerId'] as String? ?? '';
+    final reportedId =
+        widget.item?.ownerId ?? _itemData?['ownerId'] as String? ?? '';
     final itemId = widget.item?.id ?? widget.itemId ?? '';
-    final itemName = widget.item?.name ?? _itemData?['name'] as String? ?? widget.itemName ?? 'Barang';
+    final itemName =
+        widget.item?.name ??
+        _itemData?['name'] as String? ??
+        widget.itemName ??
+        'Barang';
 
     if (reportedId.isEmpty) {
       showAppErrorSnack(context, 'Data pemilik belum dimuat.');
@@ -1501,9 +1633,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 class _RecommendationCardItem extends StatelessWidget {
   final ItemModel item;
 
-  const _RecommendationCardItem({
-    required this.item,
-  });
+  const _RecommendationCardItem({required this.item});
 
   @override
   Widget build(BuildContext context) {
@@ -1513,11 +1643,7 @@ class _RecommendationCardItem extends StatelessWidget {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => ItemDetailScreen(
-              item: item,
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => ItemDetailScreen(item: item)),
         );
       },
       child: Container(
@@ -1547,13 +1673,25 @@ class _RecommendationCardItem extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
                   borderRadius: BorderRadius.circular(10),
-                  image: DecorationImage(
-                    image: item.primaryPhoto.isNotEmpty
-                        ? imageUploadService.buildImageProvider(item.primaryPhoto, targetWidth: 290)
-                        : const AssetImage('assets/images/Iklan.jpg') as ImageProvider,
-                    fit: BoxFit.cover,
-                  ),
+                  image: item.primaryPhoto.isNotEmpty
+                      ? DecorationImage(
+                          image: imageUploadService.buildImageProvider(
+                            item.primaryPhoto,
+                            targetWidth: 290,
+                          ),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
+                child: item.primaryPhoto.isEmpty
+                    ? const Center(
+                        child: Icon(
+                          Icons.image_outlined,
+                          color: Color(0xFF828282),
+                          size: 32,
+                        ),
+                      )
+                    : null,
               ),
             ),
             // Text Detail
