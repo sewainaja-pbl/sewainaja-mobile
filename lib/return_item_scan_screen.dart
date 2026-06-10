@@ -295,33 +295,78 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      image: DecorationImage(
-                        image: _getImageProvider(),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                  Builder(
+                    builder: (context) {
+                      final imageUrl = _details.isNotEmpty ? _details[0]['itemPhotoUrlSnapshot']?.toString() : null;
+                      final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+                      return Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey.shade200,
+                          image: hasImage
+                              ? DecorationImage(
+                                  image: imageUrl.startsWith('http')
+                                      ? NetworkImage(imageUrl)
+                                      : AssetImage(imageUrl) as ImageProvider,
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: !hasImage
+                            ? const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  color: Color(0xFF828282),
+                                  size: 24,
+                                ),
+                              )
+                            : null,
+                      );
+                    },
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _details.isNotEmpty
-                              ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
-                              : widget.itemName ?? 'Sony Camera a6000',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF414844),
-                          ),
-                        ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        _details.isNotEmpty
+                                            ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
+                                            : widget.itemName ?? 'Sony Camera a6000',
+                                        style: const TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF414844),
+                                        ),
+                                      ),
+                                    ),
+                                    if (widget.transactionId == null || widget.transactionId == 'dummy_trans_123')
+                                      Container(
+                                        margin: const EdgeInsets.only(left: 8),
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFFECEB),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: const Color(0xFFF04438), width: 0.5),
+                                        ),
+                                        child: const Text(
+                                          'DUMMY',
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFFF04438),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                         const SizedBox(height: 4),
                         Text(
                           _transactionData != null

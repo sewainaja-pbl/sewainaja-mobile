@@ -356,48 +356,69 @@ class _AdendumScreenState extends State<AdendumScreen> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.circular(16.0),
-                    child: itemPhoto.isNotEmpty
-                        ? (itemPhoto.startsWith('http') || itemPhoto.startsWith('assets/'))
-                            ? (itemPhoto.startsWith('http')
-                                ? Image.network(
-                                    itemPhoto,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.asset(
-                                    itemPhoto,
-                                    width: 80,
-                                    height: 80,
-                                    fit: BoxFit.cover,
-                                  ))
-                            : const Image(
-                                image: AssetImage('assets/images/Iklan.jpg'),
-                                width: 80,
-                                height: 80,
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                        image: itemPhoto.isNotEmpty && (itemPhoto.startsWith('http') || itemPhoto.startsWith('assets/'))
+                            ? DecorationImage(
+                                image: itemPhoto.startsWith('http')
+                                    ? NetworkImage(itemPhoto)
+                                    : AssetImage(itemPhoto) as ImageProvider,
                                 fit: BoxFit.cover,
                               )
-                        : const Image(
-                            image: AssetImage('assets/images/Iklan.jpg'),
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
+                            : null,
+                      ),
+                      child: (itemPhoto.isEmpty || (!itemPhoto.startsWith('http') && !itemPhoto.startsWith('assets/')))
+                          ? const Center(
+                              child: Icon(
+                                Icons.image_outlined,
+                                color: Color(0xFF828282),
+                                size: 32,
+                              ),
+                            )
+                          : null,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'PRODUK DISEWA',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF7B5804),
-                            letterSpacing: 1.2,
-                          ),
+                        Row(
+                          children: [
+                            const Text(
+                              'PRODUK DISEWA',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF7B5804),
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123')
+                              Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFECEB),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFFF04438), width: 0.5),
+                                ),
+                                child: const Text(
+                                  'DUMMY',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFF04438),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(

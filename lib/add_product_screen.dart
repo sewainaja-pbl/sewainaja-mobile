@@ -1688,7 +1688,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           'price': 'Rp.${price.toInt().toString().replaceAllMapped(RegExp(r"\B(?=(\d{3})+(?!\d))"), (match) => ".")}/${selectedDurasi.toLowerCase()}',
           'category': categoryName,
           'rating': '0.0(0)', // Default for new item
-          'image': _productPhotos.isNotEmpty ? _productPhotos.first.localPath : 'assets/images/Iklan.jpg',
+          'image': _productPhotos.isNotEmpty ? _productPhotos.first.localPath : (_existingPhotos.isNotEmpty ? _existingPhotos.first : ''),
           'isLocalAsset': _productPhotos.isNotEmpty, // Because it's an XFile path
           'more_options': true,
         });

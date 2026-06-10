@@ -36,15 +36,37 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     });
     try {
       final data = await _repository.fetchTransactions();
-      setState(() {
-        _transactions = data;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _transactions = data;
+          _isLoading = false;
+        });
+      }
+
+      // Fetch details for each transaction asynchronously to get the item names and photos
+      for (var tx in data) {
+        if (tx.details.isEmpty) {
+          _repository.fetchTransactionById(tx.id).then((fullTx) {
+            if (mounted) {
+              setState(() {
+                final idx = _transactions.indexWhere((t) => t.id == tx.id);
+                if (idx != -1) {
+                  _transactions[idx] = fullTx;
+                }
+              });
+            }
+          }).catchError((_) {
+            // Ignore error for individual transaction
+          });
+        }
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

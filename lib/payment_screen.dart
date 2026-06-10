@@ -293,13 +293,23 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           height: 80,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(15),
-                            image: DecorationImage(
-                              image: widget.itemPhoto.isNotEmpty && widget.itemPhoto.startsWith('http')
-                                  ? NetworkImage(widget.itemPhoto)
-                                  : const AssetImage('assets/images/Iklan.jpg') as ImageProvider,
-                              fit: BoxFit.cover,
-                            ),
+                            color: Colors.grey.shade200,
+                            image: widget.itemPhoto.isNotEmpty && widget.itemPhoto.startsWith('http')
+                                ? DecorationImage(
+                                    image: NetworkImage(widget.itemPhoto),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
                           ),
+                          child: (widget.itemPhoto.isEmpty || !widget.itemPhoto.startsWith('http'))
+                              ? const Center(
+                                  child: Icon(
+                                    Icons.image_outlined,
+                                    color: Color(0xFF828282),
+                                    size: 32,
+                                  ),
+                                )
+                              : null,
                         ),
                         const SizedBox(width: 16),
                         Expanded(

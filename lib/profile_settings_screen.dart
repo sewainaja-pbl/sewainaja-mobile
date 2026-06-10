@@ -7,12 +7,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'edit_profile_screen.dart';
-import 'handover_show_qr_screen.dart';
 import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
-import 'rental_deadline_screen.dart';
-import 'scan_qr_renter_screen.dart';
-import 'owner_return_show_qr_screen.dart';
 import 'settings_screen.dart';
 import 'my_items_screen.dart';
 import 'favorites_screen.dart';
@@ -92,6 +88,22 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           _realActiveTransactions = active;
           _isLoadingTransactions = false;
         });
+      }
+
+      // Fetch details for each active transaction asynchronously to get item names and photos
+      for (var tx in active) {
+        if (tx.details.isEmpty) {
+          _transactionRepository.fetchTransactionById(tx.id).then((fullTx) {
+            if (mounted) {
+              setState(() {
+                final idx = _realActiveTransactions.indexWhere((t) => t.id == tx.id);
+                if (idx != -1) {
+                  _realActiveTransactions[idx] = fullTx;
+                }
+              });
+            }
+          }).catchError((_) {});
+        }
       }
     } catch (e) {
       debugPrint("Error loading active transactions: $e");
@@ -278,8 +290,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           MaterialPageRoute(
             builder: (context) => ProfileViewScreen(
               ownerName: _name,
-              rating: "4.9",
-              listingCount: "20",
+              rating: "4.9 (Dummy)",
+              listingCount: "20 (Dummy)",
               avatarImage: _resolvedProfileImage(),
             ),
           ),
@@ -706,11 +718,17 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                                                 ),
                                               ),
                                         )
-                                      : Image.asset(
-                                          'assets/images/Iklan.jpg',
+                                      : Container(
                                           width: 64,
                                           height: 64,
-                                          fit: BoxFit.cover,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE0E0E0),
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          child: const Icon(
+                                            Icons.image_outlined,
+                                            color: Color(0xFF9E9E9E),
+                                          ),
                                         ),
                                 ),
                                 const SizedBox(width: 12),
