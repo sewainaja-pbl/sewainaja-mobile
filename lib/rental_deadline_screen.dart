@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'return_item_scan_screen.dart';
 import 'owner_return_show_qr_screen.dart';
 import 'adendum_screen.dart';
 import 'data/models/transaction_model.dart';
@@ -296,22 +298,25 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (days > 0) ...[
-                        _buildTimerBlock(daysStr, 'Hari'),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (days > 0) ...[
+                          _buildTimerBlock(daysStr, 'Hari'),
+                          _buildSeparator(),
+                        ],
+                        if (days > 0 || hours > 0) ...[
+                          _buildTimerBlock(hoursStr, 'Jam'),
+                          _buildSeparator(),
+                        ],
+                        _buildTimerBlock(minutesStr, 'Menit'),
                         _buildSeparator(),
+                        _buildTimerBlock(secondsStr, 'Detik'),
                       ],
-                      if (days > 0 || hours > 0) ...[
-                        _buildTimerBlock(hoursStr, 'Jam'),
-                        _buildSeparator(),
-                      ],
-                      _buildTimerBlock(minutesStr, 'Menit'),
-                      _buildSeparator(),
-                      _buildTimerBlock(secondsStr, 'Detik'),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -637,6 +642,26 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     DateTime? startDate,
     DateTime? endDate,
   ) {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final isRenter = _transaction == null || currentUser?.uid == _transaction?.renterId;
+
+    if (!isRenter) {
+      return _buildActionButton(
+        'Scan QR Pengembalian',
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ReturnItemScanScreen(
+                transactionId: widget.transactionId,
+                itemName: itemName,
+              ),
+            ),
+          ).then((_) => _fetchTransaction());
+        },
+      );
+    }
+
     return Column(
       children: [
         _buildActionButton(

@@ -18,6 +18,7 @@ class _AdendumScreenState extends State<AdendumScreen> {
 
   DateTime? _newEndDate;
   bool _isSubmitting = false;
+  String _selectedPaymentMethod = 'midtrans';
 
   @override
   void initState() {
@@ -140,7 +141,96 @@ class _AdendumScreenState extends State<AdendumScreen> {
     }
   }
 
-  Future<void> _submitRequest() async {
+  Future<void> _submitRequest(double extensionPrice) async {
+    if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123') {
+      // Allow dummy flow
+    } else {
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+        ),
+      );
+
+      try {
+        final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
+        final currentEnd = detail?.endDate ?? DateTime.now().add(const Duration(days: 1));
+        final newEnd = _newEndDate ?? currentEnd.add(const Duration(days: 1));
+        
+        await _repository.requestAdendum(widget.transactionId!, newEnd, extensionPrice, _selectedPaymentMethod);
+        
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          setState(() {
+            _isSubmitting = false;
+          });
+
+          // Show success dialog
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFFFFF8EF),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: const Text(
+                'Permintaan Terkirim',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              content: const Text(
+                'Permintaan perpanjangan sewa Anda telah berhasil diajukan ke pemilik barang. Silakan tunggu konfirmasi.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Color(0xFF414844),
+                ),
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Pop dialog
+                    Navigator.pop(context); // Pop AdendumScreen
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  child: const Text(
+                    'Kembali',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Navigator.pop(context); // Close loading dialog
+          setState(() {
+            _isSubmitting = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          );
+        }
+      }
+      return;
+    }
+
     setState(() {
       _isSubmitting = true;
     });
@@ -628,11 +718,118 @@ class _AdendumScreenState extends State<AdendumScreen> {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+            
+            // Payment Method Selection
+            const Row(
+              children: [
+                Icon(Icons.payment_outlined, color: Color(0xFF012D1D), size: 20),
+                SizedBox(width: 8),
+                Text(
+                  'Metode Pembayaran',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPaymentMethod = 'midtrans';
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFFE9F5E9) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.credit_card_outlined,
+                            color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Cashless',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _selectedPaymentMethod = 'cash';
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: _selectedPaymentMethod == 'cash' ? const Color(0xFFE9F5E9) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.monetization_on_outlined,
+                            color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'Tunai (COD)',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
             const SizedBox(height: 32),
-
+ 
             // 6. ACTION BUTTON
             ElevatedButton(
-              onPressed: _isSubmitting || totalHours <= 0 ? null : _submitRequest,
+              onPressed: _isSubmitting || totalHours <= 0 ? null : () => _submitRequest(extensionPrice),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF012D1D),
                 foregroundColor: Colors.white,
