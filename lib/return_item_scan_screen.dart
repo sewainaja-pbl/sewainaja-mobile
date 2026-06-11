@@ -163,6 +163,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
             builder: (_) => OwnerReturnEvidenceScreen(
               transactionId: 'dummy_trans_123',
               itemName: widget.itemName ?? 'Sony Camera a6000',
+              isForced: true,
             ),
           ),
         );
@@ -201,6 +202,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
                 builder: (_) => OwnerReturnEvidenceScreen(
                   transactionId: widget.transactionId,
                   itemName: widget.itemName,
+                  isForced: true,
                 ),
               ),
             );

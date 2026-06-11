@@ -92,6 +92,7 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
           builder: (_) => ReturnEvidenceScreen(
             transactionId: widget.transactionId,
             itemName: widget.itemData?['title'] ?? 'Sony Camera a6000',
+            isForced: true,
           ),
         ),
       );
@@ -128,8 +129,8 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
           final token = data['qrCheckoutTokenHash']?.toString() ?? '';
           final expiredAt = data['qrCheckoutExpiredAt'];
 
-          // Auto navigate if status changes to completed
-          if (status.toLowerCase() == 'completed') {
+          // Auto navigate if status changes to waiting_rating or completed
+          if (status.toLowerCase() == 'waiting_rating' || status.toLowerCase() == 'completed') {
             _navigateToEvidence();
           }
 
@@ -295,7 +296,9 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => const OwnerReturnEvidenceScreen(),
+              builder: (_) => const OwnerReturnEvidenceScreen(
+                isForced: true,
+              ),
             ),
           );
         },

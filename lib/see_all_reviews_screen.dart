@@ -1,15 +1,210 @@
 import 'package:flutter/material.dart';
+import 'data/repositories/rating_repository.dart';
 
 class SeeAllReviewsScreen extends StatelessWidget {
   final String ownerName;
+  final String? ownerId;
 
   const SeeAllReviewsScreen({
     super.key,
     this.ownerName = "Mas Tahes",
+    this.ownerId,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (ownerId == null || ownerId!.isEmpty) {
+      return _buildStaticBody(context);
+    }
+
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: RatingRepository().watchOwnerReviews(ownerId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Color(0xFFFFF8EF),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+            ),
+          );
+        }
+
+        final reviews = snapshot.data ?? [];
+        return _buildDynamicBody(context, reviews);
+      },
+    );
+  }
+
+  Widget _buildDynamicBody(BuildContext context, List<Map<String, dynamic>> reviews) {
+    final count = reviews.length;
+    double avg = 0.0;
+    int star5 = 0;
+    int star4 = 0;
+    int star3 = 0;
+    int star2 = 0;
+    int star1 = 0;
+
+    if (count > 0) {
+      double sum = 0.0;
+      for (var r in reviews) {
+        final score = (r['score'] as num?)?.toInt() ?? 5;
+        sum += score;
+        if (score == 5) {
+          star5++;
+        } else if (score == 4) {
+          star4++;
+        } else if (score == 3) {
+          star3++;
+        } else if (score == 2) {
+          star2++;
+        } else if (score == 1) {
+          star1++;
+        }
+      }
+      avg = sum / count;
+    }
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFF8EF),
+      body: CustomScrollView(
+        slivers: [
+          // --- 1A. TOP APP BAR ---
+          SliverAppBar(
+            pinned: true,
+            floating: true,
+            backgroundColor: const Color(0xFFFFF8EF),
+            elevation: 0,
+            centerTitle: false,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              "Reviews for $ownerName",
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+          ),
+
+          // --- 1B. OVERALL RATING SECTION ---
+          SliverToBoxAdapter(
+            child: Container(
+              margin: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 24),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF9F4),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left Column
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        avg > 0 ? avg.toStringAsFixed(1) : "0.0",
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 48,
+                          color: Color(0xFF012D1D),
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          for (int i = 1; i <= 5; i++)
+                            Icon(
+                              i <= avg.round() ? Icons.star : Icons.star_border,
+                              color: const Color(0xFFF8BD00),
+                              size: 18,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "$count reviews",
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: Color(0xFF414844),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 24),
+                  // Right Column (Distribution Bars)
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _buildRatingBar("5", count > 0 ? star5 / count : 0.0),
+                        const SizedBox(height: 8),
+                        _buildRatingBar("4", count > 0 ? star4 / count : 0.0),
+                        const SizedBox(height: 8),
+                        _buildRatingBar("3", count > 0 ? star3 / count : 0.0),
+                        const SizedBox(height: 8),
+                        _buildRatingBar("2", count > 0 ? star2 / count : 0.0),
+                        const SizedBox(height: 8),
+                        _buildRatingBar("1", count > 0 ? star1 / count : 0.0),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // --- 1C. REVIEWS LIST ---
+          SliverPadding(
+            padding: const EdgeInsets.only(left: 24, right: 24, bottom: 40),
+            sliver: reviews.isEmpty
+                ? const SliverToBoxAdapter(
+                    child: Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40.0),
+                        child: Text(
+                          "Belum ada ulasan.",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final r = reviews[index];
+                        final dateObj = r['createdAt']?.toDate() ?? DateTime.now();
+                        final dateStr = "${dateObj.day}-${dateObj.month}-${dateObj.year}";
+                        return _buildReviewCard(
+                          name: r['fromUserName'] ?? "Anonim",
+                          date: dateStr,
+                          rating: (r['score'] as num?)?.toInt() ?? 5,
+                          text: r['comment'] ?? "",
+                          helpfulCount: 0,
+                          itemImage: null,
+                        );
+                      },
+                      childCount: reviews.length,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticBody(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF),
       body: CustomScrollView(

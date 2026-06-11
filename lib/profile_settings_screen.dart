@@ -80,7 +80,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     try {
       final txs = await _transactionRepository.fetchTransactions();
       final active = txs.where((t) =>
-        t.status == 'pending' || t.status == 'approved' || t.status == 'ongoing'
+        t.status == 'pending' || t.status == 'approved' || t.status == 'ongoing' || t.status == 'waiting_rating'
       ).toList();
 
       if (mounted) {
@@ -157,20 +157,20 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             .get();
         final listings = itemsSnap.docs;
 
-        double totalRating = 0.0;
-        int ratedCount = 0;
-        for (var doc in listings) {
-          final rating = (doc.data()['ownerRating'] as num?)?.toDouble() ?? 0.0;
-          if (rating > 0.0) {
-            totalRating += rating;
-            ratedCount++;
-          }
+        final userSnap = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUserId)
+            .get();
+
+        double ratingVal = 0.0;
+        if (userSnap.exists) {
+          ratingVal = (userSnap.data()?['avgRatingAsOwner'] as num?)?.toDouble() ?? 0.0;
         }
 
         if (mounted) {
           setState(() {
             _listingCount = listings.length;
-            _userRating = ratedCount > 0 ? (totalRating / ratedCount) : 0.0;
+            _userRating = ratingVal;
           });
         }
       }
@@ -663,6 +663,11 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                             displayStatus = 'Aktif';
                             badgeColor = const Color(0xFFF87400);
                             textColor = Colors.white;
+                            break;
+                          case 'waiting_rating':
+                            displayStatus = 'Rating';
+                            badgeColor = const Color(0xFFFFF4DB);
+                            textColor = const Color(0xFF9A6700);
                             break;
                         }
 

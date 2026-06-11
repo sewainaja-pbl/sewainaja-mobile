@@ -70,10 +70,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   void initState() {
     super.initState();
     _targetOwnerId = widget.ownerId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
+    print('[ProfileViewScreen] initState: widget.ownerId = "${widget.ownerId}", _targetOwnerId = "$_targetOwnerId"');
     _loadProfile();
     if (_targetOwnerId.isNotEmpty) {
       _itemsStream = _itemRepo.watchItemsByOwner(_targetOwnerId);
-      _reviewsStream = _ratingRepo.watchOwnerReviews(_targetOwnerId);
+      _reviewsStream = _ratingRepo.watchOwnerReviews(_targetOwnerId, limit: 5);
     } else {
       _itemsStream = const Stream.empty();
       _reviewsStream = const Stream.empty();
@@ -85,7 +86,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       if (mounted) setState(() => _isLoadingProfile = false);
       return;
     }
+    print('[ProfileViewScreen] _loadProfile: fetching profile for "$_targetOwnerId"');
     final profile = await _userRepo.getUserProfile(_targetOwnerId);
+    print('[ProfileViewScreen] _loadProfile: fetched profile = $profile');
     if (mounted) {
       setState(() {
         _userProfile = profile;
@@ -520,7 +523,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) => SeeAllReviewsScreen(
-                                                ownerName: widget.ownerName,
+                                                ownerName: displayName,
+                                                ownerId: _targetOwnerId,
                                               ),
                                             ),
                                           );

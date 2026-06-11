@@ -16,6 +16,7 @@ class TransactionModel {
   final String ownerName;
   final List<TransactionDetailModel> details;
   final AdendumRequestModel? adendumRequest;
+  final bool? hasUserRated;
 
   TransactionModel({
     required this.id,
@@ -33,6 +34,7 @@ class TransactionModel {
     required this.ownerName,
     this.details = const [],
     this.adendumRequest,
+    this.hasUserRated,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -57,6 +59,7 @@ class TransactionModel {
       adendumRequest: json['adendumRequest'] != null
           ? AdendumRequestModel.fromJson(json['adendumRequest'] as Map<String, dynamic>)
           : null,
+      hasUserRated: json['hasUserRated'] as bool?,
     );
   }
 
