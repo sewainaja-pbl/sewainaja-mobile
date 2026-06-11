@@ -170,6 +170,9 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   }
 
   Future<void> _fetchItems({bool firstLoad = false}) async {
+    if (!_center.latitude.isFinite || !_center.longitude.isFinite) {
+      return;
+    }
     final requestVersion = ++_fetchVersion;
     setState(() {
       if (firstLoad) {
@@ -217,6 +220,9 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   void _onPositionChanged(MapCamera camera, bool hasGesture) {
     _currentZoom = camera.zoom;
     if (!hasGesture) return;
+    if (!camera.center.latitude.isFinite || !camera.center.longitude.isFinite) {
+      return;
+    }
     _moveDebounce?.cancel();
     _moveDebounce = Timer(const Duration(milliseconds: 550), () async {
       if (!mounted) return;
@@ -383,13 +389,17 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   }
 
   void _queueOrMoveMap(LatLng center, double zoom) {
-    _currentZoom = zoom;
+    if (!center.latitude.isFinite || !center.longitude.isFinite) {
+      return;
+    }
+    final clampedZoom = zoom.clamp(3.0, 18.0);
+    _currentZoom = clampedZoom;
     if (_isMapReady) {
-      _mapController.move(center, zoom);
+      _mapController.move(center, clampedZoom);
       return;
     }
     _pendingMoveCenter = center;
-    _pendingMoveZoom = zoom;
+    _pendingMoveZoom = clampedZoom;
   }
 
   @override
@@ -404,6 +414,8 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
             options: MapOptions(
               initialCenter: _center,
               initialZoom: 13,
+              minZoom: 3.0,
+              maxZoom: 18.0,
               onMapReady: () {
                 _isMapReady = true;
                 final pendingCenter = _pendingMoveCenter;
@@ -893,6 +905,22 @@ class _PhotoMarker extends StatelessWidget {
                               item.photoUrl,
                               fit: BoxFit.cover,
                               cacheWidth: compact ? 80 : 100, // Decode as tiny thumbnail to avoid lag
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: const Color(0xFFE8ECE8),
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 1.5,
+                                        color: Color(0xFF2F6743),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                               errorBuilder: (context, error, stackTrace) =>
                                   const _MarkerImageFallback(),
                             )
