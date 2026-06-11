@@ -15,6 +15,7 @@ class TransactionModel {
   final String renterName;
   final String ownerName;
   final List<TransactionDetailModel> details;
+  final AdendumRequestModel? adendumRequest;
 
   TransactionModel({
     required this.id,
@@ -31,6 +32,7 @@ class TransactionModel {
     required this.renterName,
     required this.ownerName,
     this.details = const [],
+    this.adendumRequest,
   });
 
   factory TransactionModel.fromJson(Map<String, dynamic> json) {
@@ -52,6 +54,9 @@ class TransactionModel {
               ?.map((d) => TransactionDetailModel.fromJson(d as Map<String, dynamic>))
               .toList() ??
           [],
+      adendumRequest: json['adendumRequest'] != null
+          ? AdendumRequestModel.fromJson(json['adendumRequest'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -112,6 +117,35 @@ class TransactionDetailModel {
       itemNameSnapshot: json['itemNameSnapshot'] ?? 'Item',
       itemPhotoUrlSnapshot: json['itemPhotoUrlSnapshot'] ?? '',
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class AdendumRequestModel {
+  final DateTime? newEndDate;
+  final double additionalCost;
+  final String status;
+  final String? paymentMethod;
+  final String? paymentStatus;
+  final DateTime? createdAt;
+
+  AdendumRequestModel({
+    this.newEndDate,
+    required this.additionalCost,
+    required this.status,
+    this.paymentMethod,
+    this.paymentStatus,
+    this.createdAt,
+  });
+
+  factory AdendumRequestModel.fromJson(Map<String, dynamic> json) {
+    return AdendumRequestModel(
+      newEndDate: TransactionModel._parseDate(json['newEndDate']),
+      additionalCost: (json['additionalCost'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] ?? 'pending',
+      paymentMethod: json['paymentMethod'],
+      paymentStatus: json['paymentStatus'],
+      createdAt: TransactionModel._parseDate(json['createdAt']),
     );
   }
 }

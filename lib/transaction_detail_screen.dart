@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'scan_qr_renter_screen.dart';
 import 'dispute_form_screen.dart';
 import 'api_config.dart';
@@ -177,6 +178,44 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red),
       );
     } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _approveAdendum() async {
+    final tId = widget.transactionId;
+    if (tId == null) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      await _repository.approveAdendum(tId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perpanjangan sewa disetujui!'), backgroundColor: Color(0xFF1B4332)),
+      );
+      _fetchTransactionDetails();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _rejectAdendum() async {
+    final tId = widget.transactionId;
+    if (tId == null) return;
+    
+    setState(() => _isLoading = true);
+    try {
+      await _repository.rejectAdendum(tId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perpanjangan sewa ditolak.'), backgroundColor: Color(0xFF1B4332)),
+      );
+      _fetchTransactionDetails();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+      );
       setState(() => _isLoading = false);
     }
   }
@@ -559,6 +598,10 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
+            if (_transaction?.adendumRequest != null && (_transaction!.adendumRequest!.status == 'pending' || (_transaction!.adendumRequest!.status == 'approved' && _transaction!.adendumRequest!.paymentMethod == 'midtrans' && _transaction!.adendumRequest!.paymentStatus == 'pending' && isRenter))) ...[
+              _buildAdendumBanner(isRenter),
+              const SizedBox(height: 24),
+            ],
             if (status.toLowerCase() == 'ongoing') ...[
               Container(
                 padding: const EdgeInsets.all(20),
@@ -1417,6 +1460,257 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 color: Color(0xFF012D1D),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdendumBanner(bool isRenter) {
+    final adendum = _transaction!.adendumRequest!;
+    final newDateStr = _formatDate(adendum.newEndDate);
+    final costStr = "Rp. ${adendum.additionalCost.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}";
+    final paymentMethodStr = adendum.paymentMethod == 'cash' ? 'Tunai (COD)' : 'Cashless (Midtrans)';
+
+    if (adendum.status == 'approved' && adendum.paymentMethod == 'midtrans' && adendum.paymentStatus == 'pending' && isRenter) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF8EF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF7B5804)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.payment_outlined, color: Color(0xFF7B5804)),
+                SizedBox(width: 8),
+                Text(
+                  'Pembayaran Perpanjangan Sewa',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7B5804),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Perpanjangan sewa hingga $newDateStr telah disetujui. Silakan lakukan pembayaran sebesar $costStr.',
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 13,
+                color: Color(0xFF414844),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : () async {
+                  setState(() => _isLoading = true);
+                  try {
+                    final redirectUrl = await _repository.initiateAdendumPayment(widget.transactionId!);
+                    if (redirectUrl.isNotEmpty) {
+                      final Uri url = Uri.parse(redirectUrl);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                        // Show confirmation dialog here similar to PaymentScreen
+                        if (mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: const Color(0xFFFFF8EF),
+                              title: const Text('Menunggu Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                              content: const Text('Silakan selesaikan pembayaran perpanjangan Anda di browser yang terbuka. Setelah selesai, muat ulang halaman ini.', style: TextStyle(fontFamily: 'Poppins')),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    _fetchTransactionDetails();
+                                  },
+                                  child: const Text('Tutup', style: TextStyle(fontFamily: 'Poppins')),
+                                )
+                              ],
+                            ),
+                          );
+                        }
+                      } else {
+                        throw Exception('Tidak dapat membuka link pembayaran.');
+                      }
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                  } finally {
+                    if (mounted) setState(() => _isLoading = false);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF012D1D),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: const Text(
+                  'Bayar Sekarang',
+                  style: TextStyle(fontFamily: 'Poppins', color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isRenter) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF8EF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF7B5804)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: Color(0xFF7B5804)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Menunggu persetujuan perpanjangan sewa dari pemilik hingga $newDateStr.',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: Color(0xFF7B5804),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF7B5804), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.more_time_rounded, color: Color(0xFF7B5804), size: 28),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Permintaan Perpanjangan Sewa',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF7B5804),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Penyewa mengajukan perpanjangan durasi sewa dengan rincian berikut:',
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF414844)),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF8EF),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Selesai Baru', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF717973))),
+                    Text(newDateStr, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Biaya Tambahan', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF717973))),
+                    Text(costStr, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF7B5804))),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Metode Bayar', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFF717973))),
+                    Text(paymentMethodStr, style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isLoading ? null : _rejectAdendum,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Tolak',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _approveAdendum,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Terima',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

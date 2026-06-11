@@ -151,36 +151,139 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
             }
           }
 
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Opacity(
-                opacity: isExpired ? 0.2 : 1.0,
-                child: QrImageView(
-                  data: token,
-                  version: QrVersions.auto,
-                  size: 220.0,
-                  backgroundColor: const Color(0xFFFDF9F4),
+          // Check Adendum COD
+          Widget? codAlert;
+          if (data['adendumRequest'] != null) {
+            final adendum = data['adendumRequest'];
+            if (adendum['status'] == 'approved' && adendum['paymentMethod'] == 'cash' && adendum['paymentStatus'] == 'pending') {
+              final amountStr = "Rp. ${(adendum['additionalCost'] ?? 0).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]}.')}";
+              codAlert = Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8EF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF7B5804), width: 1.5),
                 ),
-              ),
-              if (isExpired)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    'QR KADALUWARSA\nHarap klik tombol Refresh',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                child: Column(
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.payments_outlined, color: Color(0xFF7B5804)),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Tagihan Tunai (COD) Perpanjangan',
+                            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF7B5804)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Penyewa harus membayar uang tunai sebesar $amountStr untuk perpanjangan sewa saat pengembalian barang.',
+                      style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF414844)),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: const Color(0xFFFFF8EF),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              title: const Text('Konfirmasi Pembayaran COD', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                              content: Text('Apakah Anda yakin telah menerima pembayaran tunai sebesar $amountStr dari penyewa?', style: const TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844))),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('Batal', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF012D1D)),
+                                  child: const Text('Ya, Konfirmasi', style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          if (confirm == true) {
+                            try {
+                              final token = await const AuthSessionService().getValidIdToken();
+                              final response = await http.post(
+                                Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  if (token != null) 'Authorization': 'Bearer $token',
+                                },
+                                body: jsonEncode({
+                                  'transactionId': widget.transactionId,
+                                  'method': 'cash',
+                                  'amount': adendum['additionalCost'] ?? 0,
+                                }),
+                              );
+                              if (response.statusCode == 200) {
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pembayaran COD berhasil dikonfirmasi!'), backgroundColor: Color(0xFF1B4332)));
+                              } else {
+                                throw Exception('Gagal mengonfirmasi pembayaran.');
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red));
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF012D1D),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Konfirmasi Uang Diterima', style: TextStyle(fontFamily: 'Poppins', color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
+
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (codAlert != null) codAlert,
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Opacity(
+                    opacity: isExpired ? 0.2 : 1.0,
+                    child: QrImageView(
+                      data: token,
+                      version: QrVersions.auto,
+                      size: 220.0,
+                      backgroundColor: const Color(0xFFFDF9F4),
                     ),
                   ),
-                ),
+                  if (isExpired)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        'QR KADALUWARSA\nHarap klik tombol Refresh',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ],
           );
         },
@@ -237,7 +340,7 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
             const Padding(
               padding: EdgeInsets.only(top: 24.0, left: 32.0, right: 32.0),
               child: Text(
-                'Tunjukkan kode QR ini ke pemilik\nsebagai tanda serah terima pengembalian',
+                'Tunjukkan kode QR ini ke penyewa\nsebagai tanda serah terima pengembalian',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Poppins',
