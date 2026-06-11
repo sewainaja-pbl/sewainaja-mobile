@@ -125,6 +125,11 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
         textColor = const Color(0xFFF59E0B);
         label = 'Sengketa';
         break;
+      case 'waiting_rating':
+        bgColor = const Color(0xFFFFF4DB);
+        textColor = const Color(0xFFB8860B);
+        label = 'Rating';
+        break;
       default:
         bgColor = const Color(0xFFEEEEEE);
         textColor = const Color(0xFF6B6B6B);

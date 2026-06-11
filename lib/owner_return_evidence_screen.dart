@@ -3,11 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'api_config.dart';
 import 'auth_session_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'main_navigation_screen.dart';
 
 class OwnerReturnEvidenceScreen extends StatefulWidget {
   final String? transactionId;
   final String? itemName;
-  const OwnerReturnEvidenceScreen({super.key, this.transactionId, this.itemName});
+  final bool isForced;
+  final bool isRoot;
+  const OwnerReturnEvidenceScreen({
+    super.key,
+    this.transactionId,
+    this.itemName,
+    this.isForced = true,
+    this.isRoot = false,
+  });
 
   @override
   State<OwnerReturnEvidenceScreen> createState() => _OwnerReturnEvidenceScreenState();
@@ -28,8 +38,22 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
   @override
   void initState() {
     super.initState();
+    _savePendingRatingState();
     _fetchDetailsAndEvidences();
   }
+
+  Future<void> _savePendingRatingState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_rating_id', widget.transactionId ?? '');
+      await prefs.setString('pending_rating_item_name', widget.itemName ?? '');
+      await prefs.setString('pending_rating_role', 'owner');
+    } catch (e) {
+      debugPrint('Error saving pending rating state: $e');
+    }
+  }
+
+
 
   Future<void> _fetchDetailsAndEvidences() async {
     final tId = widget.transactionId;
@@ -139,20 +163,6 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
     return null;
   }
 
-  ImageProvider _getImageProvider() {
-    if (_details.isNotEmpty) {
-      final url = _details[0]['itemPhotoUrlSnapshot']?.toString();
-      if (url != null && url.isNotEmpty) {
-        if (url.startsWith('http')) {
-          return NetworkImage(url);
-        } else if (url.startsWith('assets/')) {
-          return AssetImage(url);
-        }
-      }
-    }
-    return const AssetImage('assets/images/Iklan.jpg');
-  }
-
   Future<void> _submit() async {
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,6 +181,9 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
         : '';
     if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') {
       // Simulasi mode mock jika transactionId kosong atau dummy
+      setState(() {
+        _canPop = true;
+      });
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -179,6 +192,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
             itemName: widget.itemName ?? 'Sony Camera a6000',
             dateRange: '8 Jan - 10 Jan 2025',
             itemImage: itemImage,
+            isRoot: widget.isRoot,
           );
         },
       );
@@ -222,6 +236,9 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
         final body = jsonDecode(response.body);
         if (body['success'] == true) {
           if (mounted) {
+            setState(() {
+              _canPop = true;
+            });
             showDialog(
               context: context,
               barrierDismissible: false,
@@ -232,6 +249,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                       : widget.itemName ?? 'Sony Camera a6000',
                   dateRange: _formatDateRange(),
                   itemImage: itemImage,
+                  isRoot: widget.isRoot,
                 );
               },
             );
@@ -321,9 +339,18 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _canPop,
+      canPop: widget.isForced ? false : _canPop,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
         if (didPop) return;
+        if (widget.isForced) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Anda wajib memberikan rating untuk menyelesaikan transaksi.'),
+              backgroundColor: Color(0xFFF04438),
+            ),
+          );
+          return;
+        }
         final shouldPop = await _showExitConfirmationDialog();
         if (shouldPop) {
           setState(() {
@@ -340,6 +367,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
           elevation: 0,
           backgroundColor: const Color(0xFFFDF9F4),
           centerTitle: true,
+          automaticallyImplyLeading: !widget.isForced,
           title: const Text(
             'Serah Terima',
             style: TextStyle(
@@ -349,10 +377,12 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
               color: Color(0xFF1B4332),
             ),
           ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-            onPressed: () => Navigator.pop(context),
-          ),
+          leading: widget.isForced
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+                  onPressed: () => Navigator.pop(context),
+                ),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
@@ -720,10 +750,12 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
   final String itemName;
   final String dateRange;
   final String itemImage;
+  final bool isRoot;
   const _OwnerReturnSuccessModal({
     required this.itemName,
     required this.dateRange,
     required this.itemImage,
+    this.isRoot = false,
   });
 
   @override
@@ -743,7 +775,22 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
             Align(
               alignment: Alignment.topRight,
               child: GestureDetector(
-                onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+                onTap: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('pending_rating_id');
+                  await prefs.remove('pending_rating_item_name');
+                  await prefs.remove('pending_rating_role');
+                  if (context.mounted) {
+                    if (isRoot) {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                      );
+                    } else {
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    }
+                  }
+                },
                 child: const Icon(Icons.close, color: Color(0xFF414844), size: 24),
               ),
             ),
@@ -887,7 +934,22 @@ class _OwnerReturnSuccessModal extends StatelessWidget {
             
             // Action Button
             GestureDetector(
-              onTap: () => Navigator.popUntil(context, (route) => route.isFirst),
+              onTap: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('pending_rating_id');
+                await prefs.remove('pending_rating_item_name');
+                await prefs.remove('pending_rating_role');
+                if (context.mounted) {
+                  if (isRoot) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                    );
+                  } else {
+                    Navigator.popUntil(context, (route) => route.isFirst);
+                  }
+                }
+              },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 16.0),

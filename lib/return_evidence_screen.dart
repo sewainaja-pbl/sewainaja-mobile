@@ -4,17 +4,27 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
 import 'dispute_form_screen.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
+import 'main_navigation_screen.dart';
 
 class ReturnEvidenceScreen extends StatefulWidget {
   final String? transactionId;
   final String? itemName;
-  const ReturnEvidenceScreen({super.key, this.transactionId, this.itemName});
+  final bool isForced;
+  final bool isRoot;
+  const ReturnEvidenceScreen({
+    super.key,
+    this.transactionId,
+    this.itemName,
+    this.isForced = true,
+    this.isRoot = false,
+  });
 
   @override
   State<ReturnEvidenceScreen> createState() => _ReturnEvidenceScreenState();
@@ -29,7 +39,30 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
   @override
   void initState() {
     super.initState();
+    _savePendingRatingState();
     _fetchTransactionDetails();
+  }
+
+  Future<void> _savePendingRatingState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('pending_rating_id', widget.transactionId ?? '');
+      await prefs.setString('pending_rating_item_name', widget.itemName ?? '');
+      await prefs.setString('pending_rating_role', 'renter');
+    } catch (e) {
+      debugPrint('Error saving pending rating state: $e');
+    }
+  }
+
+  Future<void> _clearPendingRatingState() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('pending_rating_id');
+      await prefs.remove('pending_rating_item_name');
+      await prefs.remove('pending_rating_role');
+    } catch (e) {
+      debugPrint('Error clearing pending rating state: $e');
+    }
   }
 
   Future<void> _fetchTransactionDetails() async {
@@ -183,7 +216,20 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.popUntil(context, (route) => route.isFirst);
+      setState(() {
+        _canPop = true;
+      });
+      await _clearPendingRatingState();
+      if (mounted) {
+        if (widget.isRoot) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+          );
+        } else {
+          Navigator.popUntil(context, (route) => route.isFirst);
+        }
+      }
       return;
     }
 
@@ -259,7 +305,20 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            Navigator.popUntil(context, (route) => route.isFirst);
+            setState(() {
+              _canPop = true;
+            });
+            await _clearPendingRatingState();
+            if (mounted) {
+              if (widget.isRoot) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+                );
+              } else {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              }
+            }
           }
         } else {
           throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
@@ -471,9 +530,18 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: _canPop,
+      canPop: widget.isForced ? false : _canPop,
       onPopInvokedWithResult: (bool didPop, Object? result) async {
         if (didPop) return;
+        if (widget.isForced) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Anda wajib memberikan rating untuk menyelesaikan transaksi.'),
+              backgroundColor: Color(0xFFF04438),
+            ),
+          );
+          return;
+        }
         final shouldPop = await _showExitConfirmationDialog();
         if (shouldPop) {
           setState(() {
@@ -490,6 +558,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
           elevation: 0,
           backgroundColor: const Color(0xFFFDF9F4),
           centerTitle: true,
+          automaticallyImplyLeading: !widget.isForced,
           title: const Text(
             'Serah Terima',
             style: TextStyle(
@@ -499,10 +568,12 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
               color: Color(0xFF1B4332),
             ),
           ),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-            onPressed: () => Navigator.pop(context),
-          ),
+          leading: widget.isForced
+              ? null
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+                  onPressed: () => Navigator.pop(context),
+                ),
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),

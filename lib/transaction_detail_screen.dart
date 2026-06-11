@@ -14,6 +14,8 @@ import 'return_item_scan_screen.dart';
 import 'owner_return_show_qr_screen.dart';
 import 'payment_screen.dart';
 import 'rental_deadline_screen.dart';
+import 'return_evidence_screen.dart';
+import 'owner_return_evidence_screen.dart';
 
 
 class TransactionDetailScreen extends StatefulWidget {
@@ -342,6 +344,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         return 'Transaksi Dibatalkan';
       case 'disputed':
         return 'Dalam Sengketa';
+      case 'waiting_rating':
+        return 'Menunggu Rating Kedua Pihak';
       default:
         return status.toUpperCase();
     }
@@ -360,6 +364,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       case 'cancelled':
         return const Color(0xFFBA1A1A); // Merah
       case 'disputed':
+        return const Color(0xFF7B5804); // Amber
+      case 'waiting_rating':
         return const Color(0xFF7B5804); // Amber
       default:
         return const Color(0xFF012D1D);
@@ -380,6 +386,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         return Icons.cancel_outlined;
       case 'disputed':
         return Icons.gpp_maybe;
+      case 'waiting_rating':
+        return Icons.star_half_rounded;
       default:
         return Icons.sync;
     }
@@ -1334,6 +1342,86 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 elevation: 0,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+    
+    if (status == 'waiting_rating') {
+      final hasRated = _transaction?.hasUserRated ?? false;
+      if (!hasRated) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                if (isRenter) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReturnEvidenceScreen(
+                        transactionId: widget.transactionId,
+                        itemName: itemName,
+                        isForced: true,
+                      ),
+                    ),
+                  ).then((_) => _fetchTransactionDetails());
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OwnerReturnEvidenceScreen(
+                        transactionId: widget.transactionId,
+                        itemName: itemName,
+                        isForced: true,
+                      ),
+                    ),
+                  ).then((_) => _fetchTransactionDetails());
+                }
+              },
+              icon: const Icon(Icons.star_rounded, color: Colors.white),
+              label: const Text(
+                'Berikan Rating & Ulasan',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B5804),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      } else {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFC1C8C2),
+                borderRadius: BorderRadius.circular(9999),
+              ),
+              child: const Center(
+                child: Text(
+                  'Menunggu partner memberikan rating',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
               ),
             ),
           ),

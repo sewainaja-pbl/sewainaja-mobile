@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sewainaja/login_screen.dart';
 import 'package:sewainaja/main_navigation_screen.dart';
 import 'package:sewainaja/onboarding_screen.dart';
+import 'package:sewainaja/return_evidence_screen.dart';
+import 'package:sewainaja/owner_return_evidence_screen.dart';
 
 class AnimatedSplashScreen extends StatefulWidget {
   const AnimatedSplashScreen({super.key});
@@ -39,6 +41,29 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
           await prefs.setString('token', freshToken);
         }
       } catch (_) {}
+
+      // Check for pending rating state
+      final pendingRatingId = prefs.getString('pending_rating_id') ?? '';
+      if (pendingRatingId.isNotEmpty) {
+        final pendingRole = prefs.getString('pending_rating_role') ?? 'renter';
+        final pendingItemName = prefs.getString('pending_rating_item_name') ?? 'Barang Sewaan';
+        if (pendingRole == 'renter') {
+          return ReturnEvidenceScreen(
+            transactionId: pendingRatingId,
+            itemName: pendingItemName,
+            isForced: true,
+            isRoot: true,
+          );
+        } else {
+          return OwnerReturnEvidenceScreen(
+            transactionId: pendingRatingId,
+            itemName: pendingItemName,
+            isForced: true,
+            isRoot: true,
+          );
+        }
+      }
+
       return const MainNavigationScreen();
     }
 

@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 import 'home_screen.dart';
 import 'categories_screen.dart';
 import 'add_product_screen.dart';
@@ -6,6 +9,10 @@ import 'chat_screen.dart';
 import 'profile_settings_screen.dart';
 import 'notification_service.dart';
 import 'widgets/pressable_scale.dart';
+import 'api_config.dart';
+import 'auth_session_service.dart';
+import 'return_evidence_screen.dart';
+import 'owner_return_evidence_screen.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -38,12 +45,98 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Ensure chat area state is set to false initially (Home tab)
     NotificationService.instance.setChatAreaActive(false);
     NotificationService.instance.addListener(_onNotificationReceived);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkPendingRatings();
+    });
   }
 
   @override
   void dispose() {
     NotificationService.instance.removeListener(_onNotificationReceived);
     super.dispose();
+  }
+
+  Future<void> _checkPendingRatings() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions?status=waiting_rating'),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true && body['data'] is List) {
+          final transactions = body['data'] as List;
+          for (var trans in transactions) {
+            final hasUserRated = trans['hasUserRated'] ?? false;
+            if (!hasUserRated) {
+              final transactionId = trans['id']?.toString() ?? '';
+              final renterId = trans['renterId']?.toString() ?? '';
+              final ownerId = trans['ownerId']?.toString() ?? '';
+
+              String itemName = 'Barang Sewaan';
+              if (trans['details'] != null && (trans['details'] as List).isNotEmpty) {
+                itemName = trans['details'][0]['itemNameSnapshot']?.toString() ?? 'Barang Sewaan';
+              } else {
+                final detailResponse = await http.get(
+                  Uri.parse('${ApiConfig.baseUrl}/transactions/$transactionId'),
+                  headers: headers,
+                );
+                if (detailResponse.statusCode == 200) {
+                  final detailBody = jsonDecode(detailResponse.body);
+                  if (detailBody['success'] == true && detailBody['data'] != null) {
+                    final detailsList = detailBody['data']['details'] as List?;
+                    if (detailsList != null && detailsList.isNotEmpty) {
+                      itemName = detailsList[0]['itemNameSnapshot']?.toString() ?? 'Barang Sewaan';
+                    }
+                  }
+                }
+              }
+
+              if (mounted) {
+                if (currentUser.uid == renterId) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReturnEvidenceScreen(
+                        transactionId: transactionId,
+                        itemName: itemName,
+                        isForced: true,
+                      ),
+                    ),
+                  );
+                  _checkPendingRatings();
+                } else if (currentUser.uid == ownerId) {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => OwnerReturnEvidenceScreen(
+                        transactionId: transactionId,
+                        itemName: itemName,
+                        isForced: true,
+                      ),
+                    ),
+                  );
+                  _checkPendingRatings();
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking pending ratings: $e');
+    }
   }
 
   @override
