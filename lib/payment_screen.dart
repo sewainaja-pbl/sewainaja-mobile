@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
+import 'payment_webview_screen.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String transactionId;
@@ -58,18 +58,16 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (response.statusCode == 200 && body['success'] == true) {
         final redirectUrl = body['data']['redirect_url']?.toString();
         if (redirectUrl != null && redirectUrl.isNotEmpty) {
-          final Uri url = Uri.parse(redirectUrl);
-          try {
-            final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
-            if (launched) {
-              if (mounted) {
-                _showPaidConfirmationDialog();
-              }
-            } else {
-              _showErrorSnackBar('Tidak dapat membuka link pembayaran.');
+          if (mounted) {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaymentWebViewScreen(url: redirectUrl),
+              ),
+            );
+            if (mounted) {
+              _showPaidConfirmationDialog();
             }
-          } catch (e) {
-            _showErrorSnackBar('Tidak dapat membuka link pembayaran.');
           }
         } else {
           _showErrorSnackBar('Gagal mendapatkan link pembayaran Midtrans.');
