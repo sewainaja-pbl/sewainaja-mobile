@@ -439,7 +439,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                       (item) => Marker(
                         point: LatLng(item.latitude, item.longitude),
                         width: compactMarkers ? 62 : 88,
-                        height: compactMarkers ? 74 : 98,
+                        height: compactMarkers ? 85 : 105,
                         child: GestureDetector(
                           onTap: () => setState(() => _selected = item),
                           child: _PhotoMarker(
