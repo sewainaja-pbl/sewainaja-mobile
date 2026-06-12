@@ -22,6 +22,7 @@ class MainNavigationScreen extends StatefulWidget {
   @override
   State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
+//testing
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
@@ -34,13 +35,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    _screens = [
-      null,
-      null,
-      null,
-      null,
-      null,
-    ];
+    _screens = [null, null, null, null, null];
     _screens[_selectedIndex] = _buildScreen(_selectedIndex);
     // Ensure chat area state is set to false initially (Home tab)
     NotificationService.instance.setChatAreaActive(false);
@@ -84,8 +79,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               final ownerId = trans['ownerId']?.toString() ?? '';
 
               String itemName = 'Barang Sewaan';
-              if (trans['details'] != null && (trans['details'] as List).isNotEmpty) {
-                itemName = trans['details'][0]['itemNameSnapshot']?.toString() ?? 'Barang Sewaan';
+              if (trans['details'] != null &&
+                  (trans['details'] as List).isNotEmpty) {
+                itemName =
+                    trans['details'][0]['itemNameSnapshot']?.toString() ??
+                    'Barang Sewaan';
               } else {
                 final detailResponse = await http.get(
                   Uri.parse('${ApiConfig.baseUrl}/transactions/$transactionId'),
@@ -93,10 +91,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 );
                 if (detailResponse.statusCode == 200) {
                   final detailBody = jsonDecode(detailResponse.body);
-                  if (detailBody['success'] == true && detailBody['data'] != null) {
+                  if (detailBody['success'] == true &&
+                      detailBody['data'] != null) {
                     final detailsList = detailBody['data']['details'] as List?;
                     if (detailsList != null && detailsList.isNotEmpty) {
-                      itemName = detailsList[0]['itemNameSnapshot']?.toString() ?? 'Barang Sewaan';
+                      itemName =
+                          detailsList[0]['itemNameSnapshot']?.toString() ??
+                          'Barang Sewaan';
                     }
                   }
                 }
@@ -142,27 +143,25 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBody: true, // Allows content to flow underneath the transparent bottom navigation area
+      extendBody:
+          true, // Allows content to flow underneath the transparent bottom navigation area
       body: Stack(
         children: [
           // 1. MAIN CONTENT AREA (Stack with smooth cross-fade tab transitions)
           Stack(
-            children: List.generate(
-              _screens.length,
-              (index) {
-                final screen = _screens[index];
-                if (screen == null) return const SizedBox.shrink();
-                final bool isActive = _selectedIndex == index;
-                return IgnorePointer(
-                  ignoring: !isActive,
-                  child: TabScreenWrapper(
-                    isActive: isActive,
-                    duration: const Duration(milliseconds: 240),
-                    child: screen,
-                  ),
-                );
-              },
-            ),
+            children: List.generate(_screens.length, (index) {
+              final screen = _screens[index];
+              if (screen == null) return const SizedBox.shrink();
+              final bool isActive = _selectedIndex == index;
+              return IgnorePointer(
+                ignoring: !isActive,
+                child: TabScreenWrapper(
+                  isActive: isActive,
+                  duration: const Duration(milliseconds: 240),
+                  child: screen,
+                ),
+              );
+            }),
           ),
 
           // 2. CUSTOM FLOATING BOTTOM NAVBAR
@@ -173,7 +172,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               child: SafeArea(
                 child: Container(
                   height: 75,
-                  margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                  margin: const EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    bottom: 20,
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 10),
                   decoration: BoxDecoration(
                     color: const Color(0xFF012D1D), // ID: '201:2650' Background
@@ -347,7 +350,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       onTap: () {
         _changeTab(index);
       },
-      scaleFactor: 0.90, // Bounces slightly more than card items for satisfying tap feel
+      scaleFactor:
+          0.90, // Bounces slightly more than card items for satisfying tap feel
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
@@ -365,8 +369,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             },
             child: Icon(
               isActive ? activeIcon : inactiveIcon,
-              key: ValueKey<bool>(isActive), // Force animated switcher to transition when icon changes
-              color: isActive ? const Color(0xFF012D1D) : const Color(0xFFFFF8EF),
+              key: ValueKey<bool>(
+                isActive,
+              ), // Force animated switcher to transition when icon changes
+              color: isActive
+                  ? const Color(0xFF012D1D)
+                  : const Color(0xFFFFF8EF),
               size: 24,
             ),
           ),
