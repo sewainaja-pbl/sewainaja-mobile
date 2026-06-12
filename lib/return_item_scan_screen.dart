@@ -208,11 +208,11 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
             );
           }
         } else {
-          throw Exception(body['message'] ?? 'Gagal memproses pengembalian barang.');
+          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal memproses pengembalian barang.');
         }
       } else {
         final body = jsonDecode(response.body);
-        throw Exception(body['message'] ?? 'Gagal memproses pengembalian barang.');
+        throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal memproses pengembalian barang.');
       }
     } catch (e) {
       if (mounted) {

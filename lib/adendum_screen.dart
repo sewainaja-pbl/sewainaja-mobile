@@ -538,6 +538,42 @@ class _AdendumScreenState extends State<AdendumScreen> {
               ),
             ),
             
+            const SizedBox(height: 20),
+            
+            // Aturan Perpanjangan Sewa Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8EF),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFE2DCD3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.info_outline_rounded, color: Color(0xFF7B5804), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Aturan Perpanjangan Sewa',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF7B5804),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildRuleItem('Waktu pengembalian baru harus lebih lambat dari waktu selesai saat ini.'),
+                  _buildRuleItem('Pengajuan perpanjangan memerlukan persetujuan pemilik barang sebelum aktif.'),
+                  _buildRuleItem('Jika ada bentrok dengan pesanan pengguna lain, sistem otomatis membatalkan pengajuan ini.'),
+                ],
+              ),
+            ),
+            
             const SizedBox(height: 32),
             
             // 2. SECTION TITLE
@@ -635,6 +671,40 @@ class _AdendumScreenState extends State<AdendumScreen> {
                 ],
               ),
             ),
+            
+            // Validation Warning Banner
+            if (totalHours <= 0) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEB),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFF04438), width: 1),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.error_outline_rounded, color: Color(0xFFF04438), size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        newEnd.isBefore(currentEnd) || newEnd.isAtSameMomentAs(currentEnd)
+                            ? 'Waktu pengembalian baru harus lebih lambat dari waktu selesai saat ini.'
+                            : newEnd.isBefore(DateTime.now())
+                                ? 'Waktu pengembalian baru tidak boleh di masa lalu.'
+                                : 'Durasi perpanjangan minimal harus 1 jam.',
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFFF04438),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             
             const SizedBox(height: 24),
             
@@ -851,6 +921,29 @@ class _AdendumScreenState extends State<AdendumScreen> {
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildRuleItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('• ', style: TextStyle(color: Color(0xFF7B5804), fontSize: 14, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 11,
+                color: Color(0xFF414844),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

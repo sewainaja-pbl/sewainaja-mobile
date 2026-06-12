@@ -172,11 +172,11 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
             );
           }
         } else {
-          throw Exception(checkinBody['message'] ?? 'Gagal melakukan check-in.');
+          throw Exception(checkinBody['error']?['message'] ?? checkinBody['message'] ?? 'Gagal melakukan check-in.');
         }
       } else {
         final checkinBody = jsonDecode(checkinResp.body);
-        throw Exception(checkinBody['message'] ?? 'Gagal melakukan check-in.');
+        throw Exception(checkinBody['error']?['message'] ?? checkinBody['message'] ?? 'Gagal melakukan check-in.');
       }
     } catch (e) {
       // Tutup loading dialog jika masih tampil

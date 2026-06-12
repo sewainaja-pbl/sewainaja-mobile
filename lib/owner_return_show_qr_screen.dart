@@ -59,7 +59,7 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
             );
           }
         } else {
-          throw Exception(body['message'] ?? 'Gagal me-regenerate QR');
+          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal me-regenerate QR');
         }
       } else {
         throw Exception('Server error: ${response.statusCode}');
@@ -229,7 +229,8 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
                               if (response.statusCode == 200) {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pembayaran COD berhasil dikonfirmasi!'), backgroundColor: Color(0xFF1B4332)));
                               } else {
-                                throw Exception('Gagal mengonfirmasi pembayaran.');
+                                final body = jsonDecode(response.body);
+                                throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengonfirmasi pembayaran.');
                               }
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red));

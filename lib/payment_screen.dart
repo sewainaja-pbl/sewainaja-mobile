@@ -28,6 +28,7 @@ class PaymentScreen extends StatefulWidget {
 class _PaymentScreenState extends State<PaymentScreen> {
   bool _isLoading = false;
   String _selectedMethod = 'midtrans'; // 'midtrans' or 'cash'
+  bool _hasInitiatedMidtrans = false;
 
   String _formatCurrency(double val) {
     return val.toStringAsFixed(0).replaceAllMapped(
@@ -58,15 +59,22 @@ class _PaymentScreenState extends State<PaymentScreen> {
       if (response.statusCode == 200 && body['success'] == true) {
         final redirectUrl = body['data']['redirect_url']?.toString();
         if (redirectUrl != null && redirectUrl.isNotEmpty) {
+          setState(() {
+            _hasInitiatedMidtrans = true;
+          });
           if (mounted) {
-            await Navigator.push(
+            final result = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
                 builder: (context) => PaymentWebViewScreen(url: redirectUrl),
               ),
             );
             if (mounted) {
-              _showPaidConfirmationDialog();
+              if (result == true) {
+                _checkPaymentStatus();
+              } else {
+                _showErrorSnackBar('Pembayaran dibatalkan atau belum diselesaikan.');
+              }
             }
           }
         } else {
@@ -101,7 +109,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       setState(() => _isLoading = false);
 
       if (response.statusCode == 200 && body['success'] == true) {
-        _showSuccessDialog('Permintaan Pembayaran Tunai (COD) berhasil dikirim! Silakan lakukan pembayaran tunai ke pemilik barang saat serah terima.');
+        _showCODPendingDialog('Permintaan Pembayaran Tunai (COD) berhasil dikirim! Silakan lakukan pembayaran tunai ke pemilik barang saat serah terima.');
       } else {
         _showErrorSnackBar(body['error']?['message'] ?? 'Gagal memproses pembayaran tunai.');
       }
@@ -133,14 +141,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
         if (isPaid) {
           if (mounted) {
-            Navigator.pop(context); // Close dialog
             _showSuccessDialog('Pembayaran terverifikasi! Status transaksi diperbarui.');
           }
         } else {
           _showErrorSnackBar('Pembayaran belum terdeteksi. Harap selesaikan transaksi Anda.');
         }
       } else {
-        _showErrorSnackBar('Gagal mengecek status pembayaran.');
+        final errorMsg = body['error']?['message'] ?? body['message'] ?? 'Gagal mengecek status pembayaran.';
+        _showErrorSnackBar(errorMsg);
       }
     } catch (_) {
       setState(() => _isLoading = false);
@@ -148,36 +156,44 @@ class _PaymentScreenState extends State<PaymentScreen> {
     }
   }
 
-  void _showPaidConfirmationDialog() {
+  void _showCODPendingDialog(String message) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFFFFF8EF),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Menunggu Pembayaran',
-          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D)),
-        ),
-        content: const Text(
-          'Silakan selesaikan pembayaran Anda di browser yang terbuka. Jika sudah, klik tombol di bawah untuk verifikasi status.',
-          style: TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.info_outline, color: Color(0xFF7B5804), size: 60),
+            const SizedBox(height: 16),
+            const Text(
+              'Metode COD Dipilih',
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF012D1D)),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844), fontSize: 13),
+            ),
+          ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Batal', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _checkPaymentStatus();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF012D1D),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          Center(
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context, true); // Pop back to detail screen with success indicator
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF012D1D),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
+              child: const Text('Tutup', style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
             ),
-            child: const Text('Saya Sudah Bayar', style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
           ),
         ],
       ),
@@ -518,6 +534,27 @@ class _PaymentScreenState extends State<PaymentScreen> {
                       ),
                     ),
                   ),
+
+                  if (_hasInitiatedMidtrans && _selectedMethod == 'midtrans') ...[
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: _checkPaymentStatus,
+                      icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
+                      label: const Text(
+                        'Cek Status Verifikasi Pembayaran',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF012D1D),
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFF012D1D), width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 48),
 
