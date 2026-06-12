@@ -32,32 +32,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   }
 
   Future<void> _loadItems() async {
-    final List<Map<String, dynamic>> dummyItems = [
-      {
-        "name": "Sony W830 with 8x Optical Zoom",
-        "price": "Rp.120.000/Day",
-        "rating": "4.8(292)",
-        "image": "",
-        "more_options": true,
-        "isDummy": true,
-      },
-      {
-        "name": "Sony Dual-Sense PS5",
-        "price": "Rp.45.000/Day",
-        "rating": "4.8(292)",
-        "image": "",
-        "more_options": true,
-        "isDummy": true,
-      },
-      {
-        "name": "Sony Dual-Sense PS5 (Baris Baru)",
-        "price": "Rp.45.000/Day",
-        "rating": "4.8(292)",
-        "image": "",
-        "more_options": true,
-        "isDummy": true,
-      },
-    ];
+
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -66,12 +41,12 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
       final List<Map<String, dynamic>> localItems = List<Map<String, dynamic>>.from(localItemsDynamic);
       
       setState(() {
-        _displayItems = [...localItems, ...dummyItems];
+        _displayItems = localItems;
       });
     } catch (e) {
       debugPrint('Failed to load local items: $e');
       setState(() {
-        _displayItems = dummyItems;
+        _displayItems = [];
       });
     }
   }
@@ -213,7 +188,6 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   Widget _buildItemCard(Map<String, dynamic> item) {
     final isLocalAsset = item['isLocalAsset'] == true;
     final hasImage = item["image"] != null && item["image"].toString().isNotEmpty;
-    final isDummy = item['isDummy'] == true;
 
     final imageProvider = hasImage
         ? (isLocalAsset 
@@ -306,28 +280,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                           )
                         : null,
                   ),
-                  if (isDummy)
-                    Positioned(
-                      top: 8,
-                      left: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFECEB),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFF04438), width: 0.5),
-                        ),
-                        child: const Text(
-                          'DUMMY',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF04438),
-                          ),
-                        ),
-                      ),
-                    ),
+
                   // Rating Badge
                   Positioned(
                     bottom: 8,

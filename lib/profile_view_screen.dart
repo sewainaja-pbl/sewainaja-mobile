@@ -125,10 +125,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         joinDate = "Member sejak ${rawCreatedAt.toDate().year}";
       }
     } catch (_) {}
-    final String statsFollowers = "103 Followers"; // dummy
-    final int listingCount = _userProfile?['totalTransactions'] ?? 20;
+    final int followersCount = _userProfile?['followersCount'] ?? 0;
+    final String statsFollowers = "$followersCount Followers";
+    final int listingCount = _userProfile?['totalTransactions'] ?? 0;
     final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "$listingCount+ Transactions";
-    final String aboutMeText = "Passionate gadget & tools enthusiast. I specialize in premium and well-maintained items...";
+    final String aboutMeText = _userProfile?['aboutMe'] as String? ?? "Belum ada informasi profil.";
     
     final String? avatarUrl = () {
       final profile = _userProfile?['profilePhotoUrl'] as String?;
@@ -161,7 +162,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             backgroundColor: const Color(0xFF012D1D),
             pinned: false,
             automaticallyImplyLeading: false,
-            expandedHeight: 270, // Approximate height for header
+            expandedHeight: 270,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               background: Column(
@@ -172,13 +173,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                  // --- 1A. TOP APP BAR ACTION ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Back Button
                         GestureDetector(
                           onTap: () => Navigator.pop(context),
                           child: Container(
@@ -195,10 +194,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                             ),
                           ),
                         ),
-                        // Share Button
                         GestureDetector(
                           onTap: () {
-                            // Dummy share action
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text('Membagikan profil $displayName...'),
@@ -225,13 +222,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // --- 1B. OWNER MAIN INFO ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Avatar Box with Rating Badge
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
@@ -247,7 +242,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                               ),
                             ),
-                            // Rating Badge
                             Positioned(
                               bottom: -6,
                               left: 0,
@@ -256,7 +250,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFF8BD00), // Yellow Gold
+                                    color: const Color(0xFFF8BD00),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
@@ -285,7 +279,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           ],
                         ),
                         const SizedBox(width: 16),
-                        // Owner details
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -320,7 +313,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              // Stats Row
                               Text(
                                 "$statsFollowers   •   $statsListings",
                                 style: const TextStyle(
@@ -338,12 +330,10 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   ),
                   const SizedBox(height: 10),
 
-                  // --- 1C. ACTION BUTTONS ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24.0),
                     child: Row(
                       children: [
-                        // Follow Button
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
@@ -372,7 +362,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                           ),
                         ),
                         const SizedBox(width: 12),
-                        // Message Button
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
@@ -380,7 +369,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => RoomChatScreen(
-                                    partnerId: widget.ownerName, // Using name as fallback ID
+                                    partnerId: widget.ownerId ?? "unknown_user",
                                     partnerName: displayName,
                                     itemId: "profile_chat",
                                     itemName: "Diskusi Profil",
@@ -441,14 +430,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             ),
           ),
 
-          // --- SECTIONS ---
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- 2A. ABOUT ME SECTION ---
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Column(
@@ -479,7 +466,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // --- 2B. STRENGTHS BADGE SECTION ---
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 24.0),
                               child: Wrap(
@@ -492,14 +478,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                               ),
                             ),
 
-                            // Divider
                             Container(
                               height: 0.5,
                               margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                               color: const Color(0xFF414844).withValues(alpha: 0.2),
                             ),
 
-                            // --- 2C. REVIEWS PREVIEW SECTION ---
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -548,7 +532,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 12),
-                                // Review Cards Slider
                                 SizedBox(
                                   height: 135,
                                   child: StreamBuilder<List<Map<String, dynamic>>>(
@@ -590,14 +573,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                               ],
                             ),
 
-                            // Divider
                             Container(
                               height: 0.5,
                               margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
                               color: const Color(0xFF414844).withValues(alpha: 0.2),
                             ),
 
-                            // --- 2D. OWNER LISTINGS (CATALOG) ---
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -615,7 +596,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                                 const SizedBox(height: 12),
 
-                                // Mini Search Bar
                                 Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                                   child: Container(
@@ -676,7 +656,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 
-                                // Category Slide (Matches Most Trusted Nearby filter)
                                 SizedBox(
                                   height: 40,
                                   child: ListView.separated(
@@ -737,7 +716,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                       ),
                     ),
 
-                      // Listing Grid (SliverGrid)
                       filteredProducts.isEmpty
                           ? SliverToBoxAdapter(
                               child: Container(
@@ -797,7 +775,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                                 itemId: itemModel.id,
                                                 itemName: product.name,
                                                 pricePerHour: itemModel.pricePerHour,
-                                                sellerLocation: "Tembalang, Banyumanik", // Dummy, bisa diambil dari itemModel address
+                                                sellerLocation: _userProfile?['location'] as String? ?? "Lokasi tidak tersedia",
                                                 imagePath: product.image,
                                                 isLocalAsset: product.isLocalAsset,
                                               ),

@@ -27,29 +27,29 @@ class ChatParticipantInfo {
 class ChatRoomModel {
   final String id;
   final List<String> participantIds;
-  final String itemId;
+  final String? itemId;
   final String? transactionId;
   final String lastMessage;
   final DateTime? lastMessageAt;
   final String lastMessageSender;
   final DateTime? createdAt;
   final Map<String, ChatParticipantInfo> participants;
-  final String itemName;
-  final String itemPhotoUrl;
+  final String? itemName;
+  final String? itemPhotoUrl;
   final String? createdBy;
 
   const ChatRoomModel({
     required this.id,
     required this.participantIds,
-    required this.itemId,
+    this.itemId,
     this.transactionId,
     required this.lastMessage,
     this.lastMessageAt,
     required this.lastMessageSender,
     this.createdAt,
     required this.participants,
-    required this.itemName,
-    required this.itemPhotoUrl,
+    this.itemName,
+    this.itemPhotoUrl,
     this.createdBy,
   });
 
@@ -67,15 +67,15 @@ class ChatRoomModel {
     return ChatRoomModel(
       id: doc.id,
       participantIds: List<String>.from(data['participantIds'] as List? ?? []),
-      itemId: data['itemId'] as String? ?? '',
+      itemId: data['itemId'] as String?,
       transactionId: data['transactionId'] as String?,
       lastMessage: data['lastMessage'] as String? ?? '',
       lastMessageAt: (data['lastMessageAt'] as Timestamp?)?.toDate(),
       lastMessageSender: data['lastMessageSender'] as String? ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       participants: parsedParticipants,
-      itemName: data['itemName'] as String? ?? '',
-      itemPhotoUrl: data['itemPhotoUrl'] as String? ?? '',
+      itemName: data['itemName'] as String?,
+      itemPhotoUrl: data['itemPhotoUrl'] as String?,
       createdBy: data['createdBy'] as String?,
     );
   }
@@ -89,16 +89,16 @@ class ChatRoomModel {
     return {
       'id': id,
       'participantIds': participantIds,
-      'itemId': itemId,
-      'transactionId': transactionId,
+      if (itemId != null) 'itemId': itemId,
+      if (transactionId != null) 'transactionId': transactionId,
       'lastMessage': lastMessage,
       'lastMessageAt': lastMessageAt,
       'lastMessageSender': lastMessageSender,
       'createdAt': createdAt,
       'participants': pMap,
-      'itemName': itemName,
-      'itemPhotoUrl': itemPhotoUrl,
-      'createdBy': createdBy,
+      if (itemName != null) 'itemName': itemName,
+      if (itemPhotoUrl != null) 'itemPhotoUrl': itemPhotoUrl,
+      if (createdBy != null) 'createdBy': createdBy,
     };
   }
 }

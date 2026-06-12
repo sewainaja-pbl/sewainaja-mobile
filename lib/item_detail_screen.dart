@@ -684,26 +684,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   String _getDynamicDescription(String? itemName) {
     if (itemName == null || itemName.trim().isEmpty)
-      return "Barang sewaan berkualitas dengan kondisi yang masih sangat baik. Sangat cocok digunakan untuk berbagai keperluan Anda. (Dummy)";
+      return "Barang sewaan berkualitas dengan kondisi yang masih sangat baik. Sangat cocok digunakan untuk berbagai keperluan Anda.";
 
     final lowerName = itemName.toLowerCase();
     if (lowerName.contains("sony a6000")) {
-      return "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan. (Dummy)";
+      return "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau. Kondisi barang sangat terawat, lensa bersih tanpa jamur sama sekali. Cocok untuk pemula hingga profesional untuk event fotografi maupun videografi ringan. Termasuk tas kamera, 1 baterai ekstra, dan charger bawaan.";
     } else if (lowerName.contains("airpods")) {
-      return "Apple AirPods Max 2 memberikan pengalaman mendengarkan audio yang tak tertandingi dengan Active Noise Cancellation terdepan di industri. Bantalan telinga sangat nyaman dipakai berjam-jam. Kondisi mulus 99%, baterai awet, lengkap dengan Smart Case bawaan. (Dummy)";
+      return "Apple AirPods Max 2 memberikan pengalaman mendengarkan audio yang tak tertandingi dengan Active Noise Cancellation terdepan di industri. Bantalan telinga sangat nyaman dipakai berjam-jam. Kondisi mulus 99%, baterai awet, lengkap dengan Smart Case bawaan.";
     } else if (lowerName.contains("ps5") ||
         lowerName.contains("dual-sense") ||
         lowerName.contains("controller")) {
-      return "Controller Sony DualSense PS5 original, kondisi fisik mulus dan fungsi tombol serta analog 100% normal tanpa drift. Haptic feedback dan adaptive triggers berfungsi sempurna. Cocok untuk mabar bersama teman atau sekadar bermain solo. (Dummy)";
+      return "Controller Sony DualSense PS5 original, kondisi fisik mulus dan fungsi tombol serta analog 100% normal tanpa drift. Haptic feedback dan adaptive triggers berfungsi sempurna. Cocok untuk mabar bersama teman atau sekadar bermain solo.";
     } else if (lowerName.contains("sony w830") ||
         lowerName.contains("cybershot")) {
-      return "Kamera digital saku Sony W830 20.1 MP. Kamera yang sangat praktis dibawa kemana saja, hasil foto tajam khas Sony dengan 8x optical zoom. Cocok untuk mengabadikan momen casual dan street photography. Termasuk memory card 32GB dan pouch. (Dummy)";
+      return "Kamera digital saku Sony W830 20.1 MP. Kamera yang sangat praktis dibawa kemana saja, hasil foto tajam khas Sony dengan 8x optical zoom. Cocok untuk mengabadikan momen casual dan street photography. Termasuk memory card 32GB dan pouch.";
     } else if (lowerName.contains("tenda")) {
-      return "Tenda camping kapasitas 4 orang dengan bahan double layer tahan air (waterproof). Frame kokoh dan mudah dirakit, sangat cocok untuk kegiatan outdoor atau hiking bersama teman dan keluarga. (Dummy)";
+      return "Tenda camping kapasitas 4 orang dengan bahan double layer tahan air (waterproof). Frame kokoh dan mudah dirakit, sangat cocok untuk kegiatan outdoor atau hiking bersama teman dan keluarga.";
     } else if (lowerName.contains("bor") || lowerName.contains("drill")) {
-      return "Mesin bor listrik bertenaga dengan berbagai kecepatan. Lengkap dengan set mata bor untuk kayu, besi, dan beton. Kondisi terawat dan siap digunakan untuk kebutuhan pertukangan Anda. (Dummy)";
+      return "Mesin bor listrik bertenaga dengan berbagai kecepatan. Lengkap dengan set mata bor untuk kayu, besi, dan beton. Kondisi terawat dan siap digunakan untuk kebutuhan pertukangan Anda.";
     } else {
-      return "$itemName merupakan barang sewaan berkualitas yang kami tawarkan dengan kondisi fisik dan fungsi terbaik. Barang selalu dirawat secara rutin sehingga dapat berfungsi dengan optimal untuk menunjang aktivitas Anda. Jangan ragu untuk menyewa atau menghubungi *owner* jika ada pertanyaan lebih lanjut mengenai spesifikasi detail barang ini. (Dummy)";
+      return "$itemName merupakan barang sewaan berkualitas yang kami tawarkan dengan kondisi fisik dan fungsi terbaik. Barang selalu dirawat secara rutin sehingga dapat berfungsi dengan optimal untuk menunjang aktivitas Anda. Jangan ragu untuk menyewa atau menghubungi *owner* jika ada pertanyaan lebih lanjut mengenai spesifikasi detail barang ini.";
     }
   }
 
@@ -791,7 +791,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     final String sellerName =
         _itemData?['ownerName'] as String? ??
         widget.item?.ownerName ??
-        'Han Soo Hee (Dummy)';
+        'Owner';
     final double ratingRaw =
         ((_itemData?['ownerRating'] ?? widget.item?.ownerRating ?? 4.9) as num)
             .toDouble();
@@ -800,7 +800,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _itemData?['address']?['label']?.toString() ??
         _itemData?['address']?['fullAddress']?.toString();
     final String sellerLoc =
-        addressLabel ?? widget.sellerLocation ?? "Tembalang, Banyumanik (Dummy)";
+        addressLabel ?? widget.sellerLocation ?? "Lokasi tidak tersedia";
 
     return GestureDetector(
       onTap: () {

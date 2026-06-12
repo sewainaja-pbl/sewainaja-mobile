@@ -208,28 +208,13 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
     final tId = widget.transactionId;
 
     if (tId == null || tId.isEmpty) {
-      // Simulasi mode mock jika transactionId kosong
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Simulasi: Bukti pengembalian dan rating berhasil dikirim!'),
-          backgroundColor: Color(0xFF1B4332),
+          content: Text('ID Transaksi tidak valid.'),
+          backgroundColor: Color(0xFFF04438),
           behavior: SnackBarBehavior.floating,
         ),
       );
-      setState(() {
-        _canPop = true;
-      });
-      await _clearPendingRatingState();
-      if (mounted) {
-        if (widget.isRoot) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-          );
-        } else {
-          Navigator.popUntil(context, (route) => route.isFirst);
-        }
-      }
       return;
     }
 
@@ -411,7 +396,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => DisputeFormScreen(
-                            transactionId: widget.transactionId ?? 'dummy_trans_123',
+                            transactionId: widget.transactionId ?? '',
                             category: 'checkout_damage',
                             itemName: widget.itemName ?? 'Sony Camera a6000',
                           ),
@@ -664,25 +649,6 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                                        ),
                                      ),
                                    ),
-                                   if (widget.transactionId == null || widget.transactionId == 'dummy_trans_123')
-                                     Container(
-                                       margin: const EdgeInsets.only(left: 8),
-                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                       decoration: BoxDecoration(
-                                         color: const Color(0xFFFFECEB),
-                                         borderRadius: BorderRadius.circular(6),
-                                         border: Border.all(color: const Color(0xFFF04438), width: 0.5),
-                                       ),
-                                       child: const Text(
-                                         'DUMMY',
-                                         style: TextStyle(
-                                           fontFamily: 'Poppins',
-                                           fontSize: 9,
-                                           fontWeight: FontWeight.bold,
-                                           color: Color(0xFFF04438),
-                                         ),
-                                       ),
-                                     ),
                                  ],
                                ),
                               const SizedBox(height: 6),

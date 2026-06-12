@@ -1118,84 +1118,105 @@ flutter:
 # 4. Conditional UI: Ikon amplop merah hanya muncul pada mode tab "Request" (Sesuai gambar referensi kiri).
 
 # =============================================================
-# ## AI PROMPT SPEC: SEWAINAJA - ROOM CHAT SCREEN
+# ## AI PROMPT SPEC: SEWAINAJA - ROOM CHAT SCREEN (MULTI-ITEM)
 # =============================================================
-# Name: SewaIn Aja - Room Chat
-# Description: Halaman percakapan 1-on-1 dengan penjual/penyewa, dilengkapi kartu ringkasan barang dan input chat.
-# Theme: Premium Clean & Minimalist (Green Forest Palette)
+# Name: SewaIn Aja - Room Chat Screen
+# Description: Halaman obrolan tunggal per Owner yang mendukung diskusi 
+#              multi-barang. Dilengkapi bubble chat khusus untuk Item Card, 
+#              Rating, Quick Replies, dan Item Context Preview di area input.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
 
 # -------------------------------------------------------------
 # ## DEPENDENCIES SYNC
 # -------------------------------------------------------------
-# Primary Font: Poppins (Google Fonts)
-# Secondary Font: Inter (Untuk teks chat)
-# Icons: Iconify/Vector (Back, More Vert, Plus, Send)
-# Component: ListView (BouncingScrollPhysics), Fixed Bottom Input
+# Primary Font: Poppins & Plus Jakarta Sans
+# Icons: Material Icons (arrow_back, more_vert, close, add_circle_outline, sentiment_satisfied, send, star)
+# Layout: Scaffold -> Column (AppBar, Expanded ListView, Input Area)
 
 # =============================================================
 # ## UI STRUCTURE NODES
 # =============================================================
 
-# ### [SECTION 1: APPBAR / HEADER]
-# Deskripsi: Header menempel di bagian paling atas.
-# ID: '195:1100' -> Background Layar (Color: #FDF9F4)
-# ID: '196:1568' -> Back Button (Circle Background: Transparan/Sama dengan BG, Icon Color: #012D1D)
-# Profile Info (Row):
-#   - Avatar (ID '214:2018'): Rounded Rectangle (Radius 5px)
-#   - Name (ID '196:1571'): "Han So Hee" (Font: Poppins Medium, Size: 15, Color: #414844)
-#   - Status Indicator: Dot Green (#34DD48) + Text "Online" (Size 10, Color: #414844)
-# ID: '196:1639' -> Right Action: More Options Icon (bi:three-dots-vertical, Color: #000000)
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
 
-# ### [SECTION 2: PINNED ITEM SUMMARY CARD]
-# Deskripsi: Kartu ringkasan barang yang dibahas, diletakkan tepat di bawah header.
-# ID: '209:1811' -> Card Container (Background: #FFFFFF, Outline: #000000 1px, BorderRadius: 15px)
-# - Item Image (ID '209:1816'): Gambar Kotak (BorderRadius: 12px)
-# - Title (ID '209:1819'): "Sony a6000" (Font: Poppins Medium, Size: 15, Color: #012D1D)
-# - Price (ID '214:1960'): "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 12, Color: #7B5804)
+# --- 1A. TOP APP BAR ---
+# Widget: AppBar (elevation: 0, bg: #FFF8EF)
+# Leading: IconButton arrow_back (#012D1D)
+# Title (Row):
+#   - Avatar (Circle 40x40)
+#   - Column: Text "Accor Heavy Tools" (Poppins Bold 16, #012D1D) + Text "Online" (Plus Jakarta Sans 12, #10B981)
+# Actions: IconButton more_vert (#012D1D)
 
-# ### [SECTION 3: CHAT LIST (SCROLLABLE BUBBLES)]
-# Deskripsi: Area percakapan yang bisa di-scroll. Terdapat 2 tipe bubble chat.
+# --- 1B. CHAT MESSAGES AREA (LISTVIEW) ---
+# Widget: Expanded -> ListView (padding horizontal 16px)
+# 
+#   # Komponen 1: Security Warning Banner (Paling Atas)
+#   - Text: "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi..." (Plus Jakarta Sans Medium 11, #414844, textAlign center, margin 16px)
+#   - Text Link: "Baca Panduan Keamanan" (bold, warna #012D1D)
 #
-# --- SENDER BUBBLE (KIRI) ---
-# Container Style: Background #D9D9D9 (Light Gray), Sudut membulat kecuali sudut kiri atas.
-# Text: Font Inter, Size 12, Color #000000.
-# Timestamp: Berada di bawah bubble sebelah kiri (Contoh: "08:30", Font: Poppins Light, Size 10).
-# Data (ID '209:1791', '217:2109', '217:2118')
+#   # Komponen 2: Date Separator
+#   - Center Text: "24 March, 2026" (Plus Jakarta Sans Medium 12, #414844 60% opacity, margin vertical 16px)
 #
-# --- RECEIVER / ME BUBBLE (KANAN) ---
-# Container Style: Background #1B4332 (Dark Green), Sudut membulat kecuali sudut kanan bawah.
-# Text: Font Poppins Light, Size 12, Color #FFFFFF.
-# Timestamp: Berada di bawah bubble sebelah kanan (Contoh: "08:35", Font: Poppins Light, Size 10).
-# Data (ID '209:1799', '217:2113')
+#   # Komponen 3: ITEM CARD BUBBLE (Dikirim ke dalam chat)
+#   - Layout: Container max lebar 80%, margin bottom 8px, align Center Right (jika kita yg share)
+#   - Styling: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 12px
+#   - Item Info Row (Top):
+#       - Image: 64x64, radius 8px, dengan overlay label "Tersedia" (bg hitam transparan)
+#       - Column: 
+#           - Title: "Bor Listrik Bosch..." (Plus Jakarta Sans SemiBold 14, #012D1D, maxLines 2)
+#           - Price: "Rp45.000/hari" (Manrope Bold 14, #012D1D)
+#   - Action Row (Bottom, marginTop 12px): 
+#       - Button "Sewa Sekarang" (Expanded, bg #012D1D, text #FFFFFF, radius 8px, padding 8px)
+#
+#   # Komponen 4: Rating Info Bubble (Sistem)
+#   - Layout: Container width full, margin vertical 16px
+#   - Styling: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (Center):
+#       - Row: Text "Kamu kasih nilai " + 5 Icon star (#F8BD00)
+#       - Text: "Sangat puas" (Plus Jakarta Sans Medium 14, #10B981)
+#
+#   # Komponen 5: Standard Text Bubble (Sender/Kanan)
+#   - Container: bg #C1ECD4 (Light Mint), borderRadius topLeft 16, topRight 4, bottomLeft 16, bottomRight 16
+#   - Text: "Hai, barang ini ready?" (#012D1D) + Time "03:31" (align Right)
 
-# ### [SECTION 4: BOTTOM CHAT INPUT (FIXED)]
-# Deskripsi: Area ketik pesan di bagian paling bawah layar.
-# ID: '224:1398' -> Outer Background (Color: #1B4332, BorderRadius: 30px HANYA pada Top-Left & Top-Right)
-# ID: '224:1399' -> Input Container (Background: #FFFFFF, BorderRadius: 30px, Padding Horizontal)
-# - Hint Text (ID '224:1417'): "Messege...." (Font: Poppins Medium, Size: 14, Color: #012D1D)
-# - Action 1 (ID '224:1410'): Plus Icon (Background Circle: #1B4332, Icon Color: #FDF9F4)
-# - Action 2 (ID '417:2181'): Send Icon (Background Circle: #1B4332, Icon: iconamoon:send-fill, Color: #FFF8EF)
+# --- 1C. BOTTOM INPUT AREA (COMPLEX) ---
+# Widget: SafeArea -> Column (fixed at bottom)
+# Styling: bg #FFFFFF, border top 1px solid rgba(1, 45, 29, 0.1)
+#
+#   # Bagian 1: ITEM CONTEXT PREVIEW (Nempel di atas input)
+#   - Layout: Container padding 8px 16px, borderBottom tipis
+#   - Row:
+#       - Image: 32x32, radius 4px (Thumbnail produk)
+#       - Column (Expanded): Text "Kabel Type C to C..." (12px) + Text "Rp220.000" (Bold 12px)
+#       - IconButton close (size 16) -> Untuk batal nanya soal item ini.
+#
+#   # Bagian 2: QUICK REPLIES CHIPS (Scrollable Horizontal)
+#   - Layout: ListView horizontal, height 40, padding 8x16
+#   - Chip Item: bg #F3F4F6, radius 16px, padding 8x12
+#   - Text: "Hai, barang ini ready?", "Bisa dikirim hari ini?" (#414844)
+#
+#   # Bagian 3: MAIN TEXT INPUT ROW
+#   - Layout: Row (padding 12px 16px, gap 12px)
+#   - Add Icon: IconButton add_circle_outline (#414844)
+#   - Input Field (Expanded): 
+#       - Container bg #F3F4F6, radius 24px, row -> TextField (hint: "Tulis pesan...") + Icon sentiment_satisfied
+#   - Send Button: Icon send (#012D1D)
 
 # =============================================================
 # ## GLOBAL STYLE DEFINITIONS
 # =============================================================
-# Color_Primary: "#1B4332" (Medium Forest Green - Me Bubbles & Input BG)
-# Color_Primary_Dark: "#012D1D" (Deep Forest Green - Text & Icons)
-# Color_Accent: "#7B5804" (Gold/Brown - Item Price)
-# Color_Background: "#FDF9F4" (Cream Canvas)
-# Color_Sender_Bubble: "#D9D9D9" (Light Gray)
-# Color_Online_Dot: "#34DD48" (Bright Green)
+# Color_Main_Bg: "#FFF8EF"
+# Color_Chat_Bg: "#FFFFFF"
+# Color_Bubble_Sender: "#C1ECD4" (Berubah jadi hijau muda agar teks tetap bisa gelap/terbaca jelas)
+# Color_Bubble_Receiver: "#F3F4F6"
+# Color_Primary: "#012D1D"
 
 # -------------------------------------------------------------
 # ## LAYOUT RULES (CRITICAL)
 # -------------------------------------------------------------
-# 1. Page Layout: Gunakan Scaffold.
-# 2. Main Body: Gunakan struktur "Column".
-#    - Elemen Header & Pinned Item diletakkan statis di paling atas.
-#    - Chat List dibungkus dalam "Expanded" -> "ListView.builder" agar mengambil sisa ruang yang tersedia di tengah layar.
-# 3. Bottom Input: Letakkan di bagian terbawah Column atau di properti `bottomNavigationBar` Scaffold. Pastikan menggunakan SafeArea agar tidak tertutup indikator home iPhone.
-# 4. Bubble Radius: Terapkan BorderRadius dinamis. Jika sender (kiri): `BorderRadius.only(topRight, bottomLeft, bottomRight)`. Jika me (kanan): `BorderRadius.only(topLeft, topRight, bottomLeft)`.
-
+# 1. Modular Context Preview: Bagian "Item Context Preview" di area input harus bersifat kondisional (hanya muncul jika user me-navigasi ke chat langsung dari halaman detail sebuah produk). Jika di-close ('X'), preview hilang.
+# 2. Bubble Chat Types: Terdapat berbagai tipe bubble (Text biasa, Item Card, Rating System). AI harus memisahkan komponen ini menjadi custom widget terpisah agar rapi.
 # =============================================================
 # ## AI PROMPT SPEC: SEWAINAJA - EDIT PROFILE SCREEN
 # =============================================================
@@ -1515,11 +1536,27 @@ flutter:
 # - Button: "EXPLORE MORE" (ElevatedButton, bg #FDF9F4, fg #012D1D, radius 10)
 #   onTap: Navigator.push ke ItemDetailScreen
 
-# --- 2B. LOCATION PREVIEW ---
-# Title: "Your Current Location" (Poppins Bold 20, #414844)
-# Map Container: height 160, borderRadius 25, border #012D1D 0.5px
-# Widget: ReusableMapCard(center: _mapCenter, zoom: 13, interactive: false,
-#          showCenterPin: true, overlayLabel: _defaultLocationLabel)
+# --- 2B. LOCATION PREVIEW (ELEGANT LIGHT MAP) ---
+# Title: "Your Current Location" (Poppins Bold 20, #414844) -> Diletakkan di luar peta (di atasnya)
+# Layout: Container, height 180, margin horizontal 24px, borderRadius 24px, clipBehavior: antiAlias
+# Border: 1px solid rgba(1, 45, 29, 0.2) # Border hijau tua tipis
+# Map Background: FlutterMap / GoogleMap (Standar/Light Theme)
+# Overlays (Menggunakan Stack di atas Map):
+#   - Top Left Badge (Positioned top: 12, left: 12):
+#       - Container: bg #FFFFFF 85% opacity (berikan efek BackdropFilter blur), borderRadius 20, padding 8x12
+#       - Text: "20:10 WIB" (waktu dinamis) (Poppins SemiBold 12, #012D1D)
+#   - Top Right Action (Positioned top: 12, right: 12):
+#       - Container: bentuk Circle, bg #FFFFFF 85% opacity (dengan blur), padding 8
+#       - Icon: open_in_full atau zoom_out_map (#012D1D, size 16)
+#   - Bottom Info Bar (Positioned bottom: 12, left: 12, right: 12):
+#       - Container: bg #012D1D (Solid Deep Forest Green), borderRadius 16, padding 12x16, boxShadow tipis
+#       - Layout: Row (spaceBetween, crossAxisAlignment: center)
+#           - Left (Row): 
+#               - Icon: location_on (#FDF9F4, size 16)
+#               - Margin: SizedBox width 8
+#               - Text: "Semarang, Indonesia" (lokasi dinamis) (Poppins Medium 14, #FDF9F4)
+#           - Right: 
+#               - Text: "5 km" (jarak dinamis) (Poppins Regular 12, rgba(253, 249, 244, 0.7))
 # onTap: Navigator.push ke MapExploreScreen
 
 # --- 2C. NEW ARRIVALS SECTION ---

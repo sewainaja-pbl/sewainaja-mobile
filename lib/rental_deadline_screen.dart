@@ -28,9 +28,6 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   Duration _remainingDuration = Duration.zero;
   LatLng _itemLocation = const LatLng(-6.966667, 110.416664);
   String _itemAddressLabel = 'Lokasi Barang';
-  DateTime? _dummyStartDate;
-  DateTime? _dummyEndDate;
-
   @override
   void initState() {
     super.initState();
@@ -46,10 +43,13 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   Future<void> _fetchTransaction() async {
     final tId = widget.transactionId;
     if (tId == null || tId.isEmpty) {
-      _dummyStartDate = DateTime.now().subtract(const Duration(days: 1));
-      _dummyEndDate = DateTime.now().add(const Duration(hours: 3, minutes: 45));
-      _startTimer(_dummyEndDate!);
-      return; // Maintain dummy state
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'ID Transaksi tidak valid';
+          _isLoading = false;
+        });
+      }
+      return;
     }
 
     setState(() {
@@ -223,8 +223,8 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     final itemName = detail?.itemNameSnapshot ?? 'Sony Camera a6000';
     final ownerName = _transaction?.ownerName ?? 'Han so Hee';
     final itemPhoto = detail?.itemPhotoUrlSnapshot ?? '';
-    final startDate = detail?.startDate ?? _dummyStartDate;
-    final endDate = detail?.endDate ?? _dummyEndDate;
+    final startDate = detail?.startDate;
+    final endDate = detail?.endDate;
 
     final days = _remainingDuration.inDays;
     final hours = _remainingDuration.inHours % 24;
@@ -331,7 +331,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      startDate != null ? '${_formatDateShort(startDate)} (Mulai)' : '8 Jan (Mulai)',
+                      startDate != null ? '${_formatDateShort(startDate)} (Mulai)' : '- (Mulai)',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
@@ -339,7 +339,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                       ),
                     ),
                     Text(
-                      endDate != null ? '${_formatDateShort(endDate)} (Selesai)' : '10 Jan 2025 (Selesai)',
+                      endDate != null ? '${_formatDateShort(endDate)} (Selesai)' : '- (Selesai)',
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
@@ -414,11 +414,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                   ],
                   _buildTimelineItem('Request sewa diajukan • ${_formatDate(_transaction!.createdAt)}', const Color(0xFF2F6743)),
                 ] else ...[
-                  _buildTimelineItem('H-24: Sewa berakhir besok pukul 10:00', const Color(0xFFF8BD00)),
-                  const SizedBox(height: 12),
-                  _buildTimelineItem('Serah Terima Berhasil Konfirmasi', const Color(0xFF2F6743)),
-                  const SizedBox(height: 12),
-                  _buildTimelineItem('Request sewa disetujui pemilik', const Color(0xFF2F6743)),
+                  _buildTimelineItem('Memuat data sewa...', const Color(0xFFC1C8C2)),
                 ],
               ],
             ),
@@ -492,7 +488,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                         Text(
                           startDate != null && endDate != null
                               ? '${_formatDateShort(startDate)} - ${_formatDateShort(endDate)}'
-                              : '8 Jan - 10 Jan 2025',
+                              : '-',
                           style: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 12,
@@ -677,7 +673,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                     'owner': 'Pemilik: $ownerName',
                     'date': startDate != null && endDate != null
                         ? '${_formatDateShort(startDate)} - ${_formatDateShort(endDate)}'
-                        : '8 Jan - 10 Jan 2025',
+                        : '-',
                     'image': itemPhoto,
                   },
                 ),

@@ -113,7 +113,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       _NotificationList(
                         title: 'Hari ini',
                         subtitle:
-                            'Dummy yang dipin tetap paling atas, lalu update notifikasi akunmu muncul di bawahnya.',
+                            'Notifikasi terbaru mengenai aktivitas akun dan transaksi Anda.',
                         items: allItems,
                         isLoading: notificationService.isLoading,
                         onRefresh: notificationService.fetchNotifications,
@@ -167,135 +167,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
     }
 
     _showNotificationDetail(context, item);
-  }
-
-  void _showDummyDetail(BuildContext context, AppNotification item) {
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
-          decoration: const BoxDecoration(
-            color: Color(0xFFFFF8EF),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7D2C9),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                item.title,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.message,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  height: 1.55,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF717973),
-                ),
-              ),
-              if (item.imageUrl != null) ...[
-                const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: Image.network(
-                      item.imageUrl!,
-                      fit: BoxFit.cover,
-                      cacheWidth: 400, // Optimize memory for detail sheet
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: const Color(0xFFF1EDE8),
-                        alignment: Alignment.center,
-                        child: const Text(
-                          'Gambar notifikasi gagal dimuat',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF717973),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DetailRow(label: 'Status', value: 'Dummy pinned'),
-                    SizedBox(height: 10),
-                    _DetailRow(
-                      label: 'Tujuan',
-                      value:
-                          'Slot placeholder untuk flow lanjutan yang nanti disambung temanmu.',
-                    ),
-                    SizedBox(height: 10),
-                    _DetailRow(
-                      label: 'Catatan',
-                      value: 'Kartu ini sengaja selalu tampil paling atas.',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF012D1D),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: const Text(
-                    'Sip, lanjut nanti',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   void _showNotificationDetail(BuildContext context, AppNotification item) {
