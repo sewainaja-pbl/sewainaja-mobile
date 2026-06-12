@@ -704,7 +704,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ),
             Text(
-              "Maks 5 Foto", // ID: '268:3465'
+              "Maks 6 Foto", // ID: '268:3465'
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
@@ -726,7 +726,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Baris 1: 2 Slot Besar
+        // Baris 1: 2 Slot (index 0, 1)
         Row(
           children: [
             Expanded(child: _buildPhotoSlot(index: 0, isLarge: true)),
@@ -736,14 +736,24 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Baris 2: 3 Slot Kecil
+        // Baris 2: 2 Slot (index 2, 3)
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(child: _buildPhotoSlot(index: 2, isLarge: false)),
             const SizedBox(width: 16),
             Expanded(child: _buildPhotoSlot(index: 3, isLarge: false)),
-            const SizedBox(width: 16),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Baris 3: 2 Slot (index 4, 5)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             Expanded(child: _buildPhotoSlot(index: 4, isLarge: false)),
+            const SizedBox(width: 16),
+            Expanded(child: _buildPhotoSlot(index: 5, isLarge: false)),
           ],
         ),
       ],
@@ -757,8 +767,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final existingUrl = hasExisting ? _existingPhotos[index] : null;
     final photo = hasNew ? _productPhotos[index - _existingPhotos.length] : null;
     
+    final hasImage = existingUrl != null || photo != null;
+    final bool displayAsLarge = isLarge || hasImage;
+    
     final radius = BorderRadius.circular(40);
-    final height = isLarge ? 180.0 : 55.0;
+    final height = displayAsLarge ? 180.0 : 55.0;
 
     return GestureDetector(
       onTap: _isSubmitting ? null : _pickProductImages,
@@ -769,9 +782,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
           borderRadius: radius,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isLarge ? 0.04 : 0.03),
-              blurRadius: isLarge ? 15 : 8,
-              offset: Offset(0, isLarge ? 6 : 4),
+              color: Colors.black.withValues(alpha: displayAsLarge ? 0.04 : 0.03),
+              blurRadius: displayAsLarge ? 15 : 8,
+              offset: Offset(0, displayAsLarge ? 6 : 4),
             ),
           ],
         ),
@@ -782,7 +795,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ClipRRect(
                     borderRadius: radius,
                     child: Image(
-                      image: _imageUploadService.buildImageProvider(existingUrl, targetWidth: isLarge ? 360 : 110),
+                      image: _imageUploadService.buildImageProvider(existingUrl, targetWidth: displayAsLarge ? 360 : 110),
                       fit: BoxFit.cover,
                     ),
                   ),
@@ -916,7 +929,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final remainingSlots =
         UploadImagePolicy.product.maxImages - (_existingPhotos.length + _productPhotos.length);
     if (remainingSlots <= 0) {
-      _showSnack('Maksimal 5 foto barang.', true);
+      _showSnack('Maksimal 6 foto barang.', true);
       return;
     }
 

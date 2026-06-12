@@ -123,6 +123,17 @@ class ImageUploadService {
     required UploadImagePolicy policy,
     required int remainingSlots,
   }) async {
+    if (remainingSlots <= 0) return const [];
+
+    // ImagePicker.pickMultiImage requires a limit of at least 2.
+    // If only 1 slot is remaining, fall back to picking a single image from gallery.
+    if (remainingSlots == 1) {
+      final file = await _picker.pickImage(source: ImageSource.gallery);
+      if (file == null) return const [];
+      final sanitized = await sanitizeImage(file, policy);
+      return sanitized != null ? [sanitized] : const [];
+    }
+
     final picked = await _picker.pickMultiImage(limit: remainingSlots);
     if (picked.isEmpty) return const [];
 

@@ -43,11 +43,12 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // main_bg
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
+        toolbarHeight: 56,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -104,8 +105,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         builder: (context, controller, child) {
           if (controller.isLoading) {
             return GridView.builder(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+              padding: const EdgeInsets.only(
+                top: 16.0,
                 left: 20.0,
                 right: 20.0,
                 bottom: 120.0,
@@ -168,8 +169,8 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
           }
 
           return GridView.builder(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + kToolbarHeight + 8,
+            padding: const EdgeInsets.only(
+              top: 16.0,
               left: 20.0,
               right: 20.0,
               bottom: 120.0,

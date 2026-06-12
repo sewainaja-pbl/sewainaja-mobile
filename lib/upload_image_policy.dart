@@ -33,7 +33,7 @@ class UploadImagePolicy {
     kind: UploadImageKind.product,
     storageFolder: 'items',
     maxBytes: 2 * 1024 * 1024,
-    maxImages: 5,
+    maxImages: 6,
     targetLongestSide: 1800,
     initialQuality: 88,
     minimumQuality: 66,
