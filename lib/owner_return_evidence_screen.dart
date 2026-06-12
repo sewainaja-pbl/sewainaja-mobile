@@ -255,11 +255,11 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
             );
           }
         } else {
-          throw Exception(body['message'] ?? 'Gagal mengirim ulasan.');
+          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengirim ulasan.');
         }
       } else {
         final body = jsonDecode(response.body);
-        throw Exception(body['message'] ?? 'Gagal mengirim ulasan.');
+        throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengirim ulasan.');
       }
     } catch (e) {
       if (mounted) {

@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'scan_qr_renter_screen.dart';
 import 'dispute_form_screen.dart';
 import 'api_config.dart';
@@ -16,6 +15,7 @@ import 'payment_screen.dart';
 import 'rental_deadline_screen.dart';
 import 'return_evidence_screen.dart';
 import 'owner_return_evidence_screen.dart';
+import 'payment_webview_screen.dart';
 
 
 class TransactionDetailScreen extends StatefulWidget {
@@ -125,18 +125,18 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         },
       );
       
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Permintaan sewa disetujui!'), backgroundColor: Color(0xFF1B4332)),
-          );
-          _fetchTransactionDetails();
-          return;
-        }
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Permintaan sewa disetujui!'), backgroundColor: Color(0xFF1B4332)),
+        );
+        _fetchTransactionDetails();
+        return;
       }
+      
+      final errorMsg = body['error']?['message'] ?? body['message'] ?? 'Gagal menyetujui permintaan sewa.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal menyetujui permintaan sewa.'), backgroundColor: Colors.red),
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -162,18 +162,19 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         },
       );
       
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Transaksi dibatalkan.'), backgroundColor: Color(0xFF1B4332)),
-          );
-          _fetchTransactionDetails();
-          return;
-        }
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body['success'] == true) {
+        final message = body['message'] ?? 'Transaksi dibatalkan.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: const Color(0xFF1B4332)),
+        );
+        _fetchTransactionDetails();
+        return;
       }
+      
+      final errorMsg = body['error']?['message'] ?? body['message'] ?? 'Gagal membatalkan transaksi.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal membatalkan transaksi.'), backgroundColor: Colors.red),
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -274,26 +275,26 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         }),
       );
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Pembayaran COD berhasil dikonfirmasi!'),
-              backgroundColor: Color(0xFF1B4332),
-            ),
-          );
-          if (mounted) {
-            setState(() {
-              _isPaid = true;
-            });
-          }
-          _fetchTransactionDetails();
-          return;
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200 && body['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pembayaran COD berhasil dikonfirmasi!'),
+            backgroundColor: Color(0xFF1B4332),
+          ),
+        );
+        if (mounted) {
+          setState(() {
+            _isPaid = true;
+          });
         }
+        _fetchTransactionDetails();
+        return;
       }
+      
+      final errorMsg = body['error']?['message'] ?? body['message'] ?? 'Gagal mengonfirmasi pembayaran.';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Gagal mengonfirmasi pembayaran.'), backgroundColor: Colors.red),
+        SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
       );
     } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1604,32 +1605,34 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   try {
                     final redirectUrl = await _repository.initiateAdendumPayment(widget.transactionId!);
                     if (redirectUrl.isNotEmpty) {
-                      final Uri url = Uri.parse(redirectUrl);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url, mode: LaunchMode.externalApplication);
-                        // Show confirmation dialog here similar to PaymentScreen
+                      if (mounted) {
+                        final result = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PaymentWebViewScreen(url: redirectUrl),
+                          ),
+                        );
                         if (mounted) {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: const Color(0xFFFFF8EF),
-                              title: const Text('Menunggu Pembayaran', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
-                              content: const Text('Silakan selesaikan pembayaran perpanjangan Anda di browser yang terbuka. Setelah selesai, muat ulang halaman ini.', style: TextStyle(fontFamily: 'Poppins')),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _fetchTransactionDetails();
-                                  },
-                                  child: const Text('Tutup', style: TextStyle(fontFamily: 'Poppins')),
-                                )
-                              ],
-                            ),
-                          );
+                          _fetchTransactionDetails();
+                          if (result == true) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pembayaran perpanjangan berhasil diverifikasi!'),
+                                backgroundColor: Color(0xFF1B4332),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Pembayaran perpanjangan dibatalkan atau pending.'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          }
                         }
-                      } else {
-                        throw Exception('Tidak dapat membuka link pembayaran.');
                       }
+                    } else {
+                      throw Exception('Gagal mendapatkan link pembayaran perpanjangan.');
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));

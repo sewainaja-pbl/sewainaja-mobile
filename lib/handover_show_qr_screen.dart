@@ -58,7 +58,7 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
             );
           }
         } else {
-          throw Exception(body['message'] ?? 'Gagal me-regenerate QR');
+          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal me-regenerate QR');
         }
       } else {
         throw Exception('Server error: ${response.statusCode}');

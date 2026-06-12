@@ -275,7 +275,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
 
         if (evidenceResp.statusCode != 200) {
           final body = jsonDecode(evidenceResp.body);
-          throw Exception(body['message'] ?? 'Gagal mengunggah foto bukti pengembalian ke API.');
+          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengunggah foto bukti pengembalian ke API.');
         }
       }
 
@@ -321,11 +321,11 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
             }
           }
         } else {
-          throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
+          throw Exception(ratingBody['error']?['message'] ?? ratingBody['message'] ?? 'Gagal mengirim rating.');
         }
       } else {
         final ratingBody = jsonDecode(ratingResp.body);
-        throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
+        throw Exception(ratingBody['error']?['message'] ?? ratingBody['message'] ?? 'Gagal mengirim rating.');
       }
     } catch (e) {
       // Tutup loading dialog jika masih tampil
