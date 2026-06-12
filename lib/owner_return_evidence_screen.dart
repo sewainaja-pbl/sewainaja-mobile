@@ -57,7 +57,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
 
   Future<void> _fetchDetailsAndEvidences() async {
     final tId = widget.transactionId;
-    if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') return;
+    if (tId == null || tId.isEmpty) return;
 
     setState(() {
       _isLoadingEvidences = true;
@@ -179,22 +179,12 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
     final itemImage = (detail != null && detail['itemPhotoUrlSnapshot'] != null)
         ? detail['itemPhotoUrlSnapshot'].toString()
         : '';
-    if (tId == null || tId.isEmpty || tId == 'dummy_trans_123') {
-      // Simulasi mode mock jika transactionId kosong atau dummy
-      setState(() {
-        _canPop = true;
-      });
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return _OwnerReturnSuccessModal(
-            itemName: widget.itemName ?? 'Sony Camera a6000',
-            dateRange: '8 Jan - 10 Jan 2025',
-            itemImage: itemImage,
-            isRoot: widget.isRoot,
-          );
-        },
+    if (tId == null || tId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('ID Transaksi tidak valid.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -481,25 +471,6 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
                                 ),
                               ),
                             ),
-                            if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123')
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFECEB),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: const Color(0xFFF04438), width: 0.5),
-                                ),
-                                child: const Text(
-                                  'DUMMY',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFF04438),
-                                  ),
-                                ),
-                              ),
                           ],
                         ),
                         const SizedBox(height: 2),

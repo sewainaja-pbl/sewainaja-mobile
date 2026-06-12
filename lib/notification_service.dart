@@ -30,7 +30,6 @@ class AppNotification {
   final String initials;
   final bool isRead;
   final bool highlight;
-  final bool isDummy;
   final bool isPinned;
   final String? type;
   final String? transactionId;
@@ -45,7 +44,6 @@ class AppNotification {
     required this.initials,
     required this.isRead,
     required this.highlight,
-    this.isDummy = false,
     this.isPinned = false,
     this.type,
     this.transactionId,
@@ -366,7 +364,6 @@ class NotificationService extends ChangeNotifier {
                   initials: item.initials,
                   isRead: true,
                   highlight: false,
-                  isDummy: item.isDummy,
                   isPinned: item.isPinned,
                   type: item.type,
                   transactionId: item.transactionId,
@@ -409,7 +406,6 @@ class NotificationService extends ChangeNotifier {
             initials: item.initials,
             isRead: true,
             highlight: false,
-            isDummy: item.isDummy,
             isPinned: item.isPinned,
             type: item.type,
             transactionId: item.transactionId,

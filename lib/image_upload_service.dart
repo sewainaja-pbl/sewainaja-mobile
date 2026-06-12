@@ -40,7 +40,8 @@ String getSafeImageUrl(String pathOrUrl) {
     'tas_carrier.png', 'tenda_camping.png'
   };
   if (productFiles.contains(filename)) {
-    return 'https://firebasestorage.googleapis.com/v0/b/sewainaja-b4834.firebasestorage.app/o/items%2Fdummy_assets%2F$filename?alt=media';
+    // Use actual storage path for product images
+    return 'https://firebasestorage.googleapis.com/v0/b/sewainaja-b4834.firebasestorage.app/o/items%2F$filename?alt=media';
   }
   return trimmed;
 }

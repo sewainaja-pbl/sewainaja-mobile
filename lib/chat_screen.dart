@@ -107,7 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
         // Search by item name or partner name
         return partnerName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            room.itemName.toLowerCase().contains(_searchQuery.toLowerCase());
+            (room.itemName?.toLowerCase() ?? '').contains(_searchQuery.toLowerCase());
       }).toList();
     }
 
@@ -582,61 +582,61 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
 
-              // --- DIVIDER ---
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Container(
-                  height: 1,
-                  color: const Color(
-                    0xFF919191,
-                  ).withValues(alpha: 0.6), // ID: '217:2073' Divider
-                ),
-              ),
-
-              // --- LOWER CARD (PRODUCT INFO) ---
-              Row(
-                children: [
-                  // Product Image Thumbnail
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: room.itemPhotoUrl.isNotEmpty
-                        ? Image(
-                            image: _imageUploadService.buildImageProvider(room.itemPhotoUrl),
-                            width: 26,
-                            height: 26,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: 26,
-                                height: 26,
-                                color: const Color(0xFFF5F5F5),
-                                child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
-                              );
-                            },
-                          )
-                        : Container(
-                            width: 26,
-                            height: 26,
-                            color: const Color(0xFFF5F5F5),
-                            child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
-                          ),
+              // --- DIVIDER & LOWER CARD (PRODUCT INFO) (Conditional) ---
+              if (room.itemName != null && room.itemName!.isNotEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Container(
+                    height: 1,
+                    color: const Color(
+                      0xFF919191,
+                    ).withValues(alpha: 0.6), // ID: '217:2073' Divider
                   ),
-                  const SizedBox(width: 10),
+                ),
+                Row(
+                  children: [
+                    // Product Image Thumbnail
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: (room.itemPhotoUrl != null && room.itemPhotoUrl!.isNotEmpty)
+                          ? Image(
+                              image: _imageUploadService.buildImageProvider(room.itemPhotoUrl!),
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: 26,
+                                  height: 26,
+                                  color: const Color(0xFFF5F5F5),
+                                  child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
+                                );
+                              },
+                            )
+                          : Container(
+                              width: 26,
+                              height: 26,
+                              color: const Color(0xFFF5F5F5),
+                              child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 16),
+                            ),
+                    ),
+                    const SizedBox(width: 10),
 
-                  // Product Name
-                  Expanded(
-                    child: Text(
-                      room.itemName, // ID: '217:2076'
-                      style: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w300, // Light
-                        color: Colors.black,
+                    // Product Name
+                    Expanded(
+                      child: Text(
+                        room.itemName!, // ID: '217:2076'
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w300, // Light
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

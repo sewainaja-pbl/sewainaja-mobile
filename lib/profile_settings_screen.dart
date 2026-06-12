@@ -290,8 +290,8 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
           MaterialPageRoute(
             builder: (context) => ProfileViewScreen(
               ownerName: _name,
-              rating: "4.9 (Dummy)",
-              listingCount: "20 (Dummy)",
+              rating: _userRating > 0.0 ? _userRating.toStringAsFixed(1) : "0.0",
+              listingCount: _listingCount.toString(),
               avatarImage: _resolvedProfileImage(),
             ),
           ),

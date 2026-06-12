@@ -78,18 +78,11 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
     final tokenVal = widget.qrToken;
 
     if (tId == null || tId.isEmpty || tokenVal == null || tokenVal.isEmpty) {
-      // Simulasi mode mock jika transactionId atau qrToken kosong
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Simulasi: Bukti terunggah & Check-in sukses.'),
-          backgroundColor: Color(0xFF1B4332),
+          content: Text('ID Transaksi atau Token QR tidak valid.'),
+          backgroundColor: Color(0xFFF04438),
           behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RentalDeadlineScreen(transactionId: widget.transactionId),
         ),
       );
       return;

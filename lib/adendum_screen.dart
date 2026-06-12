@@ -29,9 +29,8 @@ class _AdendumScreenState extends State<AdendumScreen> {
   Future<void> _fetchTransaction() async {
     final tId = widget.transactionId;
     if (tId == null || tId.isEmpty) {
-      // Set up mock data for preview/standalone
       setState(() {
-        _newEndDate = DateTime.now().add(const Duration(days: 1));
+        _errorMessage = "ID Transaksi tidak valid";
       });
       return;
     }
@@ -142,92 +141,10 @@ class _AdendumScreenState extends State<AdendumScreen> {
   }
 
   Future<void> _submitRequest(double extensionPrice) async {
-    if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123') {
-      // Allow dummy flow
-    } else {
-      setState(() {
-        _isSubmitting = true;
-      });
-
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF012D1D)),
-        ),
+    if (widget.transactionId == null || widget.transactionId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("ID Transaksi tidak valid"), backgroundColor: Colors.red),
       );
-
-      try {
-        final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
-        final currentEnd = detail?.endDate ?? DateTime.now().add(const Duration(days: 1));
-        final newEnd = _newEndDate ?? currentEnd.add(const Duration(days: 1));
-        
-        await _repository.requestAdendum(widget.transactionId!, newEnd, extensionPrice, _selectedPaymentMethod);
-        
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          setState(() {
-            _isSubmitting = false;
-          });
-
-          // Show success dialog
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => AlertDialog(
-              backgroundColor: const Color(0xFFFFF8EF),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Text(
-                'Permintaan Terkirim',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              content: const Text(
-                'Permintaan perpanjangan sewa Anda telah berhasil diajukan ke pemilik barang. Silakan tunggu konfirmasi.',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Color(0xFF414844),
-                ),
-              ),
-              actions: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Pop dialog
-                    Navigator.pop(context); // Pop AdendumScreen
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF012D1D),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: const Text(
-                    'Kembali',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          Navigator.pop(context); // Close loading dialog
-          setState(() {
-            _isSubmitting = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
-          );
-        }
-      }
       return;
     }
 
@@ -235,7 +152,6 @@ class _AdendumScreenState extends State<AdendumScreen> {
       _isSubmitting = true;
     });
 
-    // Show loading dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -244,61 +160,76 @@ class _AdendumScreenState extends State<AdendumScreen> {
       ),
     );
 
-    // Simulate API request call
-    await Future.delayed(const Duration(milliseconds: 1500));
+    try {
+      final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
+      final currentEnd = detail?.endDate ?? DateTime.now().add(const Duration(days: 1));
+      final newEnd = _newEndDate ?? currentEnd.add(const Duration(days: 1));
+      
+      await _repository.requestAdendum(widget.transactionId!, newEnd, extensionPrice, _selectedPaymentMethod);
+      
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        setState(() {
+          _isSubmitting = false;
+        });
 
-    if (mounted) {
-      Navigator.pop(context); // Close loading dialog
-      setState(() {
-        _isSubmitting = false;
-      });
-
-      // Show success dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFFFFF8EF),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          title: const Text(
-            'Permintaan Terkirim',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          content: const Text(
-            'Permintaan perpanjangan sewa Anda telah berhasil diajukan ke pemilik barang. Silakan tunggu konfirmasi.',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              color: Color(0xFF414844),
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Pop dialog
-                Navigator.pop(context); // Pop AdendumScreen
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF012D1D),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: const Text(
-                'Kembali',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+        // Show success dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFFFFF8EF),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text(
+              'Permintaan Terkirim',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF012D1D),
               ),
             ),
-          ],
-        ),
-      );
+            content: const Text(
+              'Permintaan perpanjangan sewa Anda telah berhasil diajukan ke pemilik barang. Silakan tunggu konfirmasi.',
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                color: Color(0xFF414844),
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Pop dialog
+                  Navigator.pop(context); // Pop AdendumScreen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF012D1D),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text(
+                  'Kembali',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+        setState(() {
+          _isSubmitting = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
     }
   }
 
@@ -489,25 +420,7 @@ class _AdendumScreenState extends State<AdendumScreen> {
                                 letterSpacing: 1.2,
                               ),
                             ),
-                            if (widget.transactionId == null || widget.transactionId!.isEmpty || widget.transactionId == 'dummy_trans_123')
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFFFECEB),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(color: const Color(0xFFF04438), width: 0.5),
-                                ),
-                                child: const Text(
-                                  'DUMMY',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFF04438),
-                                  ),
-                                ),
-                              ),
+
                           ],
                         ),
                         const SizedBox(height: 4),

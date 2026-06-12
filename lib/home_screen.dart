@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -73,6 +74,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   // Single shared animation controller for all skeleton shimmers to optimize performance
   late AnimationController _shimmerController;
+  Timer? _timeTimer;
+  String _currentTimeString = '';
 
   /// Kategori yang ditampilkan di filter chip: "All" + kategori dari Firestore.
   List<String> get categories {
@@ -103,6 +106,22 @@ class _HomeScreenState extends State<HomeScreen>
     _loadCategories();
     _listenToNewArrivals();
     _listenToTrustedNearby();
+    _updateTime();
+    _timeTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _updateTime();
+    });
+  }
+
+  void _updateTime() {
+    final now = DateTime.now();
+    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB";
+    if (_currentTimeString != timeStr) {
+      if (mounted) {
+        setState(() {
+          _currentTimeString = timeStr;
+        });
+      }
+    }
   }
 
   @override
@@ -113,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen>
     _scrollController.dispose();
     _newArrivalsSub?.cancel();
     _trustedNearbySub?.cancel();
+    _timeTimer?.cancel();
     super.dispose();
   }
 
@@ -754,7 +774,7 @@ class _HomeScreenState extends State<HomeScreen>
           Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(25),
+              borderRadius: BorderRadius.circular(24),
               onHighlightChanged: (pressed) {
                 setState(() => _isMapCardPressed = pressed);
               },
@@ -775,188 +795,151 @@ class _HomeScreenState extends State<HomeScreen>
                       ? const Offset(0, 0.012)
                       : Offset.zero,
                   child: Ink(
-                    height: 184,
+                    height: 180,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(25),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: const Color(0xFF012D1D),
-                        width: 0.5,
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.2),
+                        width: 1,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: _isMapCardPressed ? 0.028 : 0.05,
-                          ),
-                          blurRadius: _isMapCardPressed ? 6 : 10,
-                          offset: Offset(0, _isMapCardPressed ? 2 : 4),
-                        ),
-                      ],
                     ),
-                    child: Stack(
-                      children: [
-                        Positioned.fill(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(25),
+                    child: IgnorePointer(
+                      child: Stack(
+                        children: [
+                          Positioned.fill(
                             child: RepaintBoundary(
                               child: ReusableMapCard(
                                 center: _mapCenter,
                                 zoom: 13,
                                 interactive: false,
                                 showCenterPin: true,
-                                height: 184,
-                                borderRadius: BorderRadius.circular(25),
+                                height: 180,
+                                borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                           ),
-                        ),
-                        Positioned.fill(
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(25),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.06),
-                                  const Color(
-                                    0xFF012D1D,
-                                  ).withValues(alpha: 0.10),
-                                  const Color(
-                                    0xFF012D1D,
-                                  ).withValues(alpha: 0.26),
+                          // Top Left Badge
+                          Positioned(
+                            top: 12,
+                            left: 12,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    _currentTimeString.isNotEmpty ? _currentTimeString : "20:10 WIB",
+                                    style: const TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF012D1D),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Top Right Action
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.open_in_full_rounded,
+                                    color: Color(0xFF012D1D),
+                                    size: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Bottom Info Bar
+                          Positioned(
+                            bottom: 12,
+                            left: 12,
+                            right: 12,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF012D1D),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.location_on_rounded,
+                                          color: Color(0xFFFDF9F4),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _defaultLocationLabel.isNotEmpty
+                                                ? _defaultLocationLabel
+                                                : "Semarang, Indonesia",
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontFamily: 'Poppins',
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFFFDF9F4),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "5 km",
+                                    style: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                      color: const Color(0xFFFDF9F4).withValues(alpha: 0.7),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                           ),
-                        ),
-                        Positioned(
-                          top: 12,
-                          right: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.92),
-                              borderRadius: BorderRadius.circular(999),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x1A000000),
-                                  blurRadius: 10,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.map_outlined,
-                                  size: 14,
-                                  color: Color(0xFF012D1D),
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Explore Map',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF012D1D),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 14,
-                          right: 14,
-                          bottom: 14,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFFDF9F4,
-                              ).withValues(alpha: 0.94),
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x14000000),
-                                  blurRadius: 12,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF012D1D),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.near_me_rounded,
-                                    size: 18,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Lihat barang di sekitar kamu',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: Color(0xFF012D1D),
-                                        ),
-                                      ),
-                                      SizedBox(height: 2),
-                                      Text(
-                                        'Tap buat buka map interaktif dan atur radius',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(0xFF5E6762),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  width: 34,
-                                  height: 34,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEDF2EE),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 18,
-                                    color: Color(0xFF012D1D),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

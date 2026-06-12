@@ -65,7 +65,7 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
     ItemModel? lightweightItem;
     try {
       double parsedPrice = (productMap["price"] as num).toDouble();
-      String unit = "Hari"; // Assume dummy products are daily
+
       double computedPricePerHour = parsedPrice / 24;
       
       lightweightItem = ItemModel(
@@ -79,7 +79,7 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
         description: '',
         pricePerHour: computedPricePerHour,
         price: parsedPrice,
-        priceUnit: unit,
+        priceUnit: "Hari",
         status: 'available',
         condition: 'fair',
         photos: [productMap['image']],
@@ -153,7 +153,6 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sub-header showing search summary
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
             child: Text(

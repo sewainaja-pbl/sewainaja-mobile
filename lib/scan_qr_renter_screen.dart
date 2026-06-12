@@ -233,12 +233,7 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
                     ),
                   ),
                   const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () {
-                      debugPrint('Camera viewport clicked! Simulating successful scan.');
-                      _navigateToNextPage('DUMMY_TOKEN_FROM_TAP');
-                    },
-                    child: Container(
+                  Container(
                       height: 380.0,
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -306,26 +301,9 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
                             ),
                           ],
                         ),
-                      ),
                     ),
                   ),
                 ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // DUMMY BUTTON (Untuk Testing Emulator/Preview)
-            TextButton(
-              onPressed: () => _navigateToNextPage('DUMMY_TOKEN_FROM_SIMULATION'),
-              child: const Text(
-                'Gunakan Barcode Dummy (Simulasi)',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  color: Color(0xFF717973),
-                  decoration: TextDecoration.underline,
-                ),
               ),
             ),
 

@@ -101,13 +101,15 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final initialQRData = widget.transactionId != null 
-        ? "INITIAL_RETURN_TOKEN_${widget.transactionId}" 
-        : "dummy-return-qr-data";
+    if (widget.transactionId == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Serah Terima')),
+        body: const Center(child: Text('ID Transaksi tidak ditemukan.')),
+      );
+    }
 
     Widget qrCodeWidget;
-    if (widget.transactionId != null) {
-      qrCodeWidget = StreamBuilder<DocumentSnapshot>(
+    qrCodeWidget = StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('transactions')
             .doc(widget.transactionId)
@@ -289,27 +291,6 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
           );
         },
       );
-    } else {
-      // Fallback/mock mode
-      qrCodeWidget = GestureDetector(
-        onTap: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const OwnerReturnEvidenceScreen(
-                isForced: true,
-              ),
-            ),
-          );
-        },
-        child: QrImageView(
-          data: initialQRData,
-          version: QrVersions.auto,
-          size: 220.0,
-          backgroundColor: const Color(0xFFFDF9F4),
-        ),
-      );
-    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),

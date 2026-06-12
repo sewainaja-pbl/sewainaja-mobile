@@ -42,15 +42,14 @@ class ChatRepository {
     });
   }
 
-  /// Mencari room chat yang sudah ada antara currentUser dan partnerId untuk itemId tertentu.
-  Future<String?> findRoom(String partnerId, String itemId) async {
+  /// Mencari room chat yang sudah ada antara currentUser dan partnerId (1-on-1).
+  Future<String?> findRoom(String partnerId) async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return null;
 
     try {
       final snapshot = await _chatRoomsRef
           .where('participantIds', arrayContains: currentUserId)
-          .where('itemId', isEqualTo: itemId)
           .get();
 
       for (var doc in snapshot.docs) {
@@ -71,9 +70,9 @@ class ChatRepository {
     required String partnerId,
     required String partnerName,
     String? partnerAvatarUrl,
-    required String itemId,
-    required String itemName,
-    required String itemPhotoUrl,
+    String? itemId,
+    String? itemName,
+    String? itemPhotoUrl,
     required String messageText,
     String messageType = 'text',
   }) async {
@@ -110,7 +109,7 @@ class ChatRepository {
     } catch (_) {}
 
     try {
-      String roomId = existingRoomId ?? await findRoom(partnerId, itemId) ?? '';
+      String roomId = existingRoomId ?? await findRoom(partnerId) ?? '';
       
       final batch = _db.batch();
       final now = FieldValue.serverTimestamp();
@@ -133,7 +132,7 @@ class ChatRepository {
 
         batch.set(newRoomRef, {
           'participantIds': [currentUserId, partnerId],
-          'itemId': itemId,
+          if (itemId != null) 'itemId': itemId,
           'transactionId': null,
           'lastMessage': messageText,
           'lastMessageAt': now,
@@ -141,8 +140,8 @@ class ChatRepository {
           'createdBy': currentUserId,
           'createdAt': now,
           'participants': participants,
-          'itemName': itemName,
-          'itemPhotoUrl': itemPhotoUrl,
+          if (itemName != null) 'itemName': itemName,
+          if (itemPhotoUrl != null) 'itemPhotoUrl': itemPhotoUrl,
         });
       } else {
         // Update existing room

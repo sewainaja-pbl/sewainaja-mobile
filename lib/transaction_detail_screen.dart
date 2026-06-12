@@ -304,32 +304,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
-  Map<String, dynamic> _getFallbackTransactionData() {
-    return {
-      'id': 'dummy_trans_123',
-      'renterId': 'dummy_renter_uid',
-      'ownerId': 'dummy_owner_uid',
-      'renterName': 'Aminah',
-      'ownerName': 'Han so Hee',
-      'status': 'approved',
-      'totalPrice': 1080000,
-      'createdAt': {'_seconds': 1744535520, '_nanoseconds': 0},
-      'approvedAt': {'_seconds': 1744555520, '_nanoseconds': 0},
-    };
-  }
-
-  List<dynamic> _getFallbackDetails() {
-    return [
-      {
-        'itemId': 'dummy_item_1',
-        'itemNameSnapshot': 'Sony ɑ6000 Body Only',
-        'itemPhotoUrlSnapshot': '',
-        'priceAtBooking': 15000.0,
-        'subtotal': 1080000,
-      },
-    ];
-  }
-
   String _formatStatus(String status) {
     switch (status.toLowerCase()) {
       case 'pending':
@@ -413,16 +387,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     final hourStr = dt.hour.toString().padLeft(2, '0');
     final minStr = dt.minute.toString().padLeft(2, '0');
     return '${dt.day} ${months[dt.month - 1]}, ${dt.year} • $hourStr:$minStr';
-  }
-
-  String _formatDateShort(dynamic dt) {
-    if (dt == null) return '';
-    if (dt is! DateTime) return '';
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
-    ];
-    return '${dt.day} ${months[dt.month - 1]} ${dt.year}';
   }
 
   String _formatDateRange(DateTime? start, DateTime? end) {
@@ -1503,7 +1467,16 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     String category,
     String itemName,
   ) async {
-    final tId = widget.transactionId ?? 'dummy_trans_123';
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ID Transaksi tidak valid')),
+        );
+      }
+      return;
+    }
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(

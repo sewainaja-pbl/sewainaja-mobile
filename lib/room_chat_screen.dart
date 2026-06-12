@@ -1,9 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'item_detail_screen.dart';
-
+import 'ajukan_sewa_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'data/models/chat_model.dart';
@@ -17,9 +18,9 @@ class RoomChatScreen extends StatefulWidget {
   final String partnerId;
   final String partnerName;
   final String? partnerAvatarUrl;
-  final String itemId;
-  final String itemName;
-  final String itemPhotoUrl;
+  final String? itemId;
+  final String? itemName;
+  final String? itemPhotoUrl;
   final String? initialRoomId;
 
   const RoomChatScreen({
@@ -27,9 +28,9 @@ class RoomChatScreen extends StatefulWidget {
     required this.partnerId,
     required this.partnerName,
     this.partnerAvatarUrl,
-    required this.itemId,
-    required this.itemName,
-    required this.itemPhotoUrl,
+    this.itemId,
+    this.itemName,
+    this.itemPhotoUrl,
     this.initialRoomId,
   });
 
@@ -50,6 +51,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   bool _isUploadingImage = false;
   double? _itemPricePerHour;
   late bool _wasChatAreaActive;
+  bool _showItemContextPreview = true;
 
   @override
   void initState() {
@@ -59,11 +61,15 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     _actualPartnerName = widget.partnerName;
     _actualPartnerAvatarUrl = widget.partnerAvatarUrl;
     _fetchPartnerProfile();
-    _fetchItemPrice();
+    if (widget.itemId != null) {
+      _fetchItemPrice();
+    }
     _roomId = widget.initialRoomId;
     if (_roomId == null) {
-      _checkExistingRoom();
+      _showItemContextPreview = widget.itemId != null;
+      _checkExistingRoomAndInit();
     } else {
+      _showItemContextPreview = false;
       _chatRepository.markMessagesAsRead(_roomId!);
     }
   }
@@ -74,9 +80,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       if (doc.exists && mounted) {
         final data = doc.data();
         if (data != null) {
-          // Database schema uses 'name' for user name
           final fetchedName = data['name'] as String?;
-          // Try multiple possible avatar fields
           final fetchedAvatar = (data['profilePhotoUrl'] as String?);
           
           setState(() {
@@ -89,14 +93,11 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           });
         }
       }
-    } catch(e) {
-      // Ignore
-    }
+    } catch (_) {}
   }
 
-
-
   Future<void> _fetchItemPrice() async {
+    if (widget.itemId == null) return;
     try {
       final doc = await FirebaseFirestore.instance.collection('items').doc(widget.itemId).get();
       if (doc.exists && mounted) {
@@ -107,25 +108,27 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           });
         }
       }
-    } catch (e) {
-      print('Error fetching item price: $e');
+    } catch (_) {}
+  }
+
+  Future<void> _checkExistingRoomAndInit() async {
+    final existingRoomId = await _chatRepository.findRoom(widget.partnerId);
+    if (mounted) {
+      if (existingRoomId != null) {
+        setState(() {
+          _roomId = existingRoomId;
+        });
+        await _chatRepository.markMessagesAsRead(existingRoomId);
+      }
     }
   }
 
-  Future<void> _checkExistingRoom() async {
-    final existingRoomId = await _chatRepository.findRoom(widget.partnerId, widget.itemId);
-    if (mounted && existingRoomId != null) {
-      setState(() {
-        _roomId = existingRoomId;
-      });
-      _chatRepository.markMessagesAsRead(existingRoomId);
-    }
-  }
-
-  Future<void> _sendMessage() async {
-    final String text = _messageController.text.trim();
+  Future<void> _sendMessage({String? customText, String messageType = 'text'}) async {
+    final String text = customText ?? _messageController.text.trim();
     if (text.isNotEmpty) {
-      _messageController.clear();
+      if (customText == null) {
+        _messageController.clear();
+      }
       
       final roomId = await _chatRepository.sendMessage(
         existingRoomId: _roomId,
@@ -136,6 +139,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         itemName: widget.itemName,
         itemPhotoUrl: widget.itemPhotoUrl,
         messageText: text,
+        messageType: messageType,
       );
 
       if (roomId != null && _roomId == null && mounted) {
@@ -154,6 +158,23 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         }
       });
     }
+  }
+
+  Future<void> _sendItemCard() async {
+    if (widget.itemId == null || widget.itemName == null || widget.itemPhotoUrl == null) return;
+    if (_itemPricePerHour == null) {
+      await _fetchItemPrice();
+    }
+    final double computedPrice = (_itemPricePerHour ?? 15000.0) * 24;
+    final itemData = {
+      'id': widget.itemId,
+      'name': widget.itemName,
+      'price': 'Rp${computedPrice.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}/hari',
+      'image': widget.itemPhotoUrl,
+      'status': 'available',
+    };
+    final String jsonStr = json.encode(itemData);
+    await _sendMessage(customText: jsonStr, messageType: 'item_card');
   }
 
   Future<void> _pickAndSendImage() async {
@@ -216,7 +237,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
-              backgroundColor: const Color(0xFFFDF9F4),
+              backgroundColor: const Color(0xFFFFF8EF),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -226,24 +247,21 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Header Icon
                     Center(
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF7B5804).withValues(alpha: 0.1),
+                          color: const Color(0xFF012D1D).withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.report_problem_rounded,
-                          color: Color(0xFF7B5804),
+                          color: Color(0xFF012D1D),
                           size: 32,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
-                    // Title
                     const Text(
                       'Laporkan Pengguna',
                       textAlign: TextAlign.center,
@@ -255,20 +273,16 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    
-                    // Subtitle
                     const Text(
                       'Pilih alasan utama Anda melaporkan pengguna ini. Laporan Anda akan ditinjau oleh tim kami.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,
-                        color: Color(0xFF717973),
+                        color: Color(0xFF414844),
                       ),
                     ),
                     const SizedBox(height: 20),
-                    
-                    // Reasons List
                     Column(
                       children: reasons.map((reason) {
                         final isSelected = selectedReason == reason;
@@ -284,12 +298,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             decoration: BoxDecoration(
                               color: isSelected 
-                                  ? const Color(0xFF1B4332).withValues(alpha: 0.05) 
+                                  ? const Color(0xFF012D1D).withValues(alpha: 0.05) 
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isSelected 
-                                    ? const Color(0xFF1B4332) 
+                                    ? const Color(0xFF012D1D) 
                                     : const Color(0xFFE5E5E5),
                                 width: isSelected ? 1.5 : 1.0,
                               ),
@@ -303,7 +317,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                                       fontFamily: 'Poppins',
                                       fontSize: 14,
                                       fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                                      color: isSelected ? const Color(0xFF1B4332) : const Color(0xFF414844),
+                                      color: isSelected ? const Color(0xFF012D1D) : const Color(0xFF414844),
                                     ),
                                   ),
                                 ),
@@ -313,10 +327,10 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: isSelected ? const Color(0xFF1B4332) : const Color(0xFFC1C8C2),
+                                      color: isSelected ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
                                       width: 2,
                                     ),
-                                    color: isSelected ? const Color(0xFF1B4332) : Colors.transparent,
+                                    color: isSelected ? const Color(0xFF012D1D) : Colors.transparent,
                                   ),
                                   child: isSelected 
                                       ? const Icon(Icons.check, size: 12, color: Colors.white) 
@@ -329,8 +343,6 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    
-                    // Action Buttons
                     Row(
                       children: [
                         Expanded(
@@ -349,7 +361,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                                 fontFamily: 'Poppins',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                color: Color(0xFF717973),
+                                color: Color(0xFF414844),
                               ),
                             ),
                           ),
@@ -372,13 +384,13 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Pengguna berhasil dilaporkan'),
-                                    backgroundColor: Color(0xFF1B4332),
+                                    backgroundColor: Color(0xFF012D1D),
                                   ),
                                 );
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1B4332),
+                              backgroundColor: const Color(0xFF012D1D),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(30),
@@ -408,6 +420,24 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     );
   }
 
+  Future<void> _navigateToAjukanSewa(String itemId) async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('items').doc(itemId).get();
+      if (doc.exists && mounted) {
+        final itemData = doc.data();
+        if (itemData != null) {
+          itemData['id'] = itemId;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AjukanSewaScreen(itemData: itemData),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     NotificationService.instance.setChatAreaActive(_wasChatAreaActive);
@@ -416,146 +446,129 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     super.dispose();
   }
 
+  List<dynamic> _buildListItems(List<ChatMessageModel> messages) {
+    final List<dynamic> items = [];
+    if (messages.isEmpty) return items;
+
+    DateTime? lastDate;
+    for (var message in messages) {
+      if (message.sentAt != null) {
+        final msgDate = DateTime(message.sentAt!.year, message.sentAt!.month, message.sentAt!.day);
+        if (lastDate == null || msgDate != lastDate) {
+          lastDate = msgDate;
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          final yesterday = today.subtract(const Duration(days: 1));
+          
+          String dateText = "";
+          if (msgDate == today) {
+            dateText = "Hari ini";
+          } else if (msgDate == yesterday) {
+            dateText = "Kemarin";
+          } else {
+            dateText = DateFormat('d MMMM yyyy').format(message.sentAt!);
+          }
+          items.add(dateText);
+        }
+      }
+      items.add(message);
+    }
+    return items;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF9F4), // Color_Background: #FDF9F4
-
-      // --- SECTION 1: APPBAR / HEADER ---
+      backgroundColor: const Color(0xFFFFF8EF), // Cream Background
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4), // ID: '195:1100'
+        backgroundColor: const Color(0xFFFFF8EF),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        titleSpacing: 16,
+        toolbarHeight: 70,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
-            // Back Button
-            GestureDetector(
-              onTap: () => Navigator.maybePop(context),
-              child: const Icon(
-                Icons.arrow_back_rounded, // ID: '196:1568'
-                color: Color(0xFF012D1D), // Color_Primary_Dark
-                size: 26,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
+                    ? Image(
+                        image: _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : Image.asset(
+                        'assets/images/profile_user.png',
+                        fit: BoxFit.cover,
+                      ),
               ),
             ),
             const SizedBox(width: 12),
-
-            // Profile Info (Row)
-            // Avatar
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5), // ID: '214:2018'
-              child: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
-                  ? Image(
-                      image: _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!),
-                      width: 38,
-                      height: 38,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.asset(
-                      'assets/images/profile_user.png',
-                      width: 38,
-                      height: 38,
-                      fit: BoxFit.cover,
-                    ),
-            ),
-            const SizedBox(width: 12),
-
-            // Name & Status Column
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _actualPartnerName ?? widget.partnerName, // ID: '196:1571'
+                    _actualPartnerName ?? widget.partnerName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500, // Poppins Medium
-                      color: Color(0xFF414844),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF012D1D),
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      // Green Dot
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF34DD48), // Color_Online_Dot: #34DD48
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        "Online",
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 10,
-                          color: Color(0xFF414844),
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    "Online",
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      color: Color(0xFF10B981),
+                    ),
                   ),
                 ],
               ),
             ),
-
-            // Right Action: More Options
-            PopupMenuButton<String>(
-              icon: const Icon(
-                Icons.more_vert_rounded,
-                color: Colors.black,
-                size: 22,
-              ),
-              padding: EdgeInsets.zero,
-              onSelected: (value) {
-                if (value == 'report') {
-                  _showReportDialog();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'report',
-                  child: Text('Laporkan Pengguna'),
-                ),
-              ],
-            ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert, color: Color(0xFF012D1D)),
+            onPressed: _showReportDialog,
+          ),
+        ],
       ),
-
-      // --- MAIN BODY: COLUMN STRUCTURE ---
       body: Column(
         children: [
-          // ### [SECTION 2: PINNED ITEM SUMMARY CARD] ###
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ItemDetailScreen(itemId: widget.itemId),
-                ),
-              );
-            },
-            child: _buildPinnedItemCard(),
-          ),
-          
-          const SizedBox(height: 8),
-
-          // ### [SECTION 3: CHAT LIST (SCROLLABLE BUBBLES)] ###
           Expanded(
             child: _roomId == null
-                ? const Center(
-                    child: Text(
-                      "Kirim pesan pertama Anda!",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        color: Colors.grey,
+                ? Column(
+                    children: [
+                      _buildSecurityWarningBanner(),
+                      _buildPromoBanner(),
+                      const Spacer(),
+                      const Center(
+                        child: Text(
+                          "Kirim pesan pertama Anda!",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Colors.grey,
+                          ),
+                        ),
                       ),
-                    ),
+                      const Spacer(),
+                    ],
                   )
                 : StreamBuilder<List<ChatMessageModel>>(
                     stream: _chatRepository.watchMessages(_roomId!),
@@ -565,8 +578,8 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                       }
                       
                       final messages = snapshot.data ?? [];
+                      final listItems = _buildListItems(messages);
                       
-                      // Auto-scroll to bottom when new messages arrive
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (_scrollController.hasClients) {
                           _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
@@ -576,99 +589,101 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                       return ListView.builder(
                         controller: _scrollController,
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        itemCount: messages.length,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: listItems.length + 2, // Warning banner + Promo + items
                         itemBuilder: (context, index) {
-                          return _buildBubbleRow(messages[index]);
+                          if (index == 0) {
+                            return _buildSecurityWarningBanner();
+                          }
+                          if (index == 1) {
+                            return _buildPromoBanner();
+                          }
+                          final item = listItems[index - 2];
+                          if (item is String) {
+                            return _buildDateSeparator(item);
+                          }
+                          return _buildBubbleRow(item as ChatMessageModel);
                         },
                       );
                     },
                   ),
           ),
-
-          // ### [SECTION 4: BOTTOM CHAT INPUT (FIXED)] ###
-          _buildBottomChatInput(),
+          _buildBottomInputArea(),
         ],
       ),
     );
   }
 
-  // Widget for Section 2: Pinned Item Summary Card
-  Widget _buildPinnedItemCard() {
+  Widget _buildSecurityWarningBanner() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white, // ID: '209:1811' Background: #FFFFFF
-        borderRadius: BorderRadius.circular(15), // BorderRadius: 15px
-        border: Border.all(
-          color: Colors.black.withValues(alpha: 0.6), // Outline: #000000 1px (with subtle opacity)
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+      margin: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
+      alignment: Alignment.center,
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w500,
+            fontSize: 11,
+            color: Color(0xFF414844),
+            height: 1.4,
           ),
-        ],
+          children: [
+            const TextSpan(
+              text: "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi kepada penjual, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi SewaIn Aja, ya. ",
+            ),
+            WidgetSpan(
+              child: GestureDetector(
+                onTap: () {},
+                child: const Text(
+                  "Baca Panduan Keamanan",
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF012D1D),
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F8F5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFA3E4D7), width: 1),
       ),
       child: Row(
         children: [
-          // Item Image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: widget.itemPhotoUrl.isNotEmpty
-                ? Image(
-                    image: _imageUploadService.buildImageProvider(widget.itemPhotoUrl),
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: 48,
-                        height: 48,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 24),
-                      );
-                    },
-                  )
-                : Container(
-                    width: 48,
-                    height: 48,
-                    color: const Color(0xFFF5F5F5),
-                    child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFB0B0B0), size: 24),
-                  ),
-          ),
-          const SizedBox(width: 16),
-          
-          // Title & Price
+          const Icon(Icons.info_outline, color: Color(0xFF1ABC9C), size: 20),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.itemName, // ID: '209:1819'
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500, // Poppins Medium
-                    color: Color(0xFF012D1D), // Color_Primary_Dark
-                  ),
+            child: RichText(
+              text: const TextSpan(
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11,
+                  color: Color(0xFF012D1D),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  _itemPricePerHour != null
-                      ? 'Rp. ${_itemPricePerHour!.toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}/jam'
-                      : 'Loading...',
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500, // Poppins Medium
-                    color: Color(0xFF7B5804), // Color_Accent: #7B5804
+                children: [
+                  TextSpan(text: "Ada Gratis Ongkir untuk 1 pesanan/transaksi di toko ini! "),
+                  TextSpan(
+                    text: "Cek Info Terbaru",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1ABC9C),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -676,7 +691,23 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     );
   }
 
-  // Widget for generating single row with Bubble and Timestamp
+  Widget _buildDateSeparator(String dateText) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Text(
+          dateText,
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+            color: const Color(0xFF414844).withValues(alpha: 0.6),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBubbleRow(ChatMessageModel message) {
     final bool isMe = message.senderId == _currentUserId;
     
@@ -685,192 +716,593 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       timeString = DateFormat('HH:mm').format(message.sentAt!);
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16.0),
-      child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          // Message Bubble
-          Container(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.75,
-            ),
-            padding: message.messageType == 'image' 
-                ? const EdgeInsets.all(4) 
-                : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: isMe 
-                  ? const Color(0xFF1B4332) // Color_Primary: #1B4332
-                  : const Color(0xFFD9D9D9), // Color_Sender_Bubble: #D9D9D9
-              borderRadius: isMe
-                  ? const BorderRadius.only(
-                      topLeft: Radius.circular(15),
-                      topRight: Radius.circular(15),
-                      bottomLeft: Radius.circular(15),
-                      bottomRight: Radius.zero, // Corner rule 4: Me (kanan)
-                    )
-                  : const BorderRadius.only(
-                      topLeft: Radius.zero, // Corner rule 4: Sender (kiri)
-                      topRight: Radius.circular(15),
-                      bottomLeft: Radius.circular(15),
-                      bottomRight: Radius.circular(15),
-                    ),
-            ),
-            child: message.messageType == 'image'
-                ? GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => FullScreenImageViewer(imageUrl: message.message),
-                        ),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        message.message,
-                        width: 200,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+    if (message.messageType == 'item_card') {
+      return _buildItemCardBubble(message, isMe, timeString);
+    } else if (message.messageType == 'image') {
+      return _buildImageMessageBubble(message, isMe, timeString);
+    } else {
+      return _buildTextMessageBubble(message, isMe, timeString);
+    }
+  }
+
+  Widget _buildTextMessageBubble(ChatMessageModel message, bool isMe, String timeString) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFF3F4F6),
+            borderRadius: isMe
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(4),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
                   )
-                : Text(
-                    message.message,
-                    style: TextStyle(
-                      fontFamily: isMe ? 'Poppins' : 'Inter', // Font rules
-                      fontSize: 12,
-                      fontWeight: isMe ? FontWeight.w300 : FontWeight.w400, // Light vs Regular
-                      color: isMe ? Colors.white : Colors.black,
-                      height: 1.4,
-                    ),
+                : const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
                   ),
           ),
-          
-          const SizedBox(height: 6),
-
-          // Timestamp Row
-          Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
             children: [
               Text(
-                timeString,
+                message.message,
                 style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w300, // Poppins Light
-                  color: Color(0xFF414844),
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 14,
+                  color: Color(0xFF012D1D),
+                  height: 1.4,
                 ),
               ),
-              if (isMe) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.done_all_rounded,
-                  size: 14,
-                  color: message.isRead ? const Color(0xFF34DD48) : Colors.grey,
-                ),
-              ]
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    timeString,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 10,
+                      color: const Color(0xFF012D1D).withValues(alpha: 0.5),
+                    ),
+                  ),
+                  if (isMe) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.done_all,
+                      size: 14,
+                      color: message.isRead ? const Color(0xFF10B981) : Colors.grey,
+                    ),
+                  ]
+                ],
+              ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageMessageBubble(ChatMessageModel message, bool isMe, String timeString) {
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Container(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.75,
+          ),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFF3F4F6),
+            borderRadius: isMe
+                ? const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(4),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  )
+                : const BorderRadius.only(
+                    topLeft: Radius.circular(4),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FullScreenImageViewer(imageUrl: message.message),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    message.message,
+                    width: 200,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(right: 8, bottom: 4, top: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      timeString,
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 10,
+                        color: const Color(0xFF012D1D).withValues(alpha: 0.5),
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.done_all,
+                        size: 14,
+                        color: message.isRead ? const Color(0xFF10B981) : Colors.grey,
+                      ),
+                    ]
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemCardBubble(ChatMessageModel message, bool isMe, String timeString) {
+    Map<String, dynamic> item = {};
+    try {
+      item = json.decode(message.message) as Map<String, dynamic>;
+    } catch (_) {
+      item = {
+        'id': widget.itemId ?? '',
+        'name': widget.itemName ?? '',
+        'price': 'Loading...',
+        'image': widget.itemPhotoUrl ?? '',
+        'status': 'available',
+      };
+    }
+
+    final String itemId = item['id']?.toString() ?? '';
+    final String name = item['name']?.toString() ?? '';
+    final String price = item['price']?.toString() ?? '';
+    final String image = item['image']?.toString() ?? '';
+    final String status = item['status']?.toString() ?? 'available';
+    final bool isAvailable = status.toLowerCase() == 'available';
+
+    return Align(
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8.0),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFF012D1D).withValues(alpha: 0.1), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Top Product row clickable to details
+              GestureDetector(
+                onTap: () {
+                  if (itemId.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ItemDetailScreen(itemId: itemId),
+                      ),
+                    );
+                  }
+                },
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: image.isNotEmpty
+                              ? Image(
+                                  image: _imageUploadService.buildImageProvider(image),
+                                  width: 64,
+                                  height: 64,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => Container(
+                                    width: 64,
+                                    height: 64,
+                                    color: const Color(0xFFF5F5F5),
+                                    child: const Icon(Icons.image, size: 24, color: Colors.grey),
+                                  ),
+                                )
+                              : Container(
+                                  width: 64,
+                                  height: 64,
+                                  color: const Color(0xFFF5F5F5),
+                                  child: const Icon(Icons.image, size: 24, color: Colors.grey),
+                                ),
+                        ),
+                        if (!isAvailable)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: const Text(
+                                "Stok habis",
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              color: Color(0xFF012D1D),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            price,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: Color(0xFF012D1D),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            "GRATIS ONGKIR",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Action Button
+              ElevatedButton(
+                onPressed: () => _navigateToAjukanSewa(itemId),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF012D1D),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  "Sewa Sekarang",
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildBottomInputArea() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0x1A012D1D), width: 1),
+        ),
+      ),
+      child: SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildItemContextPreview(),
+            _buildQuickReplies(),
+            _buildMainInputRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildItemContextPreview() {
+    if (!_showItemContextPreview || widget.itemName == null || widget.itemName!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          bottom: BorderSide(color: Color(0x1A012D1D), width: 1),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              if (widget.itemId != null && widget.itemId!.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItemDetailScreen(itemId: widget.itemId!),
+                  ),
+                );
+              }
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: (widget.itemPhotoUrl != null && widget.itemPhotoUrl!.isNotEmpty)
+                  ? Image(
+                      image: _imageUploadService.buildImageProvider(widget.itemPhotoUrl!),
+                      width: 32,
+                      height: 32,
+                      fit: BoxFit.cover,
+                      errorBuilder: (ctx, err, stack) => Container(
+                        width: 32,
+                        height: 32,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.image, size: 16, color: Colors.grey),
+                      ),
+                    )
+                  : Container(
+                      width: 32,
+                      height: 32,
+                      color: const Color(0xFFF5F5F5),
+                      child: const Icon(Icons.image, size: 16, color: Colors.grey),
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (widget.itemId != null && widget.itemId!.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(itemId: widget.itemId!),
+                    ),
+                  );
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.itemName ?? '',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _itemPricePerHour != null
+                        ? 'Rp${((_itemPricePerHour ?? 15000.0) * 24).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}/hari'
+                        : 'Loading...',
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 16, color: Color(0xFF012D1D)),
+            onPressed: () {
+              setState(() {
+                _showItemContextPreview = false;
+              });
+            },
           ),
         ],
       ),
     );
   }
 
-  // Widget for Section 4: Bottom Chat Input (Fixed)
-  Widget _buildBottomChatInput() {
+  Widget _buildQuickReplies() {
+    final replies = [
+      "Hai, barang ini ready?",
+      "Bisa dikirim hari ini?",
+    ];
+
     return Container(
-      // ID: '224:1398' -> Outer Background
-      decoration: const BoxDecoration(
-        color: Color(0xFF1B4332), // Color_Primary
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
+      height: 50,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: widget.itemId != null ? replies.length + 1 : replies.length,
+        itemBuilder: (context, index) {
+          if (widget.itemId != null && index == 0) {
+            return _buildActionChip("📷 Kirim Produk", _sendItemCard);
+          }
+          final reply = widget.itemId != null ? replies[index - 1] : replies[index];
+          return Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: ActionChip(
+              label: Text(
+                reply,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
+                  color: Color(0xFF414844),
+                ),
+              ),
+              backgroundColor: const Color(0xFFF3F4F6),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide.none,
+              ),
+              onPressed: () => _sendMessage(customText: reply),
+            ),
+          );
+        },
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: SafeArea(
-        top: false, // Ensure safety under iPhone home indicators (Layout rule 3)
-        child: Row(
-          children: [
-            // Action 1: Plus Icon Circle Button
-            GestureDetector(
-              onTap: _pickAndSendImage,
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFDF9F4), // Inverted Background Circle to pop
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.add, // Action 1 ID: '224:1410' Plus Icon
-                    color: Color(0xFF1B4332), // Icon Color: #1B4332
-                    size: 24,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
+    );
+  }
 
-            // Inner Input Container (ID: '224:1399')
-            Expanded(
-              child: Container(
-                height: 46,
-                decoration: BoxDecoration(
-                  color: Colors.white, // Background: #FFFFFF
-                  borderRadius: BorderRadius.circular(30), // BorderRadius: 30px
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                alignment: Alignment.center,
-                child: TextField(
-                  controller: _messageController,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500, // Medium
-                    color: Color(0xFF012D1D), // Text: #012D1D
-                  ),
-                  onSubmitted: (_) => _sendMessage(),
-                  decoration: const InputDecoration(
-                    hintText: "Message....", // Hint Text (ID '224:1417')
-                    hintStyle: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500, // Poppins Medium
-                      color: Color(0xFF9EAD9F), // Light muted hint color
-                    ),
-                    border: InputBorder.none,
-                    isCollapsed: true,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Action 2: Send Icon Circle Button
-            GestureDetector(
-              onTap: _sendMessage,
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFDF9F4), // Matches Plus button for elegance
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.send_rounded, // Action 2 ID '417:2181'
-                    color: Color(0xFF1B4332), // Color: #1B4332
-                    size: 18,
-                  ),
-                ),
-              ),
-            ),
-          ],
+  Widget _buildActionChip(String label, VoidCallback onPressed) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: ActionChip(
+        label: Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF012D1D),
+          ),
         ),
+        backgroundColor: const Color(0xFFC1ECD4),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF012D1D), width: 0.5),
+        ),
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  Widget _buildMainInputRow() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 12),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF414844)),
+            onPressed: _pickAndSendImage,
+          ),
+          Expanded(
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 14,
+                        color: Color(0xFF012D1D),
+                      ),
+                      decoration: const InputDecoration(
+                        hintText: "Tulis pesan...",
+                        hintStyle: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 14,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  if (_isUploadingImage)
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFF012D1D),
+                      ),
+                    )
+                  else
+                    const Icon(Icons.sentiment_satisfied, color: Color(0xFF414844)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          CircleAvatar(
+            backgroundColor: const Color(0xFF012D1D),
+            radius: 22,
+            child: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              onPressed: () => _sendMessage(),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -916,7 +1348,7 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Gambar berhasil disimpan ke: $filePath'),
-                backgroundColor: const Color(0xFF1B4332),
+                backgroundColor: const Color(0xFF012D1D),
               ),
             );
           }

@@ -91,46 +91,14 @@ class _WalletScreenState extends State<WalletScreen> {
       debugPrint("Error loading wallet details: $e");
     }
 
-    // Load dummy transaction logs for demo
-    _loadDummyHistory();
+
     
     if (mounted) {
       setState(() => _isLoading = false);
     }
   }
 
-  void _loadDummyHistory() {
-    _history = [
-      {
-        'title': 'Pendapatan Sewa DSLR Canon',
-        'type': 'earning',
-        'amount': 180000.0,
-        'date': 'Hari ini, 14:20 WIB',
-        'status': 'Selesai',
-      },
-      {
-        'title': 'Pencairan Saldo Bank BCA',
-        'type': 'withdrawal',
-        'amount': 200000.0,
-        'date': '5 Jun 2026, 09:00 WIB',
-        'status': 'Sukses',
-      },
-      {
-        'title': 'Pendapatan Sewa Sony Camera',
-        'type': 'earning',
-        'amount': 120000.0,
-        'date': '3 Jun 2026, 17:15 WIB',
-        'status': 'Selesai',
-      },
-      {
-        'title': 'Pendapatan Sewa Tenda Camping',
-        'type': 'earning',
-        'amount': 75000.0,
-        'date': '28 Mei 2026, 11:30 WIB',
-        'status': 'Selesai',
-      },
-    ];
-  }
+
 
   String _formatRupiah(double amount) {
     return 'Rp. ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
@@ -400,24 +368,7 @@ class _WalletScreenState extends State<WalletScreen> {
                           color: Color(0xFF012D1D),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFECEB),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFF04438), width: 0.5),
-                        ),
-                        child: const Text(
-                          'DUMMY',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFF04438),
-                          ),
-                        ),
-                      ),
+
                     ],
                   ),
                   const SizedBox(height: 12),
