@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/item_model.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../../api_config.dart';
+import '../../auth_session_service.dart';
 
 /// Repository untuk mengakses collection `items` di Firestore.
 /// Mengikuti pola repository sesuai AGENTS.md.
@@ -12,6 +16,63 @@ class ItemRepository {
 
   CollectionReference<Map<String, dynamic>> get _itemsRef =>
       _db.collection('items');
+      
+  final AuthSessionService _authService = const AuthSessionService();
+
+  // ---------------------------------------------------------------------------
+  // FOLLOWING ITEMS
+  // ---------------------------------------------------------------------------
+
+  Future<List<ItemModel>> getFollowingItems() async {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) {
+      return [];
+    }
+
+    try {
+      final followsSnapshot = await _db
+          .collection('follows')
+          .where('followerId', isEqualTo: currentUserId)
+          .orderBy('createdAt', descending: true)
+          .limit(30)
+          .get();
+
+      if (followsSnapshot.docs.isEmpty) {
+        return [];
+      }
+
+      final List<String> followingIds = followsSnapshot.docs
+          .map((doc) => doc['followingId'] as String)
+          .toList();
+
+      List<ItemModel> allItems = [];
+
+      for (var i = 0; i < followingIds.length; i += 10) {
+        final chunk = followingIds.sublist(
+            i, i + 10 > followingIds.length ? followingIds.length : i + 10);
+            
+        final itemsSnapshot = await _itemsRef
+            .where('ownerId', whereIn: chunk)
+            .where('status', isEqualTo: 'available')
+            .get();
+
+        allItems.addAll(
+            itemsSnapshot.docs.map((doc) => ItemModel.fromFirestore(doc)));
+      }
+
+      allItems.sort((a, b) {
+        if (a.createdAt == null && b.createdAt == null) return 0;
+        if (a.createdAt == null) return 1;
+        if (b.createdAt == null) return -1;
+        return b.createdAt!.compareTo(a.createdAt!);
+      });
+
+      return allItems.take(5).toList();
+    } catch (e) {
+      print('Error fetching following items: $e');
+      return [];
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // MOST TRUSTED NEARBY — fetch barang available, shuffle random, filter by category

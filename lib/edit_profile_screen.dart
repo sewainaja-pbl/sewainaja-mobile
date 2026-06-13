@@ -28,8 +28,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _bioController = TextEditingController();
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _phoneFocusNode = FocusNode();
+  final FocusNode _bioFocusNode = FocusNode();
   final AddressService _addressService = const AddressService();
   String _defaultLocation = "";
   LatLng _profileMapCenter = _fallbackMapCenter;
@@ -56,6 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.initState();
     _nameFocusNode.addListener(_refreshFieldState);
     _phoneFocusNode.addListener(_refreshFieldState);
+    _bioFocusNode.addListener(_refreshFieldState);
     _loadUserData();
   }
 
@@ -70,11 +73,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _debounceTimer?.cancel();
     _nameFocusNode.removeListener(_refreshFieldState);
     _phoneFocusNode.removeListener(_refreshFieldState);
+    _bioFocusNode.removeListener(_refreshFieldState);
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
+    _bioController.dispose();
     _nameFocusNode.dispose();
     _phoneFocusNode.dispose();
+    _bioFocusNode.dispose();
     super.dispose();
   }
 
@@ -86,6 +92,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _nameController.text = cached.displayName;
         _emailController.text = cached.displayEmail;
         _phoneController.text = cached.displayPhone;
+        _bioController.text = cached.displayBio;
         _profilePhotoUrl = cached.profilePhotoUrl;
       });
       final prefs = await SharedPreferences.getInstance();
@@ -108,6 +115,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _nameController.text = synced.displayName;
         _emailController.text = synced.displayEmail;
         _phoneController.text = synced.displayPhone;
+        _bioController.text = synced.displayBio;
         _profilePhotoUrl = synced.profilePhotoUrl;
       });
       await _loadDefaultAddressFromApi();
@@ -212,6 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'name': trimmedName,
           'phone': trimmedPhone,
           'profilePhotoUrl': resolvedPhotoUrl,
+          'bio': _bioController.text.trim(),
         }),
       );
       final body = jsonDecode(response.body) as Map<String, dynamic>;
@@ -236,6 +245,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               phone: trimmedPhone,
               profilePhotoUrl: resolvedPhotoUrl,
               status: '',
+              bio: _bioController.text.trim(),
             );
       await _profileSyncService.saveProfileToCache(updatedProfile, notify: true);
       if (!mounted) return;
@@ -243,6 +253,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         _nameController.text = updatedProfile.displayName;
         _emailController.text = updatedProfile.displayEmail;
         _phoneController.text = updatedProfile.displayPhone;
+        _bioController.text = updatedProfile.displayBio;
         _profilePhotoUrl = updatedProfile.profilePhotoUrl;
         _pendingProfilePhoto = null;
       });
@@ -541,6 +552,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             focusNode: _phoneFocusNode,
             keyboardType: TextInputType.phone,
             helperText: 'Tap untuk ubah nomor telepon.',
+          ),
+          const SizedBox(height: 16),
+
+          // 3C_2. ABOUT ME
+          _buildFormRow(
+            label: "About Me",
+            controller: _bioController,
+            focusNode: _bioFocusNode,
+            helperText: 'Tap untuk ubah deskripsi profil.',
           ),
           const SizedBox(height: 16),
 

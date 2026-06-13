@@ -99,6 +99,47 @@ class ItemModel {
     );
   }
 
+  static DateTime? _parseTimestamp(dynamic val) {
+    if (val == null) return null;
+    if (val is Timestamp) return val.toDate().toLocal();
+    if (val is String) return DateTime.tryParse(val)?.toLocal();
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val).toLocal();
+    if (val is Map) {
+      final rawSeconds = val['_seconds'] ?? val['seconds'];
+      if (rawSeconds is int) {
+        final rawNanos = val['_nanoseconds'] ?? val['nanoseconds'];
+        final nanos = rawNanos is int ? rawNanos : 0;
+        return DateTime.fromMillisecondsSinceEpoch(
+          (rawSeconds * 1000) + (nanos ~/ 1000000),
+          isUtc: true,
+        ).toLocal();
+      }
+    }
+    return null;
+  }
+
+  factory ItemModel.fromJson(Map<String, dynamic> data) {
+    final pPerHour = (data['pricePerHour'] as num?)?.toDouble() ?? 0.0;
+    return ItemModel(
+      id: data['id'] as String? ?? '',
+      ownerId: data['ownerId'] as String? ?? '',
+      ownerName: data['ownerName'] as String? ?? '',
+      ownerRating: (data['ownerRating'] as num?)?.toDouble() ?? 0.0,
+      categoryId: data['categoryId'] as String? ?? '',
+      categoryName: data['categoryName'] as String? ?? '',
+      name: data['name'] as String? ?? '',
+      description: data['description'] as String? ?? '',
+      pricePerHour: pPerHour,
+      price: (data['price'] as num?)?.toDouble() ?? pPerHour * 24,
+      priceUnit: data['priceUnit'] as String? ?? 'Hari',
+      status: data['status'] as String? ?? 'available',
+      condition: data['condition'] as String? ?? 'fair',
+      photos: List<String>.from(data['photos'] as List? ?? []),
+      createdAt: _parseTimestamp(data['createdAt']),
+      updatedAt: _parseTimestamp(data['updatedAt']),
+    );
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'ownerId': ownerId,

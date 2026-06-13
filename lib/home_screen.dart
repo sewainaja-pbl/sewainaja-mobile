@@ -33,10 +33,10 @@ class HomeScreen extends StatefulWidget {
   });
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
+class HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   static const LatLng _fallbackCenter = LatLng(-6.966667, 110.416664);
   final AddressService _addressService = const AddressService();
@@ -56,6 +56,9 @@ class _HomeScreenState extends State<HomeScreen>
   List<ItemModel>? _trustedNearby;
   bool _isLoadingNewArrivals = true;
   bool _isLoadingTrustedNearby = true;
+  
+  List<ItemModel>? _followingItems;
+  bool _isLoadingFollowing = true;
 
   // Kategori dari Firestore + "All" selalu ada di depan
   List<String> _firestoreCategories = [];
@@ -71,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen>
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _trustedSectionKey = GlobalKey();
   bool _isMapCardPressed = false;
+  bool _showBackToTop = false;
 
   // Single shared animation controller for all skeleton shimmers to optimize performance
   late AnimationController _shimmerController;
@@ -110,6 +114,15 @@ class _HomeScreenState extends State<HomeScreen>
     _timeTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       _updateTime();
     });
+    _loadFollowingItems();
+    _scrollController.addListener(() {
+      final show = _scrollController.offset > 300;
+      if (show != _showBackToTop) {
+        setState(() {
+          _showBackToTop = show;
+        });
+      }
+    });
   }
 
   void _updateTime() {
@@ -121,6 +134,44 @@ class _HomeScreenState extends State<HomeScreen>
           _currentTimeString = timeStr;
         });
       }
+    }
+  }
+
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  Future<void> _handleRefresh() async {
+    await _loadDefaultLocationLabel();
+    await _loadCategories();
+    _listenToNewArrivals();
+    _listenToTrustedNearby();
+    await _loadFollowingItems();
+  }
+
+  Future<void> _loadFollowingItems() async {
+    setState(() {
+      _isLoadingFollowing = true;
+    });
+    try {
+      final items = await _itemRepo.getFollowingItems();
+      if (!mounted) return;
+      setState(() {
+        _followingItems = items;
+        _isLoadingFollowing = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _followingItems = [];
+        _isLoadingFollowing = false;
+      });
     }
   }
 
@@ -358,104 +409,127 @@ class _HomeScreenState extends State<HomeScreen>
       resizeToAvoidBottomInset: false,
       body: Stack(
         children: [
-          CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverAppBar(
-                backgroundColor: const Color(0xFF012D1D),
-                pinned: false,
-                floating: false,
-                expandedHeight: 200,
-                elevation: 0,
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SafeArea(
-                        bottom: false,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildHeader(),
-                              const SizedBox(height: 24),
-                              _buildSearchBar(),
-                            ],
+          RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: const Color(0xFF012D1D),
+            backgroundColor: const Color(0xFFFFF8EF),
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
+              ),
+              slivers: [
+                SliverAppBar(
+                  backgroundColor: const Color(0xFF012D1D),
+                  pinned: false,
+                  floating: false,
+                  expandedHeight: 200,
+                  elevation: 0,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        SafeArea(
+                          bottom: false,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildHeader(),
+                                const SizedBox(height: 24),
+                                _buildSearchBar(),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+                      ],
+                    ),
+                  ),
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(20),
+                    child: Container(
+                      height: 20,
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFF8EF),
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                      ),
+                      child: Center(
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD6C7A1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 36),
-                    ],
-                  ),
-                ),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(20),
-                  child: Container(
-                    height: 20,
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFFF8EF),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-                    ),
-                    child: Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD6C7A1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
                     ),
                   ),
                 ),
-              ),
 
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Column(
-                    children: [
-                      _buildPromoBanner(),
-                      const SizedBox(height: 28),
-                      _buildLocationPreview(),
-                      const SizedBox(height: 28),
-                      _buildSectionHeader(
-                        "New Arrivals",
-                        onSeeMoreTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const NewArrivalsScreen(),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildNewArrivals(),
-                      const SizedBox(height: 28),
-                      Container(
-                        key: _trustedSectionKey,
-                        child: _buildSectionHeader(
-                          "Most Trusted Nearby",
-                          showSeeMore: false,
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      children: [
+                        _buildPromoBanner(),
+                        const SizedBox(height: 28),
+                        _buildLocationPreview(),
+                        const SizedBox(height: 28),
+                        _buildFollowingSection(),
+                        _buildSectionHeader(
+                          "New Arrivals",
+                          onSeeMoreTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const NewArrivalsScreen(),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildCategoryFilter(),
-                      const SizedBox(height: 16),
-                    ],
+                        const SizedBox(height: 16),
+                        _buildNewArrivals(),
+                        const SizedBox(height: 28),
+                        Container(
+                          key: _trustedSectionKey,
+                          child: _buildSectionHeader(
+                            "Most Trusted Nearby",
+                            showSeeMore: false,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildCategoryFilter(),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
-              ),
 
-              _buildTrustedNearbySliver(),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-            ],
+                _buildTrustedNearbySliver(),
+                const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+              ],
+            ),
           ),
+
+          if (_showBackToTop)
+            Positioned(
+              right: 20,
+              bottom: 110,
+              child: FloatingActionButton(
+                mini: false,
+                onPressed: scrollToTop,
+                backgroundColor: const Color(0xFF012D1D),
+                foregroundColor: Colors.white,
+                shape: const CircleBorder(),
+                elevation: 4,
+                child: const Icon(Icons.keyboard_arrow_up_rounded, size: 28),
+              ),
+            ),
 
           if (_isSearchActive)
             SearchSheet(
@@ -1066,6 +1140,65 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _buildFollowingSection() {
+    if (_isLoadingFollowing || _followingItems == null || _followingItems!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader("From Your Following", showSeeMore: false),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 210,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            physics: const BouncingScrollPhysics(),
+            itemCount: _followingItems!.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final item = _followingItems![index];
+              final product = ProductData(
+                id: item.id,
+                name: item.name,
+                price: item.formattedPrice,
+                rating: item.ownerRating > 0
+                    ? item.ownerRating.toStringAsFixed(1)
+                    : '—',
+                image: item.primaryPhoto,
+                originalItem: item,
+              );
+              return SubtleFadeIn(
+                child: GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ItemDetailScreen(
+                        itemId: item.id,
+                        item: item,
+                        itemName: item.name,
+                        pricePerHour: item.pricePerHour,
+                        imagePath: item.primaryPhoto,
+                      ),
+                    ),
+                  ),
+                  child: ProductCard(
+                    product: product,
+                    heroTagPrefix: 'following-',
+                    onMorePressed: () => _showProductOptions(context, item, product),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 28),
+      ],
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // NEW ARRIVALS — StreamBuilder dari Firestore (limit 5, sort createdAt DESC)
   // ---------------------------------------------------------------------------
@@ -1117,6 +1250,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               child: ProductCard(
                 product: product,
+                heroTagPrefix: 'new-arrivals-',
                 onMorePressed: () => _showProductOptions(context, item, product),
               ),
             ),
@@ -1262,6 +1396,7 @@ class _HomeScreenState extends State<HomeScreen>
                 },
                 child: ProductCard(
                   product: product,
+                  heroTagPrefix: 'trusted-',
                   onMorePressed: () => _showProductOptions(context, item, product),
                 ),
               ),

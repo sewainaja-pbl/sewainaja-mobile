@@ -29,7 +29,7 @@ class ProfileViewScreen extends StatefulWidget {
   const ProfileViewScreen({
     super.key,
     this.ownerId,
-    this.ownerName = "Mas Tahes",
+    this.ownerName = "Pengguna",
     this.rating,
     this.listingCount,
     this.avatarImage,
@@ -41,19 +41,10 @@ class ProfileViewScreen extends StatefulWidget {
 
 class _ProfileViewScreenState extends State<ProfileViewScreen> {
   bool _isFollowing = false;
+  bool _isLoadingFollow = false;
   String _selectedCategory = "All";
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
-  
-  final List<String> _categories = [
-    "All",
-    "Tech",
-    "Power Tools",
-    "Outfit",
-    "Camp Tools",
-    "Sports",
-    "Cook",
-  ];
   
   late String _targetOwnerId;
   Map<String, dynamic>? _userProfile;
@@ -72,6 +63,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     _targetOwnerId = widget.ownerId ?? FirebaseAuth.instance.currentUser?.uid ?? '';
     print('[ProfileViewScreen] initState: widget.ownerId = "${widget.ownerId}", _targetOwnerId = "$_targetOwnerId"');
     _loadProfile();
+    _checkFollowStatus();
     if (_targetOwnerId.isNotEmpty) {
       _itemsStream = _itemRepo.watchItemsByOwner(_targetOwnerId);
       _reviewsStream = _ratingRepo.watchOwnerReviews(_targetOwnerId, limit: 5);
@@ -97,6 +89,20 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     }
   }
 
+  Future<void> _checkFollowStatus() async {
+    if (_targetOwnerId.isEmpty) return;
+    try {
+      final isFollowing = await _userRepo.getFollowStatus(_targetOwnerId);
+      if (mounted) {
+        setState(() {
+          _isFollowing = isFollowing;
+        });
+      }
+    } catch (e) {
+      print('Error checking follow status: $e');
+    }
+  }
+
   // _loadItems removed
 
   @override
@@ -114,12 +120,13 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       );
     }
 
-    final String displayName = _userProfile?['name'] ?? (widget.ownerName.trim().isEmpty ? "Mas Tahes" : widget.ownerName);
+    final String displayName = (_userProfile?['name'] != null && _userProfile!['name'].toString().trim().isNotEmpty) ? _userProfile!['name'] : (widget.ownerName.trim().isEmpty ? "Pengguna Tanpa Nama" : widget.ownerName);
+    final bool isOwnProfile = FirebaseAuth.instance.currentUser?.uid == _targetOwnerId;
     final double ratingNum = (_userProfile?['avgRatingAsOwner'] as num?)?.toDouble() ?? double.tryParse(widget.rating ?? '') ?? 0.0;
-    final String displayRating = ratingNum > 0 ? ratingNum.toStringAsFixed(1) : (widget.rating ?? "4.3");
+    final String displayRating = ratingNum > 0 ? ratingNum.toStringAsFixed(1) : (widget.rating ?? "0.0");
     
     final dynamic rawCreatedAt = _userProfile?['createdAt'];
-    String joinDate = "Member sejak 2024";
+    String joinDate = "Tanggal gabung tidak diketahui";
     try {
       if (rawCreatedAt != null) {
         joinDate = "Member sejak ${rawCreatedAt.toDate().year}";
@@ -127,9 +134,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     } catch (_) {}
     final int followersCount = _userProfile?['followersCount'] ?? 0;
     final String statsFollowers = "$followersCount Followers";
-    final int listingCount = _userProfile?['totalTransactions'] ?? 0;
-    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "$listingCount+ Transactions";
-    final String aboutMeText = _userProfile?['aboutMe'] as String? ?? "Belum ada informasi profil.";
+    final int totalTransactions = _userProfile?['totalTransactions'] ?? 0;
+    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "$totalTransactions Transactions";
+    final String aboutMeText = _userProfile?['bio'] ?? "Belum ada deskripsi profil.";
     
     final String? avatarUrl = () {
       final profile = _userProfile?['profilePhotoUrl'] as String?;
@@ -149,6 +156,14 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
         builder: (context, snapshot) {
           final items = snapshot.data ?? [];
           
+          final Set<String> dynamicCategories = {"All"};
+          for (var item in items) {
+            if (item.categoryName.isNotEmpty) {
+              dynamicCategories.add(item.categoryName);
+            }
+          }
+          final List<String> availableCategories = dynamicCategories.toList();
+          
           final List<ItemModel> filteredProducts = items.where((product) {
             final matchesCategory = _selectedCategory == "All" || product.categoryName == _selectedCategory;
             final matchesSearch = _searchQuery.isEmpty || product.name.toLowerCase().contains(_searchQuery);
@@ -162,7 +177,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             backgroundColor: const Color(0xFF012D1D),
             pinned: false,
             automaticallyImplyLeading: false,
-            expandedHeight: 270,
+            expandedHeight: isOwnProfile ? 210 : 270,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
               background: Column(
@@ -327,78 +342,110 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
+                  ),                  if (!isOwnProfile) ...[
+                    const SizedBox(height: 10),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (_isLoadingFollow) return;
+                                final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+                                if (currentUserId == null) {
+                                  showAppErrorSnack(context, "Silakan login untuk follow user.");
+                                  return;
+                                }
+                                if (currentUserId == _targetOwnerId) {
+                                  showAppErrorSnack(context, "Anda tidak dapat mem-follow diri sendiri.");
+                                  return;
+                                }
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _isFollowing = !_isFollowing;
-                              });
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _isFollowing ? Colors.transparent : const Color(0xFFF8BD00),
-                              foregroundColor: _isFollowing ? const Color(0xFFFDF9F4) : const Color(0xFF012D1D),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: _isFollowing ? const BorderSide(color: Color(0xFFFDF9F4), width: 1) : BorderSide.none,
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: Text(
-                              _isFollowing ? "Unfollow" : "Follow",
-                              style: const TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => RoomChatScreen(
-                                    partnerId: widget.ownerId ?? "unknown_user",
-                                    partnerName: displayName,
-                                    itemId: "profile_chat",
-                                    itemName: "Diskusi Profil",
-                                    itemPhotoUrl: "",
-                                  ),
+                                setState(() => _isLoadingFollow = true);
+                                try {
+                                  if (_isFollowing) {
+                                    await _userRepo.unfollowUser(_targetOwnerId);
+                                  } else {
+                                    await _userRepo.followUser(_targetOwnerId);
+                                  }
+                                  setState(() {
+                                    _isFollowing = !_isFollowing;
+                                  });
+                                  _loadProfile(); // refresh follower count
+                                } catch (e) {
+                                  showAppErrorSnack(context, e.toString());
+                                } finally {
+                                  if (mounted) {
+                                    setState(() => _isLoadingFollow = false);
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _isFollowing ? Colors.transparent : const Color(0xFFF8BD00),
+                                foregroundColor: _isFollowing ? const Color(0xFFFDF9F4) : const Color(0xFF012D1D),
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: _isFollowing ? const BorderSide(color: Color(0xFFFDF9F4), width: 1) : BorderSide.none,
                                 ),
-                              );
-                            },
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFFDF9F4),
-                              side: const BorderSide(color: Color(0xFFFDF9F4), width: 1),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
                               ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: _isLoadingFollow 
+                                  ? const SizedBox(
+                                      width: 20, 
+                                      height: 20, 
+                                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                                    )
+                                  : Text(
+                                      _isFollowing ? "Unfollow" : "Follow",
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
                             ),
-                            child: const Text(
-                              "Message",
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => RoomChatScreen(
+                                      partnerId: widget.ownerId ?? "unknown_user",
+                                      partnerName: displayName,
+                                      itemId: "profile_chat",
+                                      itemName: "Diskusi Profil",
+                                      itemPhotoUrl: "",
+                                    ),
+                                  ),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: const Color(0xFFFDF9F4),
+                                side: const BorderSide(color: Color(0xFFFDF9F4), width: 1),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                              ),
+                              child: const Text(
+                                "Message",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -464,25 +511,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 16),
 
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                              child: Wrap(
-                                spacing: 8.0,
-                                runSpacing: 8.0,
-                                children: [
-                                  _buildStrengthChip("Fast Communication (3)"),
-                                  _buildStrengthChip("Fair Pricing (2)"),
-                                ],
-                              ),
-                            ),
-
-                            Container(
-                              height: 0.5,
-                              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                              color: const Color(0xFF414844).withValues(alpha: 0.2),
-                            ),
 
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,10 +691,10 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                     scrollDirection: Axis.horizontal,
                                     padding: const EdgeInsets.symmetric(horizontal: 24),
                                     physics: const BouncingScrollPhysics(),
-                                    itemCount: _categories.length,
+                                    itemCount: availableCategories.length,
                                     separatorBuilder: (context, _) => const SizedBox(width: 12),
                                     itemBuilder: (context, index) {
-                                      final cat = _categories[index];
+                                      final cat = availableCategories[index];
                                       final isSelected = cat == _selectedCategory;
                                       return GestureDetector(
                                         onTap: () => setState(() => _selectedCategory = cat),
@@ -775,7 +804,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                                 itemId: itemModel.id,
                                                 itemName: product.name,
                                                 pricePerHour: itemModel.pricePerHour,
-                                                sellerLocation: _userProfile?['location'] as String? ?? "Lokasi tidak tersedia",
+                                                sellerLocation: _userProfile?['location'] ?? _userProfile?['address'] ?? "Lokasi tidak diketahui",
                                                 imagePath: product.image,
                                                 isLocalAsset: product.isLocalAsset,
                                               ),
@@ -943,26 +972,6 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  // Helper builder for Strength Chips
-  Widget _buildStrengthChip(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontFamily: 'Poppins',
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-          color: Color(0xFF012D1D),
-        ),
       ),
     );
   }

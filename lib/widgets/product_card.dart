@@ -11,12 +11,14 @@ class ProductCard extends StatelessWidget {
   final ProductData product;
   final bool isHorizontal;
   final VoidCallback? onMorePressed;
+  final String? heroTagPrefix;
 
   const ProductCard({
     super.key,
     required this.product,
     this.isHorizontal = false,
     this.onMorePressed,
+    this.heroTagPrefix,
   });
 
   /// Membangun ImageProvider yang tepat:
@@ -61,7 +63,7 @@ class ProductCard extends StatelessWidget {
         child: Row(
           children: [
             Hero(
-              tag: 'product-image-${product.id ?? product.name}',
+              tag: '${heroTagPrefix ?? ''}product-image-${product.id ?? product.name}',
               child: Container(
                 width: 100,
                 height: 100,
@@ -173,7 +175,7 @@ class ProductCard extends StatelessWidget {
               child: Stack(
                 children: [
                   Hero(
-                    tag: 'product-image-${product.id ?? product.name}',
+                    tag: '${heroTagPrefix ?? ''}product-image-${product.id ?? product.name}',
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(

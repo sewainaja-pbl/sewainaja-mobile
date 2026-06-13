@@ -31,6 +31,7 @@ class ProfileSettingsScreen extends StatefulWidget {
 
 class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
   String _name = '';
+  String _bio = '';
   String _defaultLocation = '';
   String _profilePhotoUrl = '';
   String _userStatus = '';
@@ -121,6 +122,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (!mounted) return;
       setState(() {
         _name = cached.displayName;
+        _bio = cached.displayBio;
         _profilePhotoUrl = cached.profilePhotoUrl;
         _userStatus = cached.status;
         _walletBalance = cached.walletBalance;
@@ -136,6 +138,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
       if (synced == null || !mounted) return;
       setState(() {
         _name = synced.displayName;
+        _bio = synced.displayBio;
         _profilePhotoUrl = synced.profilePhotoUrl;
         _userStatus = synced.status;
         _walletBalance = synced.walletBalance;
@@ -496,6 +499,38 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
               ),
             ),
           ),
+
+          // --- About Me ---
+          if (_bio.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'About Me',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF414844),
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _bio,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF414844),
+                  height: 1.5,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     ),

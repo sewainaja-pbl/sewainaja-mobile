@@ -24,6 +24,7 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   int _selectedIndex = 0;
   bool _isSearchActive = false;
   String? _lastProcessedNotificationId;
@@ -345,7 +346,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     return PressableScale(
       onTap: () {
-        _changeTab(index);
+        if (isActive && index == 0) {
+          _homeKey.currentState?.scrollToTop();
+        } else {
+          _changeTab(index);
+        }
       },
       scaleFactor: 0.90, // Bounces slightly more than card items for satisfying tap feel
       child: AnimatedContainer(
@@ -379,6 +384,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     switch (index) {
       case 0:
         return HomeScreen(
+          key: _homeKey,
           onSearchActiveChanged: (active) {
             setState(() => _isSearchActive = active);
           },
