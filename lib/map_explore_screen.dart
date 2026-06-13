@@ -42,7 +42,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
   String _centerAddressLabel = 'Memuat alamat titik...';
   List<MapItem> _items = const [];
   MapItem? _selected;
-  String _selectedCategoryKey = 'all';
+  Set<String> _selectedCategoryKeys = {'all'};
   int _fetchVersion = 0;
 
   Timer? _moveDebounce;
@@ -148,24 +148,21 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
     }
   }
 
-  _UiCategory get _selectedCategory {
-    for (final category in _categories) {
-      if (category.key == _selectedCategoryKey) {
-        return category;
-      }
-    }
-    return _categories.first;
-  }
+  bool get _isAllSelected => _selectedCategoryKeys.contains('all') || _selectedCategoryKeys.isEmpty;
 
-  int get _activeFilterCount => _selectedCategory.isAll ? 0 : 1;
+  int get _activeFilterCount => _isAllSelected ? 0 : _selectedCategoryKeys.length;
 
   List<MapItem> get _visibleItems {
-    final base = _items;
-    if (_selectedCategory.isAll) return base;
-    final label = _selectedCategory.label.toLowerCase();
-    return base.where((item) {
-      final categoryName = item.categoryName.toLowerCase();
-      return categoryName.contains(label) || item.categoryId == _selectedCategory.apiCategoryId;
+    if (_isAllSelected) return _items;
+    return _items.where((item) {
+      return _selectedCategoryKeys.any((key) {
+        final cat = _categories.firstWhere(
+          (c) => c.key == key,
+          orElse: () => _UiCategory.all(),
+        );
+        return item.categoryId == cat.apiCategoryId ||
+            item.categoryName.toLowerCase().contains(cat.label.toLowerCase());
+      });
     }).toList();
   }
 
@@ -184,12 +181,11 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
     });
 
     try {
-      final selected = _selectedCategory;
       final items = await _itemsService.fetchNearbyItems(
         lat: _center.latitude,
         lng: _center.longitude,
         radiusKm: _radiusKm,
-        categoryId: selected.isAll ? null : selected.apiCategoryId,
+        categoryId: null, // Filter kategori dilakukan client-side (multi-select)
       );
       if (!mounted || requestVersion != _fetchVersion) return;
       setState(() {
@@ -453,7 +449,19 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                         width: compactMarkers ? 62 : 88,
                         height: compactMarkers ? 85 : 105,
                         child: GestureDetector(
-                          onTap: () => setState(() => _selected = item),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ItemDetailScreen(
+                                  itemId: item.id,
+                                  itemName: item.name,
+                                  pricePerHour: item.pricePerHour,
+                                  imagePath: item.photoUrl,
+                                ),
+                              ),
+                            );
+                          },
                           child: _PhotoMarker(
                             item: item,
                             selected: _selected?.id == item.id,
@@ -479,12 +487,14 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.only(top: 12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Row(
-                    children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
                       _ActionBtn(
                         icon: Icons.arrow_back_ios_new_rounded,
                         onTap: () => Navigator.pop(context),
@@ -553,40 +563,72 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                       ),
                     ],
                   ),
+                  ),
                   const SizedBox(height: 10),
-                  SizedBox(
-                    height: 36,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    clipBehavior: Clip.none,
+                    child: Row(
+                      children: List.generate(_categories.length, (index) {
                         final category = _categories[index];
-                        final selected = category.key == _selectedCategoryKey;
-                        return GestureDetector(
-                          onTap: () async {
-                            if (selected) return;
-                            setState(() {
-                              _selectedCategoryKey = category.key;
-                              _selected = null;
-                            });
-                            await _fetchItems();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFF012D1D)
-                                  : const Color(0xFFFDF9F4),
-                              borderRadius: BorderRadius.circular(999),
-                              border: Border.all(
-                                color: selected
-                                    ? const Color(0xFF012D1D)
-                                    : const Color(0xFFD9D9D9),
+                        final isAll = category.isAll;
+                        final selected = isAll
+                            ? _isAllSelected
+                            : _selectedCategoryKeys.contains(category.key);
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: index < _categories.length - 1 ? 8 : 0,
+                          ),
+                          child: GestureDetector(
+                            onTap: () async {
+                              setState(() {
+                                _selected = null;
+                                if (isAll) {
+                                  // Tap All → reset semua
+                                  _selectedCategoryKeys = {'all'};
+                                } else {
+                                  if (selected) {
+                                    // Single tap saat sudah aktif → tetap aktif
+                                    // (double tap untuk batalkan)
+                                    return;
+                                  } else {
+                                    // Tambah filter
+                                    _selectedCategoryKeys.remove('all');
+                                    _selectedCategoryKeys.add(category.key);
+                                  }
+                                }
+                              });
+                              await _fetchItems();
+                            },
+                            onDoubleTap: () async {
+                              if (isAll) return;
+                              setState(() {
+                                _selectedCategoryKeys.remove(category.key);
+                                if (_selectedCategoryKeys.isEmpty) {
+                                  _selectedCategoryKeys = {'all'};
+                                }
+                                _selected = null;
+                              });
+                              await _fetchItems();
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
                               ),
-                            ),
-                            child: Center(
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? (isAll ? const Color(0xFF012D1D) : const Color(0xFF2F6743))
+                                    : const Color(0xFFFDF9F4),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: selected
+                                      ? (isAll ? const Color(0xFF012D1D) : const Color(0xFF2F6743))
+                                      : const Color(0xFFD9D9D9),
+                                ),
+                              ),
                               child: Text(
                                 category.label,
                                 style: TextStyle(
@@ -601,17 +643,17 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                             ),
                           ),
                         );
-                      },
+                      }),
                     ),
                   ),
                   if (_activeFilterCount > 0)
                     Align(
                       alignment: Alignment.centerRight,
                       child: Container(
-                        margin: const EdgeInsets.only(top: 6),
+                        margin: const EdgeInsets.only(top: 6, right: 16),
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF012D1D),
+                          color: const Color(0xFF2F6743),
                           borderRadius: BorderRadius.circular(999),
                         ),
                         child: Text(
@@ -773,19 +815,14 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                           _fetchItems();
                         },
                         onClearFilter: () {
-                          setState(() => _selectedCategoryKey = 'all');
+                          setState(() => _selectedCategoryKeys = {'all'});
                           _fetchItems();
                         },
                       )
                     else
-                      Text(
-                        '${items.length} barang dalam jangkauan.',
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF414844),
-                        ),
+                      _NearbyItemsList(
+                        items: items,
+                        formatPrice: _formatPrice,
                       ),
                   ],
                 ),
@@ -1183,6 +1220,135 @@ class _EmptyResultCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _NearbyItemsList extends StatelessWidget {
+  final List<MapItem> items;
+  final String Function(double) formatPrice;
+
+  const _NearbyItemsList({
+    required this.items,
+    required this.formatPrice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.location_on_rounded, color: Color(0xFF2F6743), size: 14),
+            const SizedBox(width: 4),
+            Text(
+              '${items.length} barang dalam jangkauan terdekat',
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF414844),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 88,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final item = items[index];
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(
+                        itemId: item.id,
+                        itemName: item.name,
+                        pricePerHour: item.pricePerHour,
+                        imagePath: item.photoUrl,
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 160,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFDCE7DF)),
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: item.photoUrl.isNotEmpty
+                              ? Image.network(
+                                  item.photoUrl,
+                                  fit: BoxFit.cover,
+                                  cacheWidth: 100,
+                                  errorBuilder: (_, __, ___) =>
+                                      const _MarkerImageFallback(),
+                                )
+                              : const _MarkerImageFallback(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF012D1D),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              formatPrice(item.pricePerHour),
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2F6743),
+                              ),
+                            ),
+                            Text(
+                              '${item.distanceKm.toStringAsFixed(1)} km',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 9,
+                                color: Color(0xFF717973),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

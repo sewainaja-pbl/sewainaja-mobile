@@ -13,6 +13,7 @@ import 'image_upload_service.dart';
 import 'notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'profile_view_screen.dart';
 
 class RoomChatScreen extends StatefulWidget {
   final String partnerId;
@@ -22,6 +23,7 @@ class RoomChatScreen extends StatefulWidget {
   final String? itemName;
   final String? itemPhotoUrl;
   final String? initialRoomId;
+  final bool autoSendItemCard;
 
   const RoomChatScreen({
     super.key,
@@ -32,6 +34,7 @@ class RoomChatScreen extends StatefulWidget {
     this.itemName,
     this.itemPhotoUrl,
     this.initialRoomId,
+    this.autoSendItemCard = false,
   });
 
   @override
@@ -113,12 +116,44 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
   Future<void> _checkExistingRoomAndInit() async {
     final existingRoomId = await _chatRepository.findRoom(widget.partnerId);
+    String targetRoomId = '';
+    
     if (mounted) {
       if (existingRoomId != null) {
         setState(() {
           _roomId = existingRoomId;
         });
+        targetRoomId = existingRoomId;
         await _chatRepository.markMessagesAsRead(existingRoomId);
+      }
+    }
+    
+    bool hasAlreadySentItem = false;
+    if (targetRoomId.isNotEmpty && widget.itemId != null) {
+      try {
+        final msgs = await FirebaseFirestore.instance
+            .collection('chat_rooms')
+            .doc(targetRoomId)
+            .collection('messages')
+            .where('messageType', isEqualTo: 'item_card')
+            .get();
+        
+        for (var doc in msgs.docs) {
+          final data = doc.data();
+          final text = data['message'] as String? ?? '';
+          if (text.contains('"id":"${widget.itemId}"') || text.contains('"id": "${widget.itemId}"')) {
+            hasAlreadySentItem = true;
+            break;
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (hasAlreadySentItem) {
+      if (mounted) {
+        setState(() {
+          _showItemContextPreview = false;
+        });
       }
     }
   }
@@ -130,6 +165,16 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         _messageController.clear();
       }
       
+      // Kirim item card lebih dulu jika belum pernah dikirim dalam konteks ini
+      if (_showItemContextPreview && widget.itemId != null && messageType == 'text') {
+        if (mounted) {
+          setState(() {
+            _showItemContextPreview = false;
+          });
+        }
+        await _sendItemCard();
+      }
+
       final roomId = await _chatRepository.sendMessage(
         existingRoomId: _roomId,
         partnerId: widget.partnerId,
@@ -142,9 +187,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         messageType: messageType,
       );
 
-      if (roomId != null && _roomId == null && mounted) {
+      if (mounted) {
         setState(() {
-          _roomId = roomId;
+          if (roomId != null && _roomId == null) {
+            _roomId = roomId;
+          }
+          _showItemContextPreview = false;
         });
       }
 
@@ -202,9 +250,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           messageType: 'image',
         );
 
-        if (newRoomId != null && _roomId == null && mounted) {
+        if (mounted) {
           setState(() {
-            _roomId = newRoomId;
+            if (newRoomId != null && _roomId == null) {
+              _roomId = newRoomId;
+            }
+            _showItemContextPreview = false;
           });
         }
       }
@@ -479,9 +530,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF8EF), // Cream Background
+      backgroundColor: const Color(0xFFF4F4F0),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF8EF),
+        backgroundColor: const Color(0xFFF4F4F0),
         elevation: 0,
         automaticallyImplyLeading: false,
         toolbarHeight: 70,
@@ -490,57 +541,73 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileViewScreen(
+                  ownerId: widget.partnerId,
+                  ownerName: _actualPartnerName ?? widget.partnerName,
+                  avatarImage: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
+                      ? _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!)
+                      : const AssetImage('assets/images/profile_user.png'),
+                ),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
-                    ? Image(
-                        image: _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : Image.asset(
-                        'assets/images/profile_user.png',
-                        fit: BoxFit.cover,
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
+                      ? Image(
+                          image: _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : Image.asset(
+                          'assets/images/profile_user.png',
+                          fit: BoxFit.cover,
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _actualPartnerName ?? widget.partnerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Color(0xFF012D1D),
                       ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    _actualPartnerName ?? widget.partnerName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF012D1D),
                     ),
-                  ),
-                  const Text(
-                    "Online",
-                    style: TextStyle(
-                      fontFamily: 'Plus Jakarta Sans',
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                      color: Color(0xFF10B981),
+                    const Text(
+                      "Online",
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                        color: Color(0xFF10B981),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -588,7 +655,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
                       return ListView.builder(
                         controller: _scrollController,
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: listItems.length + 2, // Warning banner + Promo + items
                         itemBuilder: (context, index) {
@@ -736,7 +803,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFF3F4F6),
+            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFD1D5DB),
             borderRadius: isMe
                 ? const BorderRadius.only(
                     topLeft: Radius.circular(16),
@@ -804,7 +871,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           ),
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFF3F4F6),
+            color: isMe ? const Color(0xFFC1ECD4) : const Color(0xFFD1D5DB),
             borderRadius: isMe
                 ? const BorderRadius.only(
                     topLeft: Radius.circular(16),
@@ -1047,24 +1114,23 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
 
   Widget _buildBottomInputArea() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0x1A012D1D), width: 1),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildItemContextPreview(),
+        _buildQuickReplies(),
+        Container(
+          decoration: const BoxDecoration(
+            color: Color(0xFF012D1D),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: _buildMainInputRow(),
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildItemContextPreview(),
-            _buildQuickReplies(),
-            _buildMainInputRow(),
-          ],
-        ),
-      ),
+      ],
     );
   }
 
@@ -1076,10 +1142,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0x1A012D1D), width: 1),
-        ),
+        color: Colors.transparent,
       ),
       child: Row(
         children: [
@@ -1174,6 +1237,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   }
 
   Widget _buildQuickReplies() {
+    if (!_showItemContextPreview) {
+      return const SizedBox.shrink();
+    }
     final replies = [
       "Hai, barang ini ready?",
       "Bisa dikirim hari ini?",
@@ -1185,12 +1251,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: widget.itemId != null ? replies.length + 1 : replies.length,
+        itemCount: replies.length,
         itemBuilder: (context, index) {
-          if (widget.itemId != null && index == 0) {
-            return _buildActionChip("📷 Kirim Produk", _sendItemCard);
-          }
-          final reply = widget.itemId != null ? replies[index - 1] : replies[index];
+          final reply = replies[index];
           return Container(
             margin: const EdgeInsets.only(right: 8),
             child: ActionChip(
@@ -1202,7 +1265,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                   color: Color(0xFF414844),
                 ),
               ),
-              backgroundColor: const Color(0xFFF3F4F6),
+              backgroundColor: const Color(0xFFD1D5DB),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide.none,
@@ -1215,44 +1278,28 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     );
   }
 
-  Widget _buildActionChip(String label, VoidCallback onPressed) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        label: Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        backgroundColor: const Color(0xFFC1ECD4),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFF012D1D), width: 0.5),
-        ),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
   Widget _buildMainInputRow() {
     return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, top: 4, bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       child: Row(
         children: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Color(0xFF414844)),
-            onPressed: _pickAndSendImage,
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.add, color: Color(0xFF012D1D)),
+              onPressed: _pickAndSendImage,
+            ),
           ),
+          const SizedBox(width: 12),
           Expanded(
             child: Container(
-              height: 44,
+              height: 48,
               decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(22),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -1266,7 +1313,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         color: Color(0xFF012D1D),
                       ),
                       decoration: const InputDecoration(
-                        hintText: "Tulis pesan...",
+                        hintText: "Message....",
                         hintStyle: TextStyle(
                           fontFamily: 'Plus Jakarta Sans',
                           fontSize: 14,
@@ -1287,18 +1334,18 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         color: Color(0xFF012D1D),
                       ),
                     )
-                  else
-                    const Icon(Icons.sentiment_satisfied, color: Color(0xFF414844)),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            backgroundColor: const Color(0xFF012D1D),
-            radius: 22,
+          const SizedBox(width: 12),
+          Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
             child: IconButton(
-              icon: const Icon(Icons.send, color: Colors.white, size: 18),
+              icon: const Icon(Icons.send, color: Color(0xFF012D1D), size: 20),
               onPressed: () => _sendMessage(),
             ),
           ),

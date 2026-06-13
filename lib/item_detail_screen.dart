@@ -23,8 +23,9 @@ import 'favorite_service.dart';
 import 'help_center_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/report_dialog.dart';
+import 'widgets/product_card.dart';
+import 'models/product.dart';
 import 'room_chat_screen.dart';
-import 'widgets/skeleton_loader.dart';
 
 class ItemDetailScreen extends StatefulWidget {
   final ItemModel? item;
@@ -58,6 +59,10 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   LatLng _itemCenter = const LatLng(-6.9791, 110.4208);
   bool _isFavorite = false;
   int _currentImageIndex = 0;
+  String? _ownerAvatarUrl;
+  bool _isLoadingOwnerAvatar = false;
+  Stream<List<ItemModel>>? _ownerItemsStream;
+  Stream<List<ItemModel>>? _recommendationStream;
 
   @override
   void initState() {
@@ -65,9 +70,46 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     if (widget.item != null) {
       _itemData = widget.item!.toJson();
       _updateCenterFromData();
+      final oId = widget.item!.ownerId;
+      if (oId.isNotEmpty) {
+        _fetchOwnerAvatar(oId);
+        _ownerItemsStream = _itemRepository.watchItemsByOwner(oId);
+      }
     }
+    _recommendationStream = _itemRepository.watchAvailableItems(
+      categoryName: widget.item?.categoryName ?? 'All'
+    );
     _fetchItemDetails();
     _initFavoriteState();
+  }
+
+  Future<void> _fetchOwnerAvatar(String ownerId) async {
+    if (ownerId.isEmpty || _ownerAvatarUrl != null || _isLoadingOwnerAvatar) return;
+    setState(() {
+      _isLoadingOwnerAvatar = true;
+    });
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(ownerId).get();
+      if (doc.exists && mounted) {
+        final data = doc.data();
+        if (data != null) {
+          final profileUrl = data['profilePhotoUrl'] as String?;
+          final selfieUrl = data['selfiePhotoUrl'] as String?;
+          setState(() {
+            _ownerAvatarUrl = (profileUrl != null && profileUrl.trim().isNotEmpty)
+                ? profileUrl
+                : (selfieUrl != null && selfieUrl.trim().isNotEmpty ? selfieUrl : null);
+          });
+        }
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingOwnerAvatar = false;
+        });
+      }
+    }
   }
 
   void _initFavoriteState() async {
@@ -111,7 +153,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             setState(() {
               _itemData = body['data'] as Map<String, dynamic>;
               _updateCenterFromData();
+              final oId = _itemData?['ownerId'] as String? ?? widget.item?.ownerId;
+              if (oId != null && oId.isNotEmpty) {
+                _ownerItemsStream ??= _itemRepository.watchItemsByOwner(oId);
+              }
+              final categoryName = _itemData?['categoryName'] as String? ?? widget.item?.categoryName ?? 'All';
+              _recommendationStream = _itemRepository.watchAvailableItems(categoryName: categoryName);
             });
+            final oId2 = _itemData?['ownerId'] as String? ?? widget.item?.ownerId;
+            if (oId2 != null && oId2.isNotEmpty) {
+              _fetchOwnerAvatar(oId2);
+            }
           }
         }
       }
@@ -197,10 +249,12 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           // Layer 1 (Dasar): SCROLLABLE CONTENT (IMAGE SLIDER & PRODUCT INFO)
           // -------------------------------------------------------------------
           Positioned.fill(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Stack(
-                children: [
+            child: CustomScrollView(
+              physics: const ClampingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Stack(
+                    children: [
                   // Image Slider (PageView)
                   SizedBox(
                     height: screenHeight * heroImageHeightFactor,
@@ -344,11 +398,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                               _buildLocationRadiusMap(),
                               const SizedBox(height: 32),
 
-                              // --- 2E. RECOMMENDATION SLIDER ---
-                              _buildRecommendationSlider(),
-
-                              // Padding bottom sangat penting agar konten tidak tertutup Bottom Action Bar (Layer 3)
-                              const SizedBox(height: 130),
+                              // --- 2E. OWNER CATALOG ---
+                              _buildOwnerCatalog(),
                             ],
                           ),
                         ),
@@ -357,6 +408,26 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   ),
                 ],
               ),
+            ),
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  sliver: SliverToBoxAdapter(
+                    child: Text(
+                      "Rekomendasi",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 20,
+                        color: Color(0xFF012D1D),
+                      ),
+                    ),
+                  ),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 130),
+                  sliver: _buildRecommendationSliverGrid(),
+                ),
+              ],
             ),
           ),
 
@@ -994,117 +1065,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  // 2E. RECOMMENDATION SLIDER (Horizontal Scroll)
-  Widget _buildRecommendationSlider() {
-    final String? activeCategory =
-        _itemData?['categoryName']?.toString() ?? widget.item?.categoryName;
-    final String? currentItemId = widget.itemId ?? widget.item?.id;
-
-    final Stream<List<ItemModel>> primaryStream =
-        (activeCategory != null && activeCategory.isNotEmpty)
-        ? _itemRepository.watchAvailableItems(categoryName: activeCategory)
-        : _itemRepository.watchAvailableItems(categoryName: 'All');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Recommendation", // ID: '277:2085'
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600, // SemiBold
-            fontSize: 20,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 190, // Tinggi list slider
-          child: StreamBuilder<List<ItemModel>>(
-            stream: primaryStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Color(0xFF012D1D),
-                    ),
-                  ),
-                );
-              }
-
-              List<ItemModel> recommended = [];
-              if (snapshot.hasData) {
-                recommended = snapshot.data!
-                    .where((item) => item.id != currentItemId)
-                    .toList();
-              }
-
-              if (recommended.isEmpty) {
-                // Fallback to all available items
-                return StreamBuilder<List<ItemModel>>(
-                  stream: _itemRepository.watchAvailableItems(
-                    categoryName: 'All',
-                  ),
-                  builder: (context, fallbackSnapshot) {
-                    if (fallbackSnapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF012D1D),
-                          ),
-                        ),
-                      );
-                    }
-
-                    List<ItemModel> fallbackRecommended = [];
-                    if (fallbackSnapshot.hasData) {
-                      fallbackRecommended = fallbackSnapshot.data!
-                          .where((item) => item.id != currentItemId)
-                          .toList();
-                    }
-
-                    if (fallbackRecommended.isEmpty) {
-                      return const Center(
-                        child: Text(
-                          "Tidak ada rekomendasi lainnya",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return _buildRecommendationList(
-                      fallbackRecommended.take(10).toList(),
-                    );
-                  },
-                );
-              }
-
-              return _buildRecommendationList(recommended.take(10).toList());
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildRecommendationList(List<ItemModel> items) {
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.zero,
-      itemCount: items.length,
-      separatorBuilder: (_, _) => const SizedBox(width: 16),
-      itemBuilder: (context, index) {
-        return _RecommendationCardItem(item: items[index]);
-      },
-    );
-  }
 
   Map<String, dynamic> _buildFallbackItemData() {
     return {
@@ -1627,106 +1587,201 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
       itemName: itemName,
     );
   }
-}
 
-// ITEM COMPONENT UNTUK RECOMMENDATION SLIDER
-class _RecommendationCardItem extends StatelessWidget {
-  final ItemModel item;
+  // 2E. OWNER CATALOG (Horizontal Scroll)
+  Widget _buildOwnerCatalog() {
+    final String? currentItemId = widget.itemId ?? widget.item?.id;
 
-  const _RecommendationCardItem({required this.item});
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              "Lainnya di toko ini",
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: Color(0xFF012D1D),
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                final sellerName = _itemData?['ownerName'] as String? ?? widget.item?.ownerName ?? 'Owner';
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProfileViewScreen(
+                      ownerId: _itemData?['ownerId'] as String? ?? widget.item?.ownerId,
+                      ownerName: sellerName,
+                      avatarImage: _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
+                          ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
+                          : const AssetImage('assets/images/profile_user.png'),
+                    ),
+                  ),
+                );
+              },
+              child: const Text(
+                "Lihat Semua",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                  color: Color(0xFF7B5804),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 220,
+          child: StreamBuilder<List<ItemModel>>(
+            stream: _ownerItemsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+                  ),
+                );
+              }
+              List<ItemModel> ownerItems = [];
+              if (snapshot.hasData) {
+                ownerItems = snapshot.data!
+                    .where((item) => item.id != currentItemId)
+                    .toList();
+              }
+              if (ownerItems.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "Tidak ada barang lain",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                );
+              }
+              return ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: ownerItems.length > 5 ? 5 : ownerItems.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 16),
+                itemBuilder: (context, index) {
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ItemDetailScreen(item: ownerItems[index]),
+                        ),
+                      );
+                    },
+                    child: ProductCard(
+                      product: ProductData(
+                        id: ownerItems[index].id,
+                        name: ownerItems[index].name,
+                        price: "Rp. ${ownerItems[index].pricePerHour.toStringAsFixed(0)}",
+                        rating: ownerItems[index].ownerRating,
+                        image: ownerItems[index].photos.isNotEmpty ? ownerItems[index].photos[0] : "",
+                        originalItem: ownerItems[index],
+                      ),
+                      isHorizontal: false,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final ImageUploadService imageUploadService = ImageUploadService();
+  // 2F. RECOMMENDATION GRID (SliverGrid)
+  Widget _buildRecommendationSliverGrid() {
+    final String? currentItemId = widget.itemId ?? widget.item?.id;
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ItemDetailScreen(item: item)),
+    return StreamBuilder<List<ItemModel>>(
+      stream: _recommendationStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+                ),
+              ),
+            ),
+          );
+        }
+        List<ItemModel> recommended = [];
+        if (snapshot.hasData) {
+          recommended = snapshot.data!
+              .where((item) => item.id != currentItemId)
+              .toList();
+        }
+        if (recommended.isEmpty) {
+          return const SliverToBoxAdapter(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.0),
+                child: Text(
+                  "Tidak ada rekomendasi lainnya",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        final itemsToDisplay = recommended.take(10).toList();
+        return SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.7,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ItemDetailScreen(item: itemsToDisplay[index]),
+                    ),
+                  );
+                },
+                child: ProductCard(
+                  product: ProductData(
+                    id: itemsToDisplay[index].id,
+                    name: itemsToDisplay[index].name,
+                    price: "Rp. ${itemsToDisplay[index].pricePerHour.toStringAsFixed(0)}",
+                    rating: itemsToDisplay[index].ownerRating,
+                    image: itemsToDisplay[index].photos.isNotEmpty ? itemsToDisplay[index].photos[0] : "",
+                    originalItem: itemsToDisplay[index],
+                  ),
+                  isHorizontal: false,
+                ),
+              );
+            },
+            childCount: itemsToDisplay.length,
+          ),
         );
       },
-      child: Container(
-        width: 145,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-            width: 0.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Gambar produk rekomen
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(10),
-                  image: item.primaryPhoto.isNotEmpty
-                      ? DecorationImage(
-                          image: imageUploadService.buildImageProvider(
-                            item.primaryPhoto,
-                            targetWidth: 290,
-                          ),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: item.primaryPhoto.isEmpty
-                    ? const Center(
-                        child: Icon(
-                          Icons.image_outlined,
-                          color: Color(0xFF828282),
-                          size: 32,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-            // Text Detail
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
-                      color: Color(0xFF414844),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.formattedPrice,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                      color: Color(0xFF012D1D),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
+

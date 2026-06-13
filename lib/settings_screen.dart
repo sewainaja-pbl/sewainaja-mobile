@@ -201,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

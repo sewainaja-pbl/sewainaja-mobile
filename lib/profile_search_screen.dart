@@ -206,7 +206,7 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
                   )
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     itemCount: _filteredProducts.length,
                     separatorBuilder: (context, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {

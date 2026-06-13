@@ -304,7 +304,7 @@ class _NotificationList extends StatelessWidget {
       onRefresh: onRefresh,
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(
-          parent: BouncingScrollPhysics(),
+          parent: ClampingScrollPhysics(),
         ),
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         itemCount: items.isEmpty ? 4 : items.length + 3,

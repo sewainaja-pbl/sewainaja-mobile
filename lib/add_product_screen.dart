@@ -354,7 +354,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
         body: Center(
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -654,7 +654,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
             )
           : SingleChildScrollView(
-              physics: _isScrollEnabled ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+              physics: _isScrollEnabled ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1328,39 +1328,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ),
         if (_useSavedAddress) ...[
           const SizedBox(height: 12),
-          _buildDropdown(
-            value: _selectedAddressId,
-            items: _addresses
-                .map(
-                  (addr) => DropdownMenuItem<String>(
-                    value: (addr['id'] ?? '').toString(),
-                    child: Text(
-                      _addressLabel(addr),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            hint: _addresses.isEmpty
-                ? 'Belum ada alamat, pilih Titik Baru'
-                : 'Pilih alamat',
-            onChanged: _addresses.isEmpty
-                ? (_) {}
-                : (val) {
-                    setState(() {
-                      _selectedAddressId = val;
-                      final found = _addresses.firstWhere(
-                        (a) => (a['id'] ?? '').toString() == val,
-                        orElse: () => <String, dynamic>{},
-                      );
-                      final coords = _extractLatLng(found['coordinat']);
-                      if (coords != null) {
-                        _itemLocation = coords;
-                      }
-                    });
-                  },
-          ),
+          _buildAddressDropdown(),
           if (selectedAddress.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
@@ -1420,6 +1388,139 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAddressDropdown() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: _fieldFillColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _fieldBorderColor),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _selectedAddressId,
+          isExpanded: true,
+          itemHeight: 76.0,
+          dropdownColor: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          icon: const Icon(
+            Icons.arrow_drop_down_rounded,
+            color: Color(0xFF012D1D),
+            size: 24,
+          ),
+          hint: Text(
+            _addresses.isEmpty
+                ? 'Belum ada alamat, pilih Titik Baru'
+                : 'Pilih alamat',
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: _fieldHintColor,
+            ),
+          ),
+          selectedItemBuilder: (BuildContext context) {
+            return _addresses.map<Widget>((addr) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _addressLabel(addr),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+              );
+            }).toList();
+          },
+          onChanged: _addresses.isEmpty
+              ? null
+              : (val) {
+                  setState(() {
+                    _selectedAddressId = val;
+                    final found = _addresses.firstWhere(
+                      (a) => (a['id'] ?? '').toString() == val,
+                      orElse: () => <String, dynamic>{},
+                    );
+                    final coords = _extractLatLng(found['coordinat']);
+                    if (coords != null) {
+                      _itemLocation = coords;
+                    }
+                  });
+                },
+          items: _addresses.asMap().entries.map<DropdownMenuItem<String>>((entry) {
+            final index = entry.key;
+            final addr = entry.value;
+            final label = (addr['label'] ?? 'Alamat').toString();
+            final fullAddr = (addr['fullAddress'] ?? '').toString();
+            final isHome = label.toLowerCase().contains('rumah');
+            final isLast = index == _addresses.length - 1;
+
+            return DropdownMenuItem<String>(
+              value: (addr['id'] ?? '').toString(),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                decoration: BoxDecoration(
+                  border: isLast
+                      ? null
+                      : const Border(
+                          bottom: BorderSide(
+                            color: Color(0xFFE6ECE8),
+                            width: 1.0,
+                          ),
+                        ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          isHome ? Icons.home_rounded : Icons.location_on_rounded,
+                          size: 14,
+                          color: const Color(0xFF012D1D),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      fullAddr,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF5C635E),
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 

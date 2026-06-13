@@ -151,7 +151,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
             )
           : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

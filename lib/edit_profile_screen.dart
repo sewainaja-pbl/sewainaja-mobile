@@ -422,7 +422,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       // --- MAIN BODY ---
       body: SingleChildScrollView(
-        physics: _isScrollEnabled ? const BouncingScrollPhysics() : const NeverScrollableScrollPhysics(),
+        physics: _isScrollEnabled ? const ClampingScrollPhysics() : const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 40), // Spacing for scroll
         child: Column(
           children: [

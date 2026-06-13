@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Widget pembungkus yang memberikan efek "bounce" / penyusutan skala (scale transition)
+/// Widget pembungkus yang memberikan efek gentle / penyusutan skala (scale transition)
 /// ketika ditekan/di-tap. Berguna untuk membuat kartu atau tombol terasa tactile dan premium.
 class PressableScale extends StatefulWidget {
   final Widget child;
@@ -12,8 +12,8 @@ class PressableScale extends StatefulWidget {
     super.key,
     required this.child,
     this.onTap,
-    this.scaleFactor = 0.96, // Skala penyusutan (default 96%)
-    this.duration = const Duration(milliseconds: 90),
+    this.scaleFactor = 0.98, // Skala penyusutan (default 98% for gentle effect)
+    this.duration = const Duration(milliseconds: 250),
   });
 
   @override
@@ -46,19 +46,19 @@ class _PressableScaleState extends State<PressableScale>
 
   void _onTapDown(TapDownDetails details) {
     if (widget.onTap != null) {
-      _controller.animateTo(widget.scaleFactor, curve: Curves.easeOut);
+      _controller.animateTo(widget.scaleFactor, curve: Curves.easeInOut);
     }
   }
 
   void _onTapUp(TapUpDetails details) {
     if (widget.onTap != null) {
-      _controller.animateTo(1.0, curve: Curves.easeIn);
+      _controller.animateTo(1.0, curve: Curves.easeInOut);
     }
   }
 
   void _onTapCancel() {
     if (widget.onTap != null) {
-      _controller.animateTo(1.0, curve: Curves.easeIn);
+      _controller.animateTo(1.0, curve: Curves.easeInOut);
     }
   }
 

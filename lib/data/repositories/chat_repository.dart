@@ -114,6 +114,16 @@ class ChatRepository {
       final batch = _db.batch();
       final now = FieldValue.serverTimestamp();
 
+      String displayLastMessage = messageText;
+      if (messageType == 'item_card') {
+        displayLastMessage = '📦 ${itemName ?? "Barang"}';
+      } else if (messageType == 'image') {
+        displayLastMessage = '📷 Foto';
+      } else if (itemName != null && messageText.isNotEmpty) {
+        // Menambahkan nama produk di depan teks agar sesuai dengan permintaan user
+        displayLastMessage = '$itemName : $messageText';
+      }
+
       if (roomId.isEmpty) {
         // Create new room
         final newRoomRef = _chatRoomsRef.doc();
@@ -134,7 +144,7 @@ class ChatRepository {
           'participantIds': [currentUserId, partnerId],
           if (itemId != null) 'itemId': itemId,
           'transactionId': null,
-          'lastMessage': messageText,
+          'lastMessage': displayLastMessage,
           'lastMessageAt': now,
           'lastMessageSender': currentUserId,
           'createdBy': currentUserId,
@@ -147,7 +157,7 @@ class ChatRepository {
         // Update existing room
         final roomRef = _chatRoomsRef.doc(roomId);
         batch.update(roomRef, {
-          'lastMessage': messageText,
+          'lastMessage': displayLastMessage,
           'lastMessageAt': now,
           'lastMessageSender': currentUserId,
         });

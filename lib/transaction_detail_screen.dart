@@ -1417,6 +1417,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
             style: OutlinedButton.styleFrom(
@@ -1446,6 +1447,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.bold,
+                fontSize: 12,
               ),
             ),
             style: OutlinedButton.styleFrom(
