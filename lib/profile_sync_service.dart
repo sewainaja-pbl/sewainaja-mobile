@@ -14,6 +14,7 @@ class CachedUserProfile {
   final String profilePhotoUrl;
   final String status;
   final double walletBalance;
+  final String bio;
 
   const CachedUserProfile({
     required this.name,
@@ -22,6 +23,7 @@ class CachedUserProfile {
     required this.profilePhotoUrl,
     required this.status,
     this.walletBalance = 0.0,
+    this.bio = '',
   });
 
   factory CachedUserProfile.fromPrefs(SharedPreferences prefs) {
@@ -32,6 +34,7 @@ class CachedUserProfile {
       profilePhotoUrl: prefs.getString('user_profile_photo_url')?.trim() ?? '',
       status: prefs.getString('user_status')?.trim() ?? '',
       walletBalance: prefs.getDouble('user_wallet_balance') ?? 0.0,
+      bio: prefs.getString('user_bio')?.trim() ?? '',
     );
   }
 
@@ -43,12 +46,14 @@ class CachedUserProfile {
       profilePhotoUrl: (json['profilePhotoUrl'] ?? json['selfiePhotoUrl'] ?? '').toString().trim(),
       status: (json['status'] ?? '').toString().trim(),
       walletBalance: (json['walletBalance'] as num?)?.toDouble() ?? 0.0,
+      bio: (json['bio'] ?? '').toString().trim(),
     );
   }
 
   String get displayName => name;
   String get displayEmail => email;
   String get displayPhone => phone;
+  String get displayBio => bio;
   bool get isVerified => status.toLowerCase() == 'verified';
   bool get isPendingVerification => status.toLowerCase() == 'pending';
 }
@@ -112,6 +117,7 @@ class ProfileSyncService {
     await prefs.setString('user_profile_photo_url', profile.profilePhotoUrl);
     await prefs.setString('user_status', profile.status);
     await prefs.setDouble('user_wallet_balance', profile.walletBalance);
+    await prefs.setString('user_bio', profile.bio);
     if (notify) {
       profileRevision.value++;
     }

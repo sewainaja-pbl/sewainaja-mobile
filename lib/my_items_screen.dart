@@ -24,6 +24,7 @@ class MyItemsScreen extends StatefulWidget {
 
 class _MyItemsScreenState extends State<MyItemsScreen> {
   List<Map<String, dynamic>> _displayItems = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -32,21 +33,64 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   }
 
   Future<void> _loadItems() async {
-
-
+    setState(() {
+      _isLoading = true;
+    });
     try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/items/mine'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> data = responseData['data'] ?? [];
+        
+        final List<Map<String, dynamic>> fetchedItems = data.map((item) {
+          final photos = item['photos'] as List<dynamic>? ?? [];
+          final String imageUrl = photos.isNotEmpty ? photos[0].toString() : '';
+          
+          return {
+            'id': item['id'],
+            'name': item['name'] ?? 'Tanpa Nama',
+            'price': 'Rp ${item['price'] ?? 0}/${item['priceUnit'] ?? 'Hari'}',
+            'image': imageUrl,
+            'isLocalAsset': false,
+            'rating': (item['ownerRating'] ?? 0).toString(),
+            'owner': item['ownerName'] ?? 'Owner',
+            'status': item['status'] ?? 'available',
+            'rawPrice': item['price'],
+            'rawPriceUnit': item['priceUnit'],
+          };
+        }).toList();
+
+        setState(() {
+          _displayItems = fetchedItems;
+          _isLoading = false;
+        });
+
+        // Simpan cache ke lokal
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('local_user_items', jsonEncode(fetchedItems));
+      } else {
+        // Fallback to local
+        final prefs = await SharedPreferences.getInstance();
+        final localItemsStr = prefs.getString('local_user_items') ?? '[]';
+        setState(() {
+          _displayItems = List<Map<String, dynamic>>.from(jsonDecode(localItemsStr));
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to load items from API: $e');
       final prefs = await SharedPreferences.getInstance();
       final localItemsStr = prefs.getString('local_user_items') ?? '[]';
-      final List<dynamic> localItemsDynamic = jsonDecode(localItemsStr);
-      final List<Map<String, dynamic>> localItems = List<Map<String, dynamic>>.from(localItemsDynamic);
-      
       setState(() {
-        _displayItems = localItems;
-      });
-    } catch (e) {
-      debugPrint('Failed to load local items: $e');
-      setState(() {
-        _displayItems = [];
+        _displayItems = List<Map<String, dynamic>>.from(jsonDecode(localItemsStr));
+        _isLoading = false;
       });
     }
   }
@@ -87,20 +131,33 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
       extendBody: true,
       body: Stack(
         children: [
-          GridView.builder(
-            padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0), // Added bottom padding for navbar
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 0.70, // Menyesuaikan agar text dan gambar proporsional
-            ),
-            itemCount: _displayItems.length,
-            itemBuilder: (context, index) {
-              final item = _displayItems[index];
-              return _buildItemCard(item);
-            },
-          ),
+          _isLoading 
+            ? const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)))
+            : _displayItems.isEmpty 
+              ? const Center(
+                  child: Text(
+                    "Belum ada barang yang didaftarkan",
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 16,
+                      color: Color(0xFF828282),
+                    ),
+                  ),
+                )
+              : GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0), // Added bottom padding for navbar
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 16,
+                    crossAxisSpacing: 16,
+                    childAspectRatio: 0.70, // Menyesuaikan agar text dan gambar proporsional
+                  ),
+                  itemCount: _displayItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _displayItems[index];
+                    return _buildItemCard(item);
+                  },
+                ),
           _buildBottomNavigationBar(),
         ],
       ),
@@ -188,11 +245,15 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   Widget _buildItemCard(Map<String, dynamic> item) {
     final isLocalAsset = item['isLocalAsset'] == true;
     final hasImage = item["image"] != null && item["image"].toString().isNotEmpty;
+    final status = item['status']?.toString() ?? 'available';
+    final isArchived = status == 'archived';
+    final isInactive = status == 'inactive';
+    final isDisabled = isArchived || isInactive;
 
     final imageProvider = hasImage
         ? (isLocalAsset 
             ? FileImage(File(item["image"])) as ImageProvider
-            : AssetImage(item["image"]))
+            : NetworkImage(item["image"])) // Use NetworkImage if not local asset
         : null;
 
     return GestureDetector(
@@ -241,11 +302,17 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
         );
       },
       child: Container(
+        foregroundDecoration: isDisabled
+            ? BoxDecoration(
+                color: Colors.white.withOpacity(0.5), // Efek abu-abu
+                borderRadius: BorderRadius.circular(15),
+              )
+            : null,
         decoration: BoxDecoration(
           color: const Color(0xFFFFFFFF),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: const Color(0xFF2F6743), // Outline Hijau SewaInAja
+            color: isDisabled ? const Color(0xFFBDBDBD) : const Color(0xFF2F6743), // Outline abu-abu jika disabled
             width: 0.5,
           ),
         ),
@@ -281,38 +348,68 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                         : null,
                   ),
 
-                  // Rating Badge
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF000000).withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFF8BD00),
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            item["rating"],
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFFFF8EF),
+                  // Badge for status (Archived / Blocked)
+                  if (isDisabled)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.4),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isArchived ? const Color(0xFFE33629) : const Color(0xFF828282),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isArchived ? "DIARSIPKAN" : "DIBLOKIR",
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
+
+                  // Rating Badge (hidden if disabled for cleaner look, or just keep it under the overlay)
+                  if (!isDisabled)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF000000).withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.star_rounded,
+                              color: Color(0xFFF8BD00),
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              item["rating"],
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFFFFF8EF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -354,6 +451,9 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                     ),
                       GestureDetector(
                         onTap: () {
+                          // Prevent interactions if archived/blocked
+                          // Or we can still allow viewing/editing but maybe restrict deletion
+                          // Actually, user should still be able to open the menu to edit/restore if we had such feature.
                           final productData = ProductData(
                             id: item['id']?.toString() ?? '',
                             name: item['name']?.toString() ?? '',
@@ -370,6 +470,10 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                             onNotInterestedPressed: () {},
                             onReportPressed: () {},
                             onEditPressed: () {
+                              if (isArchived) {
+                                showAppErrorSnack(context, 'Barang yang diarsipkan tidak dapat diedit.');
+                                return;
+                              }
                               final itemId = item['id']?.toString() ?? '';
                               if (itemId.isEmpty) {
                                 showAppErrorSnack(context, 'Barang simulasi tidak dapat diedit.');
@@ -377,15 +481,9 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                               }
                               ItemModel? itemModel;
                               try {
-                                String priceStr = item["price"].toString();
-                                String unit = "Hari";
-                                if (priceStr.toLowerCase().contains("hour") || priceStr.toLowerCase().contains("jam")) {
-                                  unit = "Jam";
-                                } else if (priceStr.toLowerCase().contains("week") || priceStr.toLowerCase().contains("minggu")) {
-                                  unit = "Minggu";
-                                }
-                                double parsedPrice = double.parse(priceStr.replaceAll(RegExp(r'[^0-9]'), ''));
-                                double computedPricePerHour = unit == "Jam" ? parsedPrice : (unit == "Minggu" ? parsedPrice / 168 : parsedPrice / 24);
+                                double parsedPrice = double.tryParse(item['rawPrice']?.toString() ?? '0') ?? 0;
+                                String unit = item['rawPriceUnit']?.toString() ?? "Hari";
+                                double computedPricePerHour = unit.toLowerCase() == "jam" ? parsedPrice : (unit.toLowerCase() == "minggu" ? parsedPrice / 168 : parsedPrice / 24);
                                 
                                 itemModel = ItemModel(
                                   id: itemId,
@@ -399,7 +497,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                                   pricePerHour: computedPricePerHour,
                                   price: parsedPrice,
                                   priceUnit: unit,
-                                  status: 'available',
+                                  status: status,
                                   condition: 'fair',
                                   photos: [item['image']],
                                 );
@@ -426,8 +524,8 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                                 builder: (context) => AlertDialog(
                                   backgroundColor: const Color(0xFFFFF8EF),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  title: const Text('Hapus Barang?', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
-                                  content: const Text('Apakah Anda yakin ingin menghapus barang ini? Status barang akan diarsipkan.', style: TextStyle(fontFamily: 'Poppins')),
+                                  title: Text(isArchived ? 'Hapus Permanen?' : 'Arsipkan Barang?', style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+                                  content: Text(isArchived ? 'Apakah Anda yakin ingin menghapus barang ini secara permanen dari riwayat Anda?' : 'Apakah Anda yakin ingin mengarsipkan barang ini?', style: const TextStyle(fontFamily: 'Poppins')),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context, false),
@@ -439,7 +537,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                       ),
                                       onPressed: () => Navigator.pop(context, true),
-                                      child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+                                      child: Text(isArchived ? 'Hapus' : 'Arsipkan', style: const TextStyle(color: Colors.white)),
                                     ),
                                   ],
                                 ),
@@ -457,11 +555,11 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
                                 );
                                 if (response.statusCode == 200) {
                                   if (!mounted) return;
-                                  showAppSuccessSnack(context, 'Barang berhasil dihapus!');
+                                  showAppSuccessSnack(context, isArchived ? 'Barang berhasil dihapus!' : 'Barang berhasil diarsipkan!');
                                   _loadItems();
                                 } else {
                                   if (!mounted) return;
-                                  showAppErrorSnack(context, 'Gagal menghapus barang.');
+                                  showAppErrorSnack(context, 'Gagal memproses barang.');
                                 }
                               } catch (e) {
                                 if (!mounted) return;
