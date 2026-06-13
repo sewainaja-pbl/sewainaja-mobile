@@ -161,7 +161,7 @@ class _WalletScreenState extends State<WalletScreen> {
               ),
             )
           : SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -854,7 +854,7 @@ class _WithdrawBottomSheetState extends State<_WithdrawBottomSheet> {
             // Quick select chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               child: Row(
                 children: [
                   _buildQuickSelectChip('Rp. 50k', 50000),

@@ -242,7 +242,7 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
                   ),
                 )
               : CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   slivers: [
                     SliverToBoxAdapter(
                       child: Padding(

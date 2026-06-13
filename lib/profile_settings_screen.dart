@@ -259,7 +259,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         ),
       ),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.only(bottom: 110),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -659,7 +659,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                     )
                   : ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: _realActiveTransactions.length,
                       itemBuilder: (context, index) {

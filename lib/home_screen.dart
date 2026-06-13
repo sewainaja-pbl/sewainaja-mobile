@@ -22,6 +22,7 @@ import 'search_screen.dart';
 import 'search_result_screen.dart';
 import 'default_address_setup_screen.dart';
 import 'profile_settings_screen.dart';
+import 'app_feedback.dart';
 
 class HomeScreen extends StatefulWidget {
   final ValueChanged<bool>? onSearchActiveChanged;
@@ -416,7 +417,7 @@ class HomeScreenState extends State<HomeScreen>
             child: CustomScrollView(
               controller: _scrollController,
               physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
+                parent: ClampingScrollPhysics(),
               ),
               slivers: [
                 SliverAppBar(
@@ -426,24 +427,39 @@ class HomeScreenState extends State<HomeScreen>
                   expandedHeight: 200,
                   elevation: 0,
                   flexibleSpace: FlexibleSpaceBar(
-                    background: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
+                    background: Stack(
                       children: [
-                        SafeArea(
-                          bottom: false,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildHeader(),
-                                const SizedBox(height: 24),
-                                _buildSearchBar(),
-                              ],
-                            ),
+                        Positioned.fill(
+                          child: Image.asset(
+                            'assets/images/background.png',
+                            fit: BoxFit.cover,
                           ),
                         ),
-                        const SizedBox(height: 36),
+                        Positioned.fill(
+                          child: Container(
+                            color: const Color(0xFF012D1D).withValues(alpha: 0.8),
+                          ),
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SafeArea(
+                              bottom: false,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    _buildHeader(),
+                                    const SizedBox(height: 24),
+                                    _buildSearchBar(),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 36),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -673,6 +689,7 @@ class HomeScreenState extends State<HomeScreen>
           onSubmitted: (value) {
             final query = value.trim();
             if (query.isNotEmpty) {
+              _searchSheetKey.currentState?.saveQueryToHistory(query);
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -718,7 +735,7 @@ class HomeScreenState extends State<HomeScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         itemCount: categories.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
@@ -859,17 +876,17 @@ class HomeScreenState extends State<HomeScreen>
                 );
               },
               child: AnimatedScale(
-                duration: const Duration(milliseconds: 110),
-                curve: Curves.easeOut,
-                scale: _isMapCardPressed ? 0.985 : 1,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                scale: _isMapCardPressed ? 0.98 : 1,
                 child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 110),
-                  curve: Curves.easeOut,
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
                   offset: _isMapCardPressed
-                      ? const Offset(0, 0.012)
+                      ? const Offset(0, 0.005)
                       : Offset.zero,
                   child: Ink(
-                    height: 180,
+                    height: 160,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
@@ -888,23 +905,23 @@ class HomeScreenState extends State<HomeScreen>
                                 zoom: 13,
                                 interactive: false,
                                 showCenterPin: true,
-                                height: 180,
+                                height: 160,
                                 borderRadius: BorderRadius.circular(24),
                               ),
                             ),
                           ),
                           // Top Left Badge
                           Positioned(
-                            top: 12,
-                            left: 12,
+                            top: 10,
+                            left: 10,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(20),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                                    horizontal: 10,
+                                    vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.85),
@@ -914,7 +931,7 @@ class HomeScreenState extends State<HomeScreen>
                                     _currentTimeString.isNotEmpty ? _currentTimeString : "20:10 WIB",
                                     style: const TextStyle(
                                       fontFamily: 'Poppins',
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFF012D1D),
                                     ),
@@ -925,14 +942,14 @@ class HomeScreenState extends State<HomeScreen>
                           ),
                           // Top Right Action
                           Positioned(
-                            top: 12,
-                            right: 12,
+                            top: 10,
+                            right: 10,
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(999),
                               child: BackdropFilter(
                                 filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                                 child: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.85),
                                     shape: BoxShape.circle,
@@ -940,7 +957,7 @@ class HomeScreenState extends State<HomeScreen>
                                   child: const Icon(
                                     Icons.open_in_full_rounded,
                                     color: Color(0xFF012D1D),
-                                    size: 16,
+                                    size: 13,
                                   ),
                                 ),
                               ),
@@ -948,22 +965,22 @@ class HomeScreenState extends State<HomeScreen>
                           ),
                           // Bottom Info Bar
                           Positioned(
-                            bottom: 12,
-                            left: 12,
-                            right: 12,
+                            bottom: 10,
+                            left: 10,
+                            right: 10,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
+                                horizontal: 12,
+                                vertical: 8,
                               ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF012D1D),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(14),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 1),
                                   ),
                                 ],
                               ),
@@ -977,9 +994,9 @@ class HomeScreenState extends State<HomeScreen>
                                         const Icon(
                                           Icons.location_on_rounded,
                                           color: Color(0xFFFDF9F4),
-                                          size: 16,
+                                          size: 14,
                                         ),
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 6),
                                         Expanded(
                                           child: Text(
                                             _defaultLocationLabel.isNotEmpty
@@ -989,7 +1006,7 @@ class HomeScreenState extends State<HomeScreen>
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
                                               fontFamily: 'Poppins',
-                                              fontSize: 14,
+                                              fontSize: 12,
                                               fontWeight: FontWeight.w500,
                                               color: Color(0xFFFDF9F4),
                                             ),
@@ -998,12 +1015,12 @@ class HomeScreenState extends State<HomeScreen>
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 6),
                                   Text(
                                     "5 km",
                                     style: TextStyle(
                                       fontFamily: 'Poppins',
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w400,
                                       color: const Color(0xFFFDF9F4).withValues(alpha: 0.7),
                                     ),
@@ -1155,7 +1172,7 @@ class HomeScreenState extends State<HomeScreen>
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             itemCount: _followingItems!.length,
             separatorBuilder: (_, __) => const SizedBox(width: 16),
             itemBuilder: (context, index) {
@@ -1219,7 +1236,7 @@ class HomeScreenState extends State<HomeScreen>
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 24),
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 16),
         itemBuilder: (context, index) {
@@ -1418,15 +1435,9 @@ class HomeScreenState extends State<HomeScreen>
       onFavoritePressed: () async {
         final nowFav = await FavoriteService.toggleFavorite(item.id);
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              nowFav ? '${item.name} disimpan ke Favorit!' : '${item.name} dihapus dari Favorit!',
-              style: const TextStyle(fontFamily: 'Poppins'),
-            ),
-            backgroundColor: const Color(0xFF012D1D),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppSuccessSnack(
+          context,
+          nowFav ? '${item.name} disimpan ke Favorit!' : '${item.name} dihapus dari Favorit!',
         );
       },
       onSimilarPressed: () {
@@ -1440,26 +1451,14 @@ class HomeScreenState extends State<HomeScreen>
         );
       },
       onNotInterestedPressed: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
-              style: TextStyle(fontFamily: 'Poppins'),
-            ),
-            backgroundColor: Color(0xFF012D1D),
-            behavior: SnackBarBehavior.floating,
-          ),
+        showAppSuccessSnack(
+          context,
+          'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
         );
       },
       onReportPressed: () {
         if (item.ownerId.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Data pemilik tidak ditemukan.', style: TextStyle(fontFamily: 'Poppins')),
-              backgroundColor: Color(0xFFE33629),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showAppErrorSnack(context, 'Data pemilik tidak ditemukan.');
           return;
         }
         showReportDialog(

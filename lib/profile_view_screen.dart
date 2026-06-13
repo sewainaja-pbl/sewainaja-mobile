@@ -171,7 +171,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
           }).toList();
 
           return CustomScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         slivers: [
           SliverAppBar(
             backgroundColor: const Color(0xFF012D1D),
@@ -580,7 +580,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                       }
                                       return ListView.separated(
                                         scrollDirection: Axis.horizontal,
-                                        physics: const BouncingScrollPhysics(),
+                                        physics: const ClampingScrollPhysics(),
                                         padding: const EdgeInsets.symmetric(horizontal: 24.0),
                                         itemCount: reviews.length,
                                         separatorBuilder: (context, index) => const SizedBox(width: 12),
@@ -662,7 +662,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                           minWidth: 40,
                                           minHeight: 20,
                                         ),
-                                        hintText: "Search listings...",
+                                        hintText: "Cari barang milik $displayName...",
                                         hintStyle: const TextStyle(
                                           fontFamily: 'Poppins',
                                           color: Colors.grey,
@@ -690,7 +690,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                   child: ListView.separated(
                                     scrollDirection: Axis.horizontal,
                                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                                    physics: const BouncingScrollPhysics(),
+                                    physics: const ClampingScrollPhysics(),
                                     itemCount: availableCategories.length,
                                     separatorBuilder: (context, _) => const SizedBox(width: 12),
                                     itemBuilder: (context, index) {
@@ -819,15 +819,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                               context: context,
                                               product: product,
                                               onFavoritePressed: () {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      '${product.name} disimpan ke Favorit!',
-                                                      style: const TextStyle(fontFamily: 'Poppins'),
-                                                    ),
-                                                    backgroundColor: const Color(0xFF012D1D),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
+                                                showAppSuccessSnack(
+                                                  context,
+                                                  '${product.name} disimpan ke Favorit!',
                                                 );
                                               },
                                               onSimilarPressed: () {
@@ -841,15 +835,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                                 );
                                               },
                                               onNotInterestedPressed: () {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text(
-                                                      'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
-                                                      style: TextStyle(fontFamily: 'Poppins'),
-                                                    ),
-                                                    backgroundColor: Color(0xFF012D1D),
-                                                    behavior: SnackBarBehavior.floating,
-                                                  ),
+                                                showAppSuccessSnack(
+                                                  context,
+                                                  'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
                                                 );
                                               },
                                                onReportPressed: () {
@@ -857,24 +845,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                                  final reportedId = _targetOwnerId;
                                                  
                                                  if (reportedId.isEmpty) {
-                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                     const SnackBar(
-                                                       content: Text('Informasi pemilik tidak tersedia untuk dilaporkan.', style: TextStyle(fontFamily: 'Poppins')),
-                                                       backgroundColor: Color(0xFFE33629),
-                                                       behavior: SnackBarBehavior.floating,
-                                                     ),
-                                                   );
+                                                   showAppErrorSnack(context, 'Informasi pemilik tidak tersedia untuk dilaporkan.');
                                                    return;
                                                  }
                                                  
                                                  if (currentUserId == reportedId) {
-                                                   ScaffoldMessenger.of(context).showSnackBar(
-                                                     const SnackBar(
-                                                       content: Text('Anda tidak bisa melaporkan barang Anda sendiri.', style: TextStyle(fontFamily: 'Poppins')),
-                                                       backgroundColor: Color(0xFFE33629),
-                                                       behavior: SnackBarBehavior.floating,
-                                                     ),
-                                                   );
+                                                   showAppErrorSnack(context, 'Anda tidak bisa melaporkan barang Anda sendiri.');
                                                    return;
                                                  }
 

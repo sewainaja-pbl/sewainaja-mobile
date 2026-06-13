@@ -855,7 +855,7 @@ flutter:
 # ## AI PROMPT SPEC: SEWAINAJA - ITEM DETAIL SCREEN (FULL)
 # =============================================================
 # Name: SewaIn Aja - Detail Barang
-# Description: Halaman detail produk lengkap dengan deskripsi, peta, rekomendasi, dan action bar melayang.
+# Description: Halaman detail produk lengkap dengan deskripsi, peta, katalog toko, rekomendasi (grid), dan action bar melayang.
 # Theme: Premium Clean & Minimalist (Green Forest Palette)
 
 # -------------------------------------------------------------
@@ -865,6 +865,7 @@ flutter:
 # Secondary Font: Inter (Untuk teks deskripsi panjang)
 # Icons: HugeIcons, FontAwesome, & Solar Icons
 # Animation: Animate_do (FadeInUp untuk transisi masuk konten)
+# Layout: Scaffold -> Stack (Layer 1: Fixed Content, Layer 2: CustomScrollView/DraggableScrollableSheet, Layer 3: Fixed Bottom Bar)
 
 # =============================================================
 # ## UI STRUCTURE NODES
@@ -875,55 +876,74 @@ flutter:
 # ID: '259:1970' -> Main Image Asset: "assets/images/iklan.jpg" (BoxFit.cover, Height: ~45% layar)
 # ID: '259:2015' -> Top Left Action: Back Button (Circle Background: #012D1D, Icon: arrow-back, Color: #FDF9F4)
 # ID: '259:2017' -> Top Right Actions (Group):
-#    - Share Button (Circle Background: #012D1D, Icon: share)
-#    - More Options Button (Circle Background: #012D1D, Icon: dots-three-vertical)
+#    - Share Button (Circle Background: #012D1D, Icon: share, Color: #FDF9F4)
+#    - More Options Button (Circle Background: #012D1D, Icon: dots-three-vertical, Color: #FDF9F4)
 
 # ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
-# Deskripsi: Container putih utama yang bisa di-scroll ke atas (DraggableScrollableSheet atau SingleChildScrollView overlap).
+# Deskripsi: Container putih utama yang bisa di-scroll ke atas (DraggableScrollableSheet atau CustomScrollView overlap).
 # ID: '259:1971' -> Sheet Background (Color: #FDF9F4, BorderRadius: 30px top-left & top-right)
 
 # --- 2A. MAIN INFO ---
-# ID: '259:1979' -> Title: "Sony Camera a6000" (Font: Poppins Bold, Size: 24, Color: #012D1D)
+# ID: '259:1979' -> Title: "Sony Camera a6000" (Font: Poppins Bold, Size: 24, Color: #012D1D, maxLines: 2)
 # ID: '259:1980' -> Price: "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 24, Color: #7B5804)
 # ID: '259:1983' -> Action: Heart/Like Icon (Outline Color: #E33629)
 # ID: '259:2049' -> Badge: "Like New" (Background: #22C23A, Text Color: #000000, Radius: 13px)
-# ID: '259:1985' -> Info: Clock Icon + "2 hari lalu" (Size: 14)
+# ID: '259:1985' -> Info: Clock Icon + "2 hari lalu" (Size: 14, Color: #414844)
 
 # --- 2B. SELLER PROFILE CARD ---
-# ID: '259:1991' -> Card Container (Border: 1px Solid #000000, Background: #FFFFFF, Radius: 14px)
-# - Avatar Image: "Han Soo Hee"
-# - Name: "Han Soo Hee" (Font: Poppins Regular, Size: 12)
-# - Rating: Star Icon (#F8BD00) + "4.9" (Size: 10)
-# - Location: "| Tembalang, Banyumanik" (Size: 10)
-# - Action: Chat Icon Button (Color: #012D1D)
+# ID: '259:1991' -> Card Container (Border: 1px Solid rgba(0,0,0,0.1), Background: #FFFFFF, Radius: 14px, Padding: 12px)
+# - Avatar Image: Foto profil (Circle)
+# - Name: "Han Soo Hee" (Font: Poppins Regular, Size: 12, Color: #012D1D)
+# - Rating: Star Icon (#F8BD00) + "4.9" (Size: 10, Color: #414844)
+# - Location: "| Tembalang, Banyumanik" (Size: 10, Color: #414844)
+# - Action: Chat Icon Button (Color: #012D1D) -> onTap: Push ke Room Chat
 
 # --- 2C. LOCATION RADIUS MAP ---
-# ID: '259:1972' -> Title: "Radius Lokasi Barang" (Font: Poppins SemiBold, Size: 20)
-# ID: '259:1977' -> Map Image Component (BorderRadius: 25px)
+# ID: '259:1972' -> Title: "Lokasi Barang" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# ID: '259:1977' -> Map Image Component (BorderRadius: 25px, Border: 0.5px solid #012D1D)
 
 # --- 2D. DESCRIPTION SECTION ---
-# ID: '270:1322' -> Title: "Description" (Font: Poppins SemiBold, Size: 20, Color: #000000)
+# ID: '270:1322' -> Title: "Description" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
 # ID: '270:1324' -> Toggle: "See more" + Arrow Drop Down Icon (Size: 14, Color: #012D1D)
 # ID: '270:1327' -> Text Content: "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau..."
-# (Teks menggunakan font Inter, Size 12, Light/300)
+# (Teks menggunakan font Inter, Size 12, Light/300, Color: #414844)
 
-# --- 2E. RECOMMENDATION SLIDER ---
-# ID: '277:2085' -> Title: "Recommendation" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
-# ID: '277:2086' -> Product Slider Instance (Horizontal Scroll)
-# - Item 1: Sony W830 (Rp.120,000/Day, Rating 4.8)
-# - Item 2: Apple Airpods Max 2 (Rp.45,000/Day, Rating 4.8)
-# - Item 3: Keyboard Mahal (Rp.45,000/Day, Rating 4.8)
-# - Item 4: Occulus VR (Rp.120,000/Day, Rating 4.8)
+# --- 2E. LAINNYA DI TOKO INI (OWNER'S CATALOG) ---
+# Deskripsi: Menampilkan barang lain dari pemilik yang sama dengan scroll horizontal.
+# Layout: Column, margin horizontal 20px, top 24px
+# - Header Row (spaceBetween):
+#     - Left: Text "Lainnya di toko ini" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+#     - Right: Text "Lihat Semua" (Font: Poppins Medium, Size: 12, Color: #012D1D) -> onTap: Push ke OwnerProfile
+# - Scroll Area: SizedBox height 230 -> ListView horizontal (BouncingScrollPhysics)
+# - [REUSED COMPONENT: OWNER PROFILE CARD]:
+#     - Gunakan komponen item card dari halaman Owner Profile.
+#     - Konfigurasi: width 160, margin right 16px, maxLines title 1 (ellipsis).
+
+# --- 2F. REKOMENDASI (VERTICAL SCROLL GRID) ---
+# Deskripsi: Rekomendasi barang serupa (cross-selling) disusun menggunakan SliverGrid agar menyatu dengan scroll halaman.
+# Header (SliverToBoxAdapter):
+#   - Margin top 32px, bottom 16px, padding horizontal 20px
+#   - Text: "Rekomendasi" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# Grid Setup (SliverPadding -> SliverGrid):
+#   - Padding: horizontal 20px, bottom 120px (PADDING EKSTRA BESAR agar aman dari Bottom Action Bar).
+#   - GridDelegate: crossAxisCount 2, mainAxisSpacing 16, crossAxisSpacing 16, childAspectRatio 0.65
+# - [REUSED COMPONENT: MAIN PRODUCT CARD]:
+#     - Gunakan komponen card produk utama dari Homepage/Search Result (dilengkapi badge overlay di atas gambar).
 
 # ### [SECTION 3: BOTTOM ACTION BAR (FIXED)]
 # Deskripsi: Bar navigasi statis melayang di bagian paling bawah layar (menimpa scrollable sheet).
-# Backgorund: Transparan atau gradient tipis agar membaur.
-# ID: '259:2031' -> Secondary Action: Chat Button Icon (Frame Putih, Icon: #012D1D, Lingkaran)
-# ID: '259:2029' -> Primary Action: "Sewa Sekarang" Button
-#    - Background: #012D1D
-#    - Text Color: #FDF9F4
-#    - Shape: Pill (BorderRadius: 277px / Circular)
-#    - Text: "Sewa Sekarang" (Font: Poppins Bold, Size: 16)
+# Backgorund: Transparan atau gradient putih tipis ke transparan di bagian atasnya agar membaur.
+# Padding: horizontal 20px, bottom SafeArea
+# Row (gap 16px):
+#   - ID '259:2031' -> Secondary Action (Left): Chat Button
+#      - Container: Circle 54x54, border 1.5px solid #012D1D, bg #FFFFFF
+#      - Icon: chat_bubble (#012D1D)
+#   - ID '259:2029' -> Primary Action (Right): "Sewa Sekarang" Button
+#      - Expanded
+#      - Background: #012D1D
+#      - Shape: Pill (BorderRadius: 9999px)
+#      - Padding: vertical 16px
+#      - Text: "Sewa Sekarang" (Font: Poppins Bold, Size: 16, Color: #FDF9F4, Center)
 
 # =============================================================
 # ## GLOBAL STYLE DEFINITIONS
@@ -934,16 +954,17 @@ flutter:
 # Color_Badge_Green: "#22C23A" (Bright Green - for conditions)
 # Color_Danger_Red: "#E33629" (Red - for heart/like)
 # Color_Star: "#F8BD00" (Yellow/Gold)
+# Color_Text_Sub: "#414844" (Dark Gray)
 
 # -------------------------------------------------------------
 # ## LAYOUT RULES
 # -------------------------------------------------------------
 # 1. Page Structure: Gunakan widget "Stack".
 #    - Layer 1 (Dasar): Image 'iklan.jpg' (Top) & Action Buttons.
-#    - Layer 2 (Tengah): DraggableScrollableSheet atau SingleChildScrollView overlap (Padding bottom ditambahkan agar tidak tertutup tombol "Sewa Sekarang").
+#    - Layer 2 (Tengah): CustomScrollView atau DraggableScrollableSheet overlap. Wajib tambahkan padding bottom yang besar di akhir Sliver agar grid rekomendasi bisa di-scroll sampai mentok tanpa terhalang bottom bar.
 #    - Layer 3 (Atas): Bottom Action Bar diletakkan dengan Positioned(bottom: 0, left: 0, right: 0).
-# 2. Description Expansion: Bagian "Description" harus bisa di-expand/collapse menggunakan widget seperti ReadMoreText atau state boolean sederhana.
-# 3. Padding: Pastikan konten di dalam sheet memiliki padding horizontal minimal 20px.
+# 2. Reused Components: AI generator wajib me-reuse komponen `Owner Profile Card` untuk section 2E dan `Main Product Card` untuk section 2F agar ukuran bundle aplikasi efisien dan desain konsisten.
+# 3. Padding: Pastikan konten teks dan header di dalam sheet memiliki padding horizontal konsisten minimal 20px.
 
 # =============================================================
 # ## AI PROMPT SPEC: SEWAINAJA - AJUKAN SEWA SCREEN (REVISED)

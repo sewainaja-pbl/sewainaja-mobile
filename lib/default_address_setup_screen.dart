@@ -287,6 +287,40 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
                 color: Color(0xFF012D1D),
               ),
             ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFD5BF87).withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFD5BF87).withValues(alpha: 0.4),
+                  width: 1,
+                ),
+              ),
+              child: const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: Color(0xFF7B5804),
+                    size: 18,
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Menyetel alamat utama akan mempermudah Anda untuk menemukan barang sewaan terdekat, serta memberikan estimasi ongkos kirim yang lebih akurat.',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        color: Color(0xFF414844),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
             const Spacer(),
             SizedBox(
               width: double.infinity,

@@ -427,7 +427,7 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
         
         Expanded(
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

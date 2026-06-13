@@ -10,6 +10,7 @@ import 'item_detail_screen.dart';
 import 'widgets/report_dialog.dart';
 import 'widgets/subtle_fade_in.dart';
 import 'widgets/pressable_scale.dart';
+import 'app_feedback.dart';
 
 class NewArrivalsScreen extends StatelessWidget {
   const NewArrivalsScreen({super.key});
@@ -145,15 +146,9 @@ class NewArrivalsScreen extends StatelessWidget {
                       context: context,
                       product: product,
                       onFavoritePressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              '${item.name} disimpan ke Favorit!',
-                              style: const TextStyle(fontFamily: 'Poppins'),
-                            ),
-                            backgroundColor: const Color(0xFF012D1D),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        showAppSuccessSnack(
+                          context,
+                          '${item.name} disimpan ke Favorit!',
                         );
                       },
                       onSimilarPressed: () {
@@ -167,26 +162,14 @@ class NewArrivalsScreen extends StatelessWidget {
                         );
                       },
                       onNotInterestedPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
-                              style: TextStyle(fontFamily: 'Poppins'),
-                            ),
-                            backgroundColor: Color(0xFF012D1D),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        showAppSuccessSnack(
+                          context,
+                          'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
                         );
                       },
                       onReportPressed: () {
                         if (item.ownerId.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Data pemilik tidak ditemukan.', style: TextStyle(fontFamily: 'Poppins')),
-                              backgroundColor: Color(0xFFE33629),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
+                          showAppErrorSnack(context, 'Data pemilik tidak ditemukan.');
                           return;
                         }
                         showReportDialog(

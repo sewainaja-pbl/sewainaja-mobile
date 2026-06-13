@@ -46,7 +46,8 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
       final pendingRatingId = prefs.getString('pending_rating_id') ?? '';
       if (pendingRatingId.isNotEmpty) {
         final pendingRole = prefs.getString('pending_rating_role') ?? 'renter';
-        final pendingItemName = prefs.getString('pending_rating_item_name') ?? 'Barang Sewaan';
+        final pendingItemName =
+            prefs.getString('pending_rating_item_name') ?? 'Barang Sewaan';
         if (pendingRole == 'renter') {
           return ReturnEvidenceScreen(
             transactionId: pendingRatingId,
@@ -138,24 +139,17 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
       body: Stack(
         children: [
           // ==========================================
-          // BACKGROUND: Fade in Radial Gradient
+          // BACKGROUND: Fade in Image
           // ==========================================
           AnimatedOpacity(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeIn,
             opacity: _startBackgroundFade ? 1.0 : 0.0,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.0,
-                  colors: [
-                    Color(0xFF1B4332), // Tengah
-                    Color(0xFF012D1D), // Pinggir
-                  ],
-                  stops: [0.0, 1.0],
-                ),
-              ),
+            child: Image.asset(
+              'assets/images/backgroudn_splash.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             ),
           ),
 
@@ -186,10 +180,16 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                     // ==========================================
                     // KOMPONEN: LOGO IMAGE
                     // ==========================================
-                    Image.asset(
-                      'assets/images/logo.png',
+                    Container(
                       width: 250,
                       height: 250,
+                      decoration: BoxDecoration(
+                        image: const DecorationImage(
+                          image: AssetImage('assets/images/logo.png'),
+                          fit: BoxFit.contain,
+                        ),
+                        borderRadius: BorderRadius.circular(40),
+                      ),
                     ),
 
                     // ==========================================

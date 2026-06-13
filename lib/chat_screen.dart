@@ -84,9 +84,10 @@ class _ChatScreenState extends State<ChatScreen> {
       }).toList();
     } else if (selectedTab == "Request") {
       // Request = rooms created by someone else (not the current user)
-      // meaning someone initiated a chat with the current user
+      // and only show them if they haven't been read yet.
       filtered = filtered.where((room) {
-        return room.createdBy != null && room.createdBy != _currentUserId;
+        final count = _unreadCounts[room.id] ?? 0;
+        return room.createdBy != null && room.createdBy != _currentUserId && count > 0;
       }).toList();
     }
 
@@ -219,8 +220,41 @@ class _ChatScreenState extends State<ChatScreen> {
 
                 final chats = snapshot.data ?? [];
                 
-                // Subscribe to real-time unread counts and fetch partner profiles
+                // Deduplicate by partnerId, keeping the room with the most recent lastMessageAt
+                final Map<String, ChatRoomModel> uniquePartnerRooms = {};
                 for (final room in chats) {
+                  String partnerId = "";
+                  for (final key in room.participants.keys) {
+                    if (key != _currentUserId) {
+                      partnerId = key;
+                      break;
+                    }
+                  }
+                  if (partnerId.isNotEmpty) {
+                    final existing = uniquePartnerRooms[partnerId];
+                    if (existing == null) {
+                      uniquePartnerRooms[partnerId] = room;
+                    } else {
+                      final existingTime = existing.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                      final roomTime = room.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                      if (roomTime.isAfter(existingTime)) {
+                        uniquePartnerRooms[partnerId] = room;
+                      }
+                    }
+                  } else {
+                    uniquePartnerRooms[room.id] = room;
+                  }
+                }
+                
+                final deduplicatedChats = uniquePartnerRooms.values.toList();
+                deduplicatedChats.sort((a, b) {
+                  final timeA = a.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  final timeB = b.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                  return timeB.compareTo(timeA);
+                });
+
+                // Subscribe to real-time unread counts and fetch partner profiles
+                for (final room in deduplicatedChats) {
                   _subscribeUnreadCount(room.id);
                   for (var entry in room.participants.entries) {
                     if (entry.key != _currentUserId) {
@@ -229,14 +263,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
                 }
 
-                final filteredChats = _filterChats(chats);
+                final filteredChats = _filterChats(deduplicatedChats);
 
                 if (filteredChats.isEmpty) {
                   return _buildEmptyState();
                 }
 
                 return ListView.builder(
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.only(
                     left: 24,
                     right: 24,

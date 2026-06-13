@@ -236,7 +236,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
             'startDate': startDateTime.toUtc().toIso8601String(),
             'endDate': endDateTime.toUtc().toIso8601String(),
           }
-        ]
+        ],
+        'notes': _notesController.text.trim(),
       };
 
       final response = await http.post(
@@ -350,7 +351,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         ),
         body: Center(
           child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -646,7 +647,7 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
       // --- MAIN BODY (Section 2 - 6) ---
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -935,30 +936,33 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF585D59), // Color_Text_Muted
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF585D59), // Color_Text_Muted
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF012D1D), // Value Color
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF012D1D), // Value Color
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 8),
           const Icon(
             Icons.keyboard_arrow_down_rounded,
             size: 20,
@@ -984,11 +988,12 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         children: [
           // Number Circle Indicator
           Container(
-            width: 32,
+            constraints: const BoxConstraints(minWidth: 32),
             height: 32,
-            decoration: const BoxDecoration(
-              color: Color(0xFF012D1D), // Deep Forest
-              shape: BoxShape.circle,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF012D1D), // Deep Forest
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
               child: Text(
@@ -1003,23 +1008,26 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           ),
           const SizedBox(width: 12),
           // Text Label and Value
-          const Text(
-            "Total Durasi Sewa:",
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w500, // Medium
-              fontSize: 14,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          const Spacer(),
-          Text(
-            "$days Hari ($hours Jam)",
-            style: const TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w700, // Bold
-              fontSize: 15,
-              color: Color(0xFF012D1D),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                text: "Total Durasi Sewa: ",
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontWeight: FontWeight.w500, // Medium
+                  fontSize: 14,
+                  color: Color(0xFF012D1D),
+                ),
+                children: [
+                  TextSpan(
+                    text: "$days Hari ($hours Jam)",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700, // Bold
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 4),

@@ -1,26 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'item_detail_screen.dart';
 import 'models/product.dart';
 import 'widgets/product_card.dart';
 import 'widgets/subtle_fade_in.dart';
-
-// ---------------------------------------------------------------------------
-// Suggestions list — tetap dipertahankan untuk saat query kosong
-// ---------------------------------------------------------------------------
-const List<String> _suggestions = [
-  'Kamera DSLR',
-  'Tenda Camping',
-  'Bor Listrik',
-  'Kemeja Formal',
-  'Sepeda Gunung',
-  'Kompor Portable',
-  'PS5 Controller',
-  'Sleeping Bag',
-];
 
 // ---------------------------------------------------------------------------
 // SearchSheet — rendered di dalam HomeScreen's Stack
@@ -60,6 +47,10 @@ class SearchSheetState extends State<SearchSheet>
   // ── Fuzzy options ──────────────────────────────────────────────────────────
   static const double _fuzzyThreshold = 0.4;
 
+  // ── Search History ─────────────────────────────────────────────────────────
+  List<String> _searchHistory = [];
+  List<String> _suggestions = [];
+
   @override
   void initState() {
     super.initState();
@@ -75,6 +66,10 @@ class SearchSheetState extends State<SearchSheet>
     ).animate(CurvedAnimation(parent: _sheetAnim, curve: Curves.easeOutCubic));
 
     _sheetAnim.forward();
+
+    // Load history
+    _loadSearchHistory();
+    _loadPopularSearches();
 
     // Subscribe ke Firestore stream
     _itemsSub = _itemRepo.watchSearchableItems().listen((items) {
@@ -106,6 +101,59 @@ class SearchSheetState extends State<SearchSheet>
       _query = raw.toLowerCase();
     });
     _applyFilter();
+  }
+
+  Future<void> _loadPopularSearches() async {
+    try {
+      final categories = await _itemRepo.fetchCategoryNames();
+      if (!mounted) return;
+      setState(() {
+        _suggestions = categories.isNotEmpty 
+          ? categories 
+          : [
+              'Kamera DSLR',
+              'Tenda Camping',
+              'Bor Listrik',
+              'Kemeja Formal',
+              'Sepeda Gunung',
+              'Kompor Portable',
+              'PS5 Controller',
+              'Sleeping Bag',
+            ]; // Fallback if no categories
+      });
+    } catch (_) {}
+  }
+
+  // ── History Logic ──────────────────────────────────────────────────────────
+  Future<void> _loadSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _searchHistory = prefs.getStringList('search_history') ?? [];
+    });
+  }
+
+  Future<void> saveQueryToHistory(String q) async {
+    final query = q.trim();
+    if (query.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    final history = prefs.getStringList('search_history') ?? [];
+    
+    // Hapus jika sudah ada (case-insensitive) agar naik ke urutan pertama
+    history.removeWhere((element) => element.toLowerCase() == query.toLowerCase());
+    history.insert(0, query);
+    
+    // Batasi maksimal 10 riwayat
+    if (history.length > 10) {
+      history.removeLast();
+    }
+    
+    await prefs.setStringList('search_history', history);
+    if (mounted) {
+      setState(() {
+        _searchHistory = history;
+      });
+    }
   }
 
   // ── Core filter logic — Fuzzy only ─────────────────────────────────────────
@@ -154,6 +202,7 @@ class SearchSheetState extends State<SearchSheet>
 
   // ── Navigate to detail ─────────────────────────────────────────────────────
   void _navigateToDetail(ItemModel item) {
+    saveQueryToHistory(_query);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -242,55 +291,172 @@ class SearchSheetState extends State<SearchSheet>
             ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: _suggestions.map((s) {
-              return GestureDetector(
-                onTap: () {
-                  widget.controller.text = s;
-                  widget.controller.selection = TextSelection.fromPosition(
-                    TextPosition(offset: s.length),
-                  );
-                  widget.focusNode.requestFocus();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF012D1D).withValues(alpha: 0.3),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.trending_up_rounded,
-                        size: 14,
-                        color: Color(0xFF012D1D),
+          // Split suggestions into 2 rows (even/odd) to make it clean and horizontally scrollable
+          Builder(
+            builder: (context) {
+              final firstRow = <String>[];
+              final secondRow = <String>[];
+              for (int i = 0; i < _suggestions.length; i++) {
+                if (i % 2 == 0) {
+                  firstRow.add(_suggestions[i]);
+                } else {
+                  secondRow.add(_suggestions[i]);
+                }
+              }
+
+              Widget buildItem(String s) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.controller.text = s;
+                      widget.controller.selection = TextSelection.fromPosition(
+                        TextPosition(offset: s.length),
+                      );
+                      widget.focusNode.requestFocus();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        s,
-                        style: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF012D1D),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFF012D1D).withValues(alpha: 0.3),
+                          width: 1.2,
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.trending_up_rounded,
+                            size: 14,
+                            color: Color(0xFF012D1D),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            s,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF012D1D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
+                );
+              }
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                clipBehavior: Clip.none,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: firstRow.map((s) => buildItem(s)).toList(),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: secondRow.map((s) => buildItem(s)).toList(),
+                    ),
+                  ],
                 ),
               );
-            }).toList(),
+            },
           ),
+          if (_searchHistory.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Riwayat Pencarian',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF414844),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.remove('search_history');
+                    setState(() {
+                      _searchHistory.clear();
+                    });
+                  },
+                  child: const Text(
+                    'Hapus Semua',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFFD32F2F),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _searchHistory.map((s) {
+                return GestureDetector(
+                  onTap: () {
+                    widget.controller.text = s;
+                    widget.controller.selection = TextSelection.fromPosition(
+                      TextPosition(offset: s.length),
+                    );
+                    widget.focusNode.requestFocus();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: const Color(0xFF919191).withValues(alpha: 0.3),
+                        width: 1.0,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.history_rounded,
+                          size: 14,
+                          color: Color(0xFF414844),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          s,
+                          style: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: Color(0xFF414844),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
         ],
       ),
     );
@@ -359,7 +525,7 @@ class SearchSheetState extends State<SearchSheet>
         Expanded(
           child: ListView.separated(
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-            physics: const BouncingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             itemCount: _results.length,
             separatorBuilder: (context, index) => const SizedBox(height: 12),
             itemBuilder: (context, index) {

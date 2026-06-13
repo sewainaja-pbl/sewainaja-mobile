@@ -352,7 +352,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           _changeTab(index);
         }
       },
-      scaleFactor: 0.90, // Bounces slightly more than card items for satisfying tap feel
+      scaleFactor: 0.95, // Gentle press effect for satisfying tap feel
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,

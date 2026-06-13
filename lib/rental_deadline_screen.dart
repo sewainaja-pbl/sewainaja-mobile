@@ -726,23 +726,29 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
 
   Widget _buildTimelineItem(String text, Color dotColor) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(width: 4), // Small indent for the dot
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: dotColor,
-            shape: BoxShape.circle,
+        const SizedBox(width: 4),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
         const SizedBox(width: 12),
-        Text(
-          text,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            color: Color(0xFF414844),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              color: Color(0xFF414844),
+            ),
           ),
         ),
       ],
