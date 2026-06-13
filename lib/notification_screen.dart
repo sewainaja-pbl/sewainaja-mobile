@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'notification_service.dart';
 import 'rental_request_screen.dart';
+import 'room_chat_screen.dart';
 import 'transaction_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -173,104 +174,243 @@ class _NotificationScreenState extends State<NotificationScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
           decoration: const BoxDecoration(
             color: Color(0xFFFFF8EF),
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD7D2C9),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                item.title,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                item.message,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  height: 1.55,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF717973),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _DetailRow(label: 'Kategori', value: item.category),
-                    const SizedBox(height: 10),
-                    _DetailRow(label: 'Waktu', value: item.timeLabel),
-                    if (item.type != null) ...[
-                      const SizedBox(height: 10),
-                      _DetailRow(label: 'Tipe', value: item.type!),
-                    ],
-                    if (item.transactionId != null) ...[
-                      const SizedBox(height: 10),
-                      _DetailRow(
-                        label: 'Transaksi',
-                        value: item.transactionId!,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF012D1D),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD7D2C9),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  child: const Text(
-                    'Tutup',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w700,
-                    ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF012D1D),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Text(
+                  item.message,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    height: 1.55,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF717973),
+                  ),
+                ),
+                // Show item image if available
+                if (item.imageUrl != null) ...[
+                  const SizedBox(height: 14),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      color: const Color(0xFFF4F1EB),
+                      child: Image.network(
+                        item.imageUrl!,
+                        width: double.infinity,
+                        fit: BoxFit.contain,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return SizedBox(
+                            height: 150,
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                                color: const Color(0xFF012D1D),
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          height: 120,
+                          alignment: Alignment.center,
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.broken_image_outlined,
+                                size: 32,
+                                color: Color(0xFF9EA39D),
+                              ),
+                              SizedBox(height: 8),
+                              Text(
+                                'Gambar tidak tersedia',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF717973),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 18),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _DetailRow(label: 'Kategori', value: item.category),
+                      const SizedBox(height: 10),
+                      _DetailRow(label: 'Waktu', value: item.timeLabel),
+                      if (item.type != null) ...[
+                        const SizedBox(height: 10),
+                        _DetailRow(label: 'Tipe', value: item.type!),
+                      ],
+                      if (item.transactionId != null) ...[
+                        const SizedBox(height: 10),
+                        _DetailRow(
+                          label: 'Transaksi',
+                          value: item.transactionId!,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF012D1D),
+                          side: const BorderSide(color: Color(0xFFD7D2C9)),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        child: const Text(
+                          'Tutup',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _navigateFromNotification(item);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF012D1D),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                        child: const Text(
+                          'Buka',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+  }
+
+  void _navigateFromNotification(AppNotification item) {
+    // If transaction-related, open transaction detail
+    if (item.transactionId != null && item.transactionId!.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TransactionDetailScreen(transactionId: item.transactionId!),
+        ),
+      );
+      return;
+    }
+
+    // If rental request type, open rental request screen
+    if (item.type == 'request') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const RentalRequestScreen()),
+      );
+      return;
+    }
+
+    // If chat notification with partner info, open the chat
+    if (item.chatPartnerId != null && item.chatPartnerId!.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RoomChatScreen(
+            partnerId: item.chatPartnerId!,
+            partnerName: item.chatPartnerName ?? 'Pengguna',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Fallback: try to extract partner name from title "Pesan baru dari [Name]"
+    if (item.title.startsWith('Pesan baru dari ')) {
+      // We don't have partnerId, show a snackbar
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Buka menu Chat untuk melihat pesan ini'),
+          backgroundColor: Color(0xFF012D1D),
+        ),
+      );
+      return;
+    }
   }
 }
 

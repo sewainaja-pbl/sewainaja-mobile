@@ -34,6 +34,8 @@ class AppNotification {
   final String? type;
   final String? transactionId;
   final String? imageUrl;
+  final String? chatPartnerId;
+  final String? chatPartnerName;
 
   const AppNotification({
     required this.id,
@@ -48,14 +50,25 @@ class AppNotification {
     this.type,
     this.transactionId,
     this.imageUrl,
+    this.chatPartnerId,
+    this.chatPartnerName,
   });
 
   factory AppNotification.fromApi(Map<String, dynamic> json) {
     final title = (json['title'] ?? '').toString().trim();
-    final body = (json['body'] ?? '').toString().trim();
+    final rawBody = (json['body'] ?? '').toString().trim();
     final type = (json['type'] ?? '').toString().trim();
     final createdAt = _readTimestamp(json['createdAt']);
     final isRead = json['isRead'] == true;
+
+    // Parse item card JSON in body if present
+    final parsed = _parseItemCardBody(rawBody);
+    final body = parsed['body'] as String;
+    final parsedImageUrl = parsed['imageUrl'] as String?;
+
+    // Prefer imageUrl from parsed body, then from the notification doc itself
+    final rawImageUrl = (json['imageUrl'] ?? '').toString().trim();
+    final imageUrl = parsedImageUrl ?? (rawImageUrl.isEmpty ? null : rawImageUrl);
 
     return AppNotification(
       id: (json['id'] ?? '').toString(),
@@ -70,9 +83,13 @@ class AppNotification {
       transactionId: (json['transactionId'] ?? '').toString().trim().isEmpty
           ? null
           : (json['transactionId'] ?? '').toString().trim(),
-      imageUrl: (json['imageUrl'] ?? '').toString().trim().isEmpty
+      imageUrl: imageUrl,
+      chatPartnerId: (json['chatPartnerId'] ?? '').toString().trim().isEmpty
           ? null
-          : (json['imageUrl'] ?? '').toString().trim(),
+          : (json['chatPartnerId'] ?? '').toString().trim(),
+      chatPartnerName: (json['chatPartnerName'] ?? '').toString().trim().isEmpty
+          ? null
+          : (json['chatPartnerName'] ?? '').toString().trim(),
     );
   }
 
@@ -80,10 +97,18 @@ class AppNotification {
     final title = message.notification?.title?.trim().isNotEmpty == true
         ? message.notification!.title!.trim()
         : (message.data['title'] ?? 'Notifikasi baru').toString();
-    final body = message.notification?.body?.trim().isNotEmpty == true
+    final rawBody = message.notification?.body?.trim().isNotEmpty == true
         ? message.notification!.body!.trim()
         : (message.data['body'] ?? 'Ada pembaruan baru untuk akunmu.').toString();
     final type = (message.data['type'] ?? '').toString().trim();
+
+    // Parse item card JSON in body if present
+    final parsed = _parseItemCardBody(rawBody);
+    final body = parsed['body'] as String;
+    final parsedImageUrl = parsed['imageUrl'] as String?;
+
+    final rawImageUrl = (message.data['imageUrl'] ?? '').toString().trim();
+    final imageUrl = parsedImageUrl ?? (rawImageUrl.isEmpty ? null : rawImageUrl);
 
     return AppNotification(
       id: message.messageId ?? 'foreground-${DateTime.now().millisecondsSinceEpoch}',
@@ -98,9 +123,13 @@ class AppNotification {
       transactionId: (message.data['transactionId'] ?? '').toString().trim().isEmpty
           ? null
           : (message.data['transactionId'] ?? '').toString().trim(),
-      imageUrl: (message.data['imageUrl'] ?? '').toString().trim().isEmpty
+      imageUrl: imageUrl,
+      chatPartnerId: (message.data['chatPartnerId'] ?? '').toString().trim().isEmpty
           ? null
-          : (message.data['imageUrl'] ?? '').toString().trim(),
+          : (message.data['chatPartnerId'] ?? '').toString().trim(),
+      chatPartnerName: (message.data['chatPartnerName'] ?? '').toString().trim().isEmpty
+          ? null
+          : (message.data['chatPartnerName'] ?? '').toString().trim(),
     );
   }
 
@@ -174,6 +203,25 @@ class AppNotification {
       return '${difference.inDays} hari lalu';
     }
     return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
+  }
+
+  /// Detects if [body] is a JSON item card string (e.g. {"id":"...","name":"...","image":"..."})
+  /// and returns a map with parsed 'body' text and optional 'imageUrl'.
+  static Map<String, dynamic> _parseItemCardBody(String body) {
+    if (body.startsWith('{') && body.contains('"name"')) {
+      try {
+        final decoded = jsonDecode(body) as Map<String, dynamic>;
+        final name = decoded['name']?.toString() ?? 'Barang';
+        final image = decoded['image']?.toString();
+        return {
+          'body': '\u{1F4E6} $name',
+          'imageUrl': (image != null && image.isNotEmpty) ? image : null,
+        };
+      } catch (_) {
+        // Not valid JSON, return as-is
+      }
+    }
+    return {'body': body, 'imageUrl': null};
   }
 }
 
@@ -368,6 +416,8 @@ class NotificationService extends ChangeNotifier {
                   type: item.type,
                   transactionId: item.transactionId,
                   imageUrl: item.imageUrl,
+                  chatPartnerId: item.chatPartnerId,
+                  chatPartnerName: item.chatPartnerName,
                 )
               : item,
         )
@@ -410,6 +460,8 @@ class NotificationService extends ChangeNotifier {
             type: item.type,
             transactionId: item.transactionId,
             imageUrl: item.imageUrl,
+            chatPartnerId: item.chatPartnerId,
+            chatPartnerName: item.chatPartnerName,
           ),
         )
         .toList();
