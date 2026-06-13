@@ -35,7 +35,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
       showAppSuccessSnack(
         context,
-        'Link reset password sudah dikirim. Cek email kamu ya.',
+        'Detail akun (termasuk password, data KTP, dll.) sudah dikirim. Cek email kamu ya.',
       );
       Navigator.pop(context); // Kembali ke halaman sebelumnya
     } on FirebaseAuthException catch (e) {
@@ -47,11 +47,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       } else if (e.code == 'too-many-requests') {
         showAppErrorSnack(context, 'Terlalu banyak percobaan. Coba beberapa saat lagi.');
       } else {
-        showAppErrorSnack(context, 'Gagal kirim reset password: ${e.message ?? e.code}');
+        showAppErrorSnack(context, 'Gagal mengirimkan detail akun: ${e.message ?? e.code}');
       }
     } catch (e) {
       if (!mounted) return;
-      showAppErrorSnack(context, 'Terjadi kesalahan saat reset password.');
+      showAppErrorSnack(context, 'Terjadi kesalahan saat memproses pemulihan akun.');
     } finally {
       if (mounted) {
         setState(() {
@@ -64,13 +64,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF012D1D),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 90,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 24, top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF012D1D),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    size: 22,
+                    color: Color(0xFFFFF8EF),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
       body: Stack(
@@ -92,8 +114,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const SizedBox(height: 50),
                   const Text(
-                    'Lupa Password?',
+                    'Pemulihan Akun & Data',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 32,
@@ -103,7 +126,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'Masukkan email yang terdaftar. Kami akan mengirimkan tautan untuk mengatur ulang kata sandi Anda.',
+                    'Masukkan email yang terdaftar. Kami akan mengirimkan seluruh detail informasi pribadi Anda (termasuk password, data verifikasi KTP, dan informasi akun lainnya) secara aman ke email Anda.',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 14,
@@ -177,7 +200,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                               ),
                             )
                           : const Text(
-                              "Kirim Tautan Reset",
+                              "Kirim Detail Akun",
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 16,

@@ -874,7 +874,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         addressLabel ?? widget.sellerLocation ?? "Lokasi tidak tersedia";
     final ImageProvider effectiveAvatar = _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
         ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
-        : const AssetImage('assets/images/profile_user.png');
+        : const AssetImage('assets/images/no-profile-picture-icon.webp');
 
     return GestureDetector(
       onTap: () {
@@ -1646,7 +1646,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                           ownerName: sellerName,
                           avatarImage: _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
                               ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
-                              : const AssetImage('assets/images/profile_user.png'),
+                              : const AssetImage('assets/images/no-profile-picture-icon.webp'),
                         ),
                       ),
                     );

@@ -469,7 +469,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 image: _resolvedProfileImage(),
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) => Image.asset(
-                  'assets/images/profile_user.png',
+                  'assets/images/no-profile-picture-icon.webp',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -896,6 +896,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_profilePhotoUrl.trim().isNotEmpty) {
       return _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 280);
     }
-    return const AssetImage('assets/images/profile_user.png');
+    return const AssetImage('assets/images/no-profile-picture-icon.webp');
   }
 }

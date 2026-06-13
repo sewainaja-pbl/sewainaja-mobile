@@ -93,17 +93,41 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
+        leadingWidth: 90,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 24, top: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF012D1D),
+                  shape: BoxShape.circle,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    size: 22,
+                    color: Color(0xFFFFF8EF),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
-        title: const Text(
-          'Help & Support',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: Color(0xFF012D1D),
+        title: const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: Text(
+            'Help & Support',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Color(0xFF012D1D),
+            ),
           ),
         ),
       ),
@@ -476,186 +500,76 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   }
 
   Widget _buildHelpCategoriesSection() {
+    if (_selectedRole != null) {
+      return const SizedBox.shrink();
+    }
+
     return Padding(
       padding: const EdgeInsets.only(left: 20, right: 20, top: 32, bottom: 40),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Kategori Bantuan',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w700,
-              fontSize: 18,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildCategoryItem(
-            icon: Icons.security_outlined,
-            title: 'Akun & Keamanan',
-            subtitle: 'Password, verifikasi, privasi',
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Cantumkan Email Anda',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontWeight: FontWeight.w600,
-              fontSize: 14,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Contoh: nama@email.com',
-              hintStyle: const TextStyle(
-                fontFamily: 'Plus Jakarta Sans',
-                fontSize: 14,
-                color: Color(0xFF717973),
-              ),
-              filled: true,
-              fillColor: const Color(0xFFFFFFFF),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFFFFF),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
                   color: const Color(0xFF012D1D).withValues(alpha: 0.1),
+                  width: 1,
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '*Nanti panduan lebih lanjut akan dikirimkan lewat email.',
-            style: TextStyle(
-              fontFamily: 'Plus Jakarta Sans',
-              fontSize: 12,
-              color: Color(0xFF717973),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bantuan akan segera dikirimkan ke email Anda.')),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF012D1D),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                'Kirim Permintaan',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
-                );
-              },
-              child: const Text(
-                'Lupa password akun? Atur ulang di sini.',
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF7B5804),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCategoryItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF012D1D).withValues(alpha: 0.1),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3F4F6),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              icon,
-              color: const Color(0xFF012D1D),
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Color(0xFF012D1D),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.security_outlined,
+                      color: Color(0xFF012D1D),
+                      size: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.w400,
-                    fontSize: 12,
-                    color: Color(0xFF414844),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Akun & Keamanan',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Password, verifikasi, privasi',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                            color: Color(0xFF414844),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

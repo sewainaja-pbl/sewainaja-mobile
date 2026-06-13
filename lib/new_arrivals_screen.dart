@@ -26,7 +26,7 @@ class NewArrivalsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
         elevation: 0,
         automaticallyImplyLeading: false,
-        toolbarHeight: 60,
+        toolbarHeight: 48,
         titleSpacing: 24,
         flexibleSpace: ClipRect(
           child: BackdropFilter(
@@ -104,16 +104,16 @@ class NewArrivalsScreen extends StatelessWidget {
             slivers: [
               SliverPadding(
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 60 + 12,
-                  left: 16.0,
-                  right: 16.0,
-                  bottom: 16.0,
+                  top: MediaQuery.of(context).padding.top + 10,
+                  left: 10.0,
+                  right: 10.0,
+                  bottom: 10.0,
                 ),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 16.0,
-                    mainAxisSpacing: 16.0,
+                    crossAxisSpacing: 10.0,
+                    mainAxisSpacing: 10.0,
                     childAspectRatio: 0.65,
                   ),
                   delegate: SliverChildBuilderDelegate(
@@ -203,15 +203,15 @@ class NewArrivalsScreen extends StatelessWidget {
   Widget _buildLoadingGrid(BuildContext context) {
     return GridView.builder(
       padding: EdgeInsets.only(
-        top: MediaQuery.of(context).padding.top + 60 + 12,
-        left: 16.0,
-        right: 16.0,
-        bottom: 16.0,
+        top: MediaQuery.of(context).padding.top + 10,
+        left: 10.0,
+        right: 10.0,
+        bottom: 10.0,
       ),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        crossAxisSpacing: 16.0,
-        mainAxisSpacing: 16.0,
+        crossAxisSpacing: 10.0,
+        mainAxisSpacing: 10.0,
         childAspectRatio: 0.65,
       ),
       itemCount: 6,

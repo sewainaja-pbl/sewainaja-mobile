@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'notification_service.dart';
 import 'rental_request_screen.dart';
@@ -365,7 +366,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  void _navigateFromNotification(AppNotification item) {
+  Future<void> _navigateFromNotification(AppNotification item) async {
     // If transaction-related, open transaction detail
     if (item.transactionId != null && item.transactionId!.isNotEmpty) {
       Navigator.push(
@@ -402,7 +403,59 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     // Fallback: try to extract partner name from title "Pesan baru dari [Name]"
     if (item.title.startsWith('Pesan baru dari ')) {
-      // We don't have partnerId, show a snackbar
+      final nameToQuery = item.title.replaceFirst('Pesan baru dari ', '').trim();
+      if (nameToQuery.isNotEmpty) {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF012D1D),
+            ),
+          ),
+        );
+
+        try {
+          final querySnapshot = await FirebaseFirestore.instance
+              .collection('users')
+              .where('name', isEqualTo: nameToQuery)
+              .limit(1)
+              .get();
+
+          if (!mounted) return;
+
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context); // Close loading dialog
+          }
+
+          if (querySnapshot.docs.isNotEmpty) {
+            final userDoc = querySnapshot.docs.first;
+            final partnerId = userDoc.id;
+            final partnerAvatarUrl = userDoc.data()['profilePhotoUrl'] as String?;
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RoomChatScreen(
+                  partnerId: partnerId,
+                  partnerName: nameToQuery,
+                  partnerAvatarUrl: partnerAvatarUrl,
+                ),
+              ),
+            );
+            return;
+          }
+        } catch (e) {
+          if (!mounted) return;
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context); // Close loading dialog on error
+          }
+        }
+      }
+
+      if (!mounted) return;
+      // If name resolution fails, show the fallback snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Buka menu Chat untuk melihat pesan ini'),

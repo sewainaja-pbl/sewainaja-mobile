@@ -671,161 +671,169 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
               ),
             ),
           ),
-          Positioned(
-            right: 16,
-            bottom: 238,
-            child: Column(
-              children: [
-                _ActionBtn(
-                  icon: Icons.my_location_rounded,
-                  onTap: _moveToCurrentLocation,
-                ),
-                const SizedBox(height: 10),
-                _ActionBtn(
-                  icon: Icons.add_rounded,
-                  onTap: () => _queueOrMoveMap(_center, _currentZoom + 1),
-                ),
-                const SizedBox(height: 10),
-                _ActionBtn(
-                  icon: Icons.remove_rounded,
-                  onTap: () => _queueOrMoveMap(_center, _currentZoom - 1),
-                ),
-              ],
-            ),
-          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: SafeArea(
               top: false,
-              child: Container(
-                margin: const EdgeInsets.all(16),
-                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8EF),
-                  borderRadius: BorderRadius.circular(18),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x22000000),
-                      blurRadius: 14,
-                      offset: Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          Icons.place_outlined,
-                          color: Color(0xFF012D1D),
-                          size: 16,
+                        _ActionBtn(
+                          icon: Icons.my_location_rounded,
+                          onTap: _moveToCurrentLocation,
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _centerAddressLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF012D1D),
-                            ),
-                          ),
+                        const SizedBox(height: 10),
+                        _ActionBtn(
+                          icon: Icons.add_rounded,
+                          onTap: () => _queueOrMoveMap(_center, _currentZoom + 1),
                         ),
-                        if (_isResolvingAddress)
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Color(0xFF012D1D),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Text(
-                          'Radius Pencarian',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF012D1D),
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          '$_radiusKm km',
-                          style: const TextStyle(
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                          ),
+                        const SizedBox(height: 10),
+                        _ActionBtn(
+                          icon: Icons.remove_rounded,
+                          onTap: () => _queueOrMoveMap(_center, _currentZoom - 1),
                         ),
                       ],
                     ),
-                    Slider(
-                      value: _radiusKm.toDouble(),
-                      min: 1,
-                      max: 20,
-                      divisions: 19,
-                      label: '$_radiusKm km',
-                      onChanged: (value) {
-                        final rounded = value.round();
-                        if (rounded != _radiusKm) {
-                          HapticFeedback.selectionClick();
-                        }
-                        setState(() => _radiusKm = rounded);
-                      },
-                      onChangeEnd: (_) => _fetchItems(),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF8EF),
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x22000000),
+                          blurRadius: 14,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('1', style: _TickStyle.textStyle),
-                          Text('5', style: _TickStyle.textStyle),
-                          Text('10', style: _TickStyle.textStyle),
-                          Text('20 km', style: _TickStyle.textStyle),
-                        ],
-                      ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.place_outlined,
+                              color: Color(0xFF012D1D),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _centerAddressLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF012D1D),
+                                ),
+                              ),
+                            ),
+                            if (_isResolvingAddress)
+                              const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Color(0xFF012D1D),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Text(
+                              'Radius Pencarian',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF012D1D),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '$_radiusKm km',
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Slider(
+                          value: _radiusKm.toDouble(),
+                          min: 1,
+                          max: 20,
+                          divisions: 19,
+                          label: '$_radiusKm km',
+                          onChanged: (value) {
+                            final rounded = value.round();
+                            if (rounded != _radiusKm) {
+                              HapticFeedback.selectionClick();
+                            }
+                            setState(() => _radiusKm = rounded);
+                          },
+                          onChangeEnd: (_) => _fetchItems(),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 6),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('1', style: _TickStyle.textStyle),
+                              Text('5', style: _TickStyle.textStyle),
+                              Text('10', style: _TickStyle.textStyle),
+                              Text('20 km', style: _TickStyle.textStyle),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (_isLoadingMap || _isRefreshingInfo)
+                          const _InfoSkeleton()
+                        else if (_error != null)
+                          InlineErrorState(
+                            message: _error!,
+                            onRetry: _fetchItems,
+                          )
+                        else if (_selected != null)
+                          _SelectedItemCard(
+                            item: _selected!,
+                            priceLabel: _formatPrice(_selected!.pricePerHour),
+                          )
+                        else if (items.isEmpty)
+                          _EmptyResultCard(
+                            onExpandRadius: () {
+                              setState(() => _radiusKm = (_radiusKm + 5).clamp(1, 20));
+                              _fetchItems();
+                            },
+                            onClearFilter: () {
+                              setState(() => _selectedCategoryKeys = {'all'});
+                              _fetchItems();
+                            },
+                          )
+                        else
+                          _NearbyItemsList(
+                            items: items,
+                            formatPrice: _formatPrice,
+                          ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    if (_isLoadingMap || _isRefreshingInfo)
-                      const _InfoSkeleton()
-                    else if (_error != null)
-                      InlineErrorState(
-                        message: _error!,
-                        onRetry: _fetchItems,
-                      )
-                    else if (_selected != null)
-                      _SelectedItemCard(
-                        item: _selected!,
-                        priceLabel: _formatPrice(_selected!.pricePerHour),
-                      )
-                    else if (items.isEmpty)
-                      _EmptyResultCard(
-                        onExpandRadius: () {
-                          setState(() => _radiusKm = (_radiusKm + 5).clamp(1, 20));
-                          _fetchItems();
-                        },
-                        onClearFilter: () {
-                          setState(() => _selectedCategoryKeys = {'all'});
-                          _fetchItems();
-                        },
-                      )
-                    else
-                      _NearbyItemsList(
-                        items: items,
-                        formatPrice: _formatPrice,
-                      ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

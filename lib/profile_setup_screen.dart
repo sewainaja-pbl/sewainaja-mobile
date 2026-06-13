@@ -132,7 +132,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (_profilePhotoUrl.trim().isNotEmpty) {
       return _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 320);
     }
-    return const AssetImage('assets/images/profile_user.png');
+    return const AssetImage('assets/images/no-profile-picture-icon.webp');
   }
 
   @override

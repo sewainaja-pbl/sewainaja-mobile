@@ -579,7 +579,7 @@ class HomeScreenState extends State<HomeScreen>
                 border: Border.all(color: Colors.white, width: 2),
                 image: DecorationImage(
                   image: (!_profilePhotoUrl.startsWith('http://') && !_profilePhotoUrl.startsWith('https://'))
-                      ? const ResizeImage(AssetImage('assets/images/profile_user.png'), width: 90)
+                      ? const ResizeImage(AssetImage('assets/images/no-profile-picture-icon.webp'), width: 90)
                       : _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 90),
                   fit: BoxFit.cover,
                 ),
@@ -1168,13 +1168,13 @@ class HomeScreenState extends State<HomeScreen>
         _buildSectionHeader("From Your Following", showSeeMore: false),
         const SizedBox(height: 16),
         SizedBox(
-          height: 210,
+          height: 250,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
             physics: const ClampingScrollPhysics(),
             itemCount: _followingItems!.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final item = _followingItems![index];
               final product = ProductData(
@@ -1232,13 +1232,13 @@ class HomeScreenState extends State<HomeScreen>
     final items = _newArrivals!;
 
     return SizedBox(
-      height: 210,
+      height: 250,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         physics: const ClampingScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final item = items[index];
           final product = ProductData(
@@ -1279,16 +1279,16 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildNewArrivalsLoading() {
     return SizedBox(
-      height: 210,
+      height: 250,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,
-        separatorBuilder: (_, __) => const SizedBox(width: 16),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, __) => ProductCardSkeleton(
           width: 160,
-          height: 210,
+          height: 250,
           animation: _shimmerController,
         ),
       ),
@@ -1318,12 +1318,12 @@ class HomeScreenState extends State<HomeScreen>
   Widget _buildTrustedNearbySliver() {
     if (_isLoadingTrustedNearby || _trustedNearby == null) {
       return SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         sliver: SliverGrid(
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
             childAspectRatio: 0.65,
           ),
           delegate: SliverChildBuilderDelegate(
@@ -1372,12 +1372,12 @@ class HomeScreenState extends State<HomeScreen>
     final items = _trustedNearby!;
 
     return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
       sliver: SliverGrid(
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
           childAspectRatio: 0.65,
         ),
         delegate: SliverChildBuilderDelegate(
