@@ -340,7 +340,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) =>
                             Image.asset(
-                              'assets/images/profile_user.png',
+                              'assets/images/no-profile-picture-icon.webp',
                               fit: BoxFit.cover,
                             ),
                       ),
@@ -500,37 +500,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
             ),
           ),
 
-          // --- About Me ---
-          if (_bio.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'About Me',
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF414844),
-                  letterSpacing: 0.3,
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                _bio,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF414844),
-                  height: 1.5,
-                ),
-              ),
-            ),
-          ],
+
         ],
       ),
     ),
@@ -1010,7 +980,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     if (_profilePhotoUrl.trim().isNotEmpty) {
       return _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 128);
     }
-    return const AssetImage('assets/images/profile_user.png');
+    return const AssetImage('assets/images/no-profile-picture-icon.webp');
   }
 
   String _statusLabel() {

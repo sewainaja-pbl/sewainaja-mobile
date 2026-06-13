@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fuzzy/fuzzy.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_config.dart';
 import 'data/models/item_model.dart';
 import 'data/repositories/item_repository.dart';
 import 'item_detail_screen.dart';
@@ -105,23 +108,51 @@ class SearchSheetState extends State<SearchSheet>
 
   Future<void> _loadPopularSearches() async {
     try {
-      final categories = await _itemRepo.fetchCategoryNames();
-      if (!mounted) return;
-      setState(() {
-        _suggestions = categories.isNotEmpty 
-          ? categories 
-          : [
-              'Kamera DSLR',
-              'Tenda Camping',
-              'Bor Listrik',
-              'Kemeja Formal',
-              'Sepeda Gunung',
-              'Kompor Portable',
-              'PS5 Controller',
-              'Sleeping Bag',
-            ]; // Fallback if no categories
-      });
+      final response = await http.get(Uri.parse('\${ApiConfig.baseUrl}/categories'));
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          final List<dynamic> data = body['data'] ?? [];
+          final categories = data
+              .map((item) => (item['category'] as String?) ?? '')
+              .where((c) => c.isNotEmpty)
+              .toList();
+
+          if (!mounted) return;
+          setState(() {
+            _suggestions = categories.isNotEmpty 
+              ? categories 
+              : [
+                  'Kamera DSLR',
+                  'Tenda Camping',
+                  'Bor Listrik',
+                  'Kemeja Formal',
+                  'Sepeda Gunung',
+                  'Kompor Portable',
+                  'PS5 Controller',
+                  'Sleeping Bag',
+                ]; // Fallback if no categories
+          });
+          return;
+        }
+      }
     } catch (_) {}
+
+    // Fallback if API fails
+    if (mounted) {
+      setState(() {
+        _suggestions = [
+          'Kamera DSLR',
+          'Tenda Camping',
+          'Bor Listrik',
+          'Kemeja Formal',
+          'Sepeda Gunung',
+          'Kompor Portable',
+          'PS5 Controller',
+          'Sleeping Bag',
+        ];
+      });
+    }
   }
 
   // ── History Logic ──────────────────────────────────────────────────────────

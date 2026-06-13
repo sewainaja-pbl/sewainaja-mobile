@@ -534,7 +534,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) {
                               return Image.asset(
-                                'assets/images/profile_user.png',
+                                'assets/images/no-profile-picture-icon.webp',
                                 width: 44,
                                 height: 44,
                                 fit: BoxFit.cover,
@@ -542,7 +542,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             },
                           )
                         : Image.asset(
-                            'assets/images/profile_user.png',
+                            'assets/images/no-profile-picture-icon.webp',
                             width: 44,
                             height: 44,
                             fit: BoxFit.cover,

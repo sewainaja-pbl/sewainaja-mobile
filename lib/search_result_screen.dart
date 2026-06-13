@@ -321,12 +321,12 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
               // Loading / Empty / Results Data
               if (_isLoading)
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 10.0),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16.0,
-                      mainAxisSpacing: 16.0,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
                       childAspectRatio: 0.65,
                     ),
                     delegate: SliverChildBuilderDelegate(
@@ -356,12 +356,12 @@ class _SearchResultScreenState extends State<SearchResultScreen> {
                 )
               else
                 SliverPadding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 120), // Memberi ruang navbar melayang di bawah
+                  padding: const EdgeInsets.only(left: 10, right: 10, bottom: 120), // Memberi ruang navbar melayang di bawah
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 16.0,
-                      mainAxisSpacing: 16.0,
+                      crossAxisSpacing: 10.0,
+                      mainAxisSpacing: 10.0,
                       childAspectRatio: 0.65,
                     ),
                     delegate: SliverChildBuilderDelegate(

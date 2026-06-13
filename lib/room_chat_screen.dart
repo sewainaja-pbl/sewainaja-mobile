@@ -44,6 +44,7 @@ class RoomChatScreen extends StatefulWidget {
 class _RoomChatScreenState extends State<RoomChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ScrollController _inputScrollController = ScrollController();
   final ChatRepository _chatRepository = ChatRepository();
   String? _roomId;
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -75,6 +76,18 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       _showItemContextPreview = false;
       _chatRepository.markMessagesAsRead(_roomId!);
     }
+    // Auto-scroll when input grows (multiline)
+    _messageController.addListener(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 100),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    });
   }
 
   Future<void> _fetchPartnerProfile() async {
@@ -478,6 +491,19 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         final itemData = doc.data();
         if (itemData != null) {
           itemData['id'] = itemId;
+          
+          // Fix GeoPoint conversion for AjukanSewaScreen
+          if (itemData['address'] is Map) {
+            final address = itemData['address'] as Map<String, dynamic>;
+            if (address['coordinat'] is GeoPoint) {
+              final gp = address['coordinat'] as GeoPoint;
+              address['coordinat'] = {
+                'latitude': gp.latitude,
+                'longitude': gp.longitude,
+              };
+            }
+          }
+
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -494,6 +520,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     NotificationService.instance.setChatAreaActive(_wasChatAreaActive);
     _messageController.dispose();
     _scrollController.dispose();
+    _inputScrollController.dispose();
     super.dispose();
   }
 
@@ -530,13 +557,18 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F0),
+      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFF012D1D),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF4F4F0),
-        elevation: 0,
+        backgroundColor: const Color(0xFFFDF9F4),
+        elevation: 3,
+        shadowColor: Colors.black12,
         automaticallyImplyLeading: false,
         toolbarHeight: 70,
         titleSpacing: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
           onPressed: () => Navigator.pop(context),
@@ -551,7 +583,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                   ownerName: _actualPartnerName ?? widget.partnerName,
                   avatarImage: _actualPartnerAvatarUrl != null && _actualPartnerAvatarUrl!.isNotEmpty
                       ? _imageUploadService.buildImageProvider(_actualPartnerAvatarUrl!)
-                      : const AssetImage('assets/images/profile_user.png'),
+                      : const AssetImage('assets/images/no-profile-picture-icon.webp'),
                 ),
               ),
             );
@@ -572,7 +604,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                           fit: BoxFit.cover,
                         )
                       : Image.asset(
-                          'assets/images/profile_user.png',
+                          'assets/images/no-profile-picture-icon.webp',
                           fit: BoxFit.cover,
                         ),
                 ),
@@ -616,66 +648,87 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: _roomId == null
-                ? Column(
-                    children: [
-                      _buildSecurityWarningBanner(),
-                      _buildPromoBanner(),
-                      const Spacer(),
-                      const Center(
-                        child: Text(
-                          "Kirim pesan pertama Anda!",
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
-                  )
-                : StreamBuilder<List<ChatMessageModel>>(
-                    stream: _chatRepository.watchMessages(_roomId!),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)));
-                      }
-                      
-                      final messages = snapshot.data ?? [];
-                      final listItems = _buildListItems(messages);
-                      
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        if (_scrollController.hasClients) {
-                          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-                        }
-                      });
-
-                      return ListView.builder(
-                        controller: _scrollController,
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: listItems.length + 2, // Warning banner + Promo + items
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return _buildSecurityWarningBanner();
-                          }
-                          if (index == 1) {
-                            return _buildPromoBanner();
-                          }
-                          final item = listItems[index - 2];
-                          if (item is String) {
-                            return _buildDateSeparator(item);
-                          }
-                          return _buildBubbleRow(item as ChatMessageModel);
-                        },
-                      );
-                    },
-                  ),
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/background.png',
+              fit: BoxFit.cover,
+            ),
           ),
-          _buildBottomInputArea(),
+          Positioned.fill(
+            child: Container(
+              color: const Color(0xFF012D1D).withValues(alpha: 0.8),
+            ),
+          ),
+          SafeArea(
+            top: false,
+            bottom: false,
+            child: Column(
+              children: [
+                Expanded(
+                  child: _roomId == null
+                      ? Column(
+                          children: [
+                            SizedBox(height: MediaQuery.of(context).padding.top + 70 + 8),
+                            _buildSecurityWarningBanner(),
+                            const Spacer(),
+                            const Center(
+                              child: Text(
+                                "Kirim pesan pertama Anda!",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                          ],
+                        )
+                      : StreamBuilder<List<ChatMessageModel>>(
+                          stream: _chatRepository.watchMessages(_roomId!),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator(color: Colors.white));
+                            }
+                            
+                            final messages = snapshot.data ?? [];
+                            final listItems = _buildListItems(messages);
+                            
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (_scrollController.hasClients) {
+                                _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                              }
+                            });
+
+                            return ListView.builder(
+                              controller: _scrollController,
+                              physics: const ClampingScrollPhysics(),
+                              padding: EdgeInsets.only(
+                                left: 16,
+                                right: 16,
+                                top: MediaQuery.of(context).padding.top + 70 + 8,
+                                bottom: 8,
+                              ),
+                              itemCount: listItems.length + 1, // Warning banner + items
+                              itemBuilder: (context, index) {
+                                if (index == 0) {
+                                  return _buildSecurityWarningBanner();
+                                }
+                                final item = listItems[index - 1];
+                                if (item is String) {
+                                  return _buildDateSeparator(item);
+                                }
+                                return _buildBubbleRow(item as ChatMessageModel);
+                              },
+                            );
+                          },
+                        ),
+                ),
+                _buildBottomInputArea(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -685,71 +738,30 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
       alignment: Alignment.center,
-      child: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-            color: Color(0xFF414844),
-            height: 1.4,
-          ),
-          children: [
-            const TextSpan(
-              text: "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi kepada penjual, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi SewaIn Aja, ya. ",
-            ),
-            WidgetSpan(
-              child: GestureDetector(
-                onTap: () {},
-                child: const Text(
-                  "Baca Panduan Keamanan",
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF012D1D),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPromoBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F8F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFA3E4D7), width: 1),
-      ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF1ABC9C), size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  color: Color(0xFF012D1D),
-                ),
-                children: [
-                  TextSpan(text: "Ada Gratis Ongkir untuk 1 pesanan/transaksi di toko ini! "),
-                  TextSpan(
-                    text: "Cek Info Terbaru",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1ABC9C),
-                    ),
-                  ),
-                ],
+          const Text(
+            "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi kepada penjual, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi SewaIn Aja, ya.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: Colors.white70,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () {},
+            child: const Text(
+              "Baca Panduan Keamanan",
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: Color(0xFFC1ECD4),
+                decoration: TextDecoration.underline,
               ),
             ),
           ),
@@ -764,11 +776,11 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         padding: const EdgeInsets.symmetric(vertical: 16),
         child: Text(
           dateText,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: 'Plus Jakarta Sans',
             fontWeight: FontWeight.w500,
             fontSize: 12,
-            color: const Color(0xFF414844).withValues(alpha: 0.6),
+            color: Colors.white60,
           ),
         ),
       ),
@@ -1067,43 +1079,58 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                               color: Color(0xFF012D1D),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            "GRATIS ONGKIR",
-                            style: TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.bold,
-                              fontSize: 10,
-                              color: Color(0xFF10B981),
-                            ),
-                          ),
+
                         ],
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
-              // Action Button
-              ElevatedButton(
-                onPressed: () => _navigateToAjukanSewa(itemId),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF012D1D),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  "Sewa Sekarang",
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: Colors.white,
-                  ),
-                ),
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('items').doc(itemId).get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox.shrink();
+                  }
+
+                  bool isOwnItem = false;
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>?;
+                    final ownerId = data?['ownerId'] as String?;
+                    isOwnItem = ownerId != null && ownerId == _currentUserId;
+                  }
+
+                  if (isOwnItem) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => _navigateToAjukanSewa(itemId),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF012D1D),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          "Sewa Sekarang",
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -1114,6 +1141,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
 
   Widget _buildBottomInputArea() {
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1122,12 +1150,23 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         _buildQuickReplies(),
         Container(
           decoration: const BoxDecoration(
-            color: Color(0xFF012D1D),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+            color: Color(0xFFFDF9F4),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 12,
+                offset: Offset(0, -4),
+              ),
+            ],
           ),
-          child: SafeArea(
-            top: false,
-            child: _buildMainInputRow(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMainInputRow(),
+              // Fill the system nav bar area so there's no gap on any device
+              SizedBox(height: bottomPadding),
+            ],
           ),
         ),
       ],
@@ -1242,7 +1281,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     }
     final replies = [
       "Hai, barang ini ready?",
-      "Bisa dikirim hari ini?",
+      "Bisa disewa hari ini?",
     ];
 
     return Container(
@@ -1280,73 +1319,106 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
 
   Widget _buildMainInputRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.add, color: Color(0xFF012D1D)),
-              onPressed: _pickAndSendImage,
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF012D1D),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white),
+                onPressed: _pickAndSendImage,
+              ),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Container(
-              height: 48,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
+                color: const Color(0xFF012D1D),
+                borderRadius: BorderRadius.circular(22),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      style: const TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontSize: 14,
-                        color: Color(0xFF012D1D),
-                      ),
-                      decoration: const InputDecoration(
-                        hintText: "Message....",
-                        hintStyle: TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 14,
-                          color: Color(0xFF9CA3AF),
+                    child: ScrollbarTheme(
+                      data: ScrollbarThemeData(
+                        thumbColor: WidgetStateProperty.all(
+                          Colors.white.withValues(alpha: 0.5),
                         ),
-                        border: InputBorder.none,
-                        isDense: true,
+                        trackColor: WidgetStateProperty.all(
+                          Colors.white.withValues(alpha: 0.15),
+                        ),
+                        trackVisibility: WidgetStateProperty.all(true),
+                        thickness: WidgetStateProperty.all(3),
+                        radius: const Radius.circular(8),
                       ),
-                      onSubmitted: (_) => _sendMessage(),
+                      child: Scrollbar(
+                        controller: _inputScrollController,
+                        thumbVisibility: true,
+                        interactive: true,
+                        child: TextField(
+                          controller: _messageController,
+                          scrollController: _inputScrollController,
+                          minLines: 1,
+                          maxLines: 6,
+                          textInputAction: TextInputAction.newline,
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 14,
+                            color: Colors.white,
+                            height: 1.4,
+                          ),
+                          decoration: const InputDecoration(
+                            hintText: "Ketik pesan...",
+                            hintStyle: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 14,
+                              color: Color(0xFF6B9E87),
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  if (_isUploadingImage)
-                    const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Color(0xFF012D1D),
+                  if (_isUploadingImage) ...
+                    [
+                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       ),
-                    )
+                    ]
                 ],
               ),
             ),
           ),
           const SizedBox(width: 12),
-          Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.send, color: Color(0xFF012D1D), size: 20),
-              onPressed: () => _sendMessage(),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFF012D1D),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: () => _sendMessage(),
+              ),
             ),
           ),
         ],

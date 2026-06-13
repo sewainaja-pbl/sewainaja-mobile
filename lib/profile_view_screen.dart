@@ -8,6 +8,7 @@ import 'search_result_screen.dart';
 import 'models/product.dart';
 import 'see_all_reviews_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/report_dialog.dart';
 import 'data/repositories/user_repository.dart';
 import 'data/repositories/rating_repository.dart';
@@ -18,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'auth_session_service.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
+import 'profile_settings_screen.dart';
 
 class ProfileViewScreen extends StatefulWidget {
   final String? ownerId;
@@ -45,6 +47,11 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   String _selectedCategory = "All";
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  
+  bool _isEditingBio = false;
+  final TextEditingController _bioController = TextEditingController();
+  bool _isSavingBio = false;
+  bool _isBioExpanded = false;
   
   late String _targetOwnerId;
   Map<String, dynamic>? _userProfile;
@@ -108,6 +115,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _bioController.dispose();
     super.dispose();
   }
 
@@ -147,7 +155,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
     }();
     final ImageProvider effectiveAvatar = avatarUrl != null 
         ? NetworkImage(avatarUrl) as ImageProvider 
-        : (widget.avatarImage ?? const AssetImage("assets/images/profile_user.png"));
+        : (widget.avatarImage ?? const AssetImage("assets/images/no-profile-picture-icon.webp"));
 
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF), // Cream background
@@ -180,9 +188,22 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
             expandedHeight: isOwnProfile ? 210 : 270,
             elevation: 0,
             flexibleSpace: FlexibleSpaceBar(
-              background: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
+              background: Stack(
                 children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/background.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      color: const Color(0xFF012D1D).withValues(alpha: 0.8),
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
                   SafeArea(
                     bottom: false,
                     child: Column(
@@ -452,6 +473,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                   const SizedBox(height: 10),
                 ],
               ),
+                ],
+              ),
             ),
             bottom: PreferredSize(
               preferredSize: const Size.fromHeight(20),
@@ -483,31 +506,142 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    "ABOUT ME",
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Color(0xFF414844),
-                                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        "ABOUT ME",
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: Color(0xFF414844),
+                                        ),
+                                      ),
+                                      if (isOwnProfile && !_isEditingBio)
+                                        GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _isEditingBio = true;
+                                              _bioController.text = aboutMeText;
+                                            });
+                                          },
+                                          child: const Icon(
+                                            Icons.edit_outlined,
+                                            size: 18,
+                                            color: Color(0xFF012D1D),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
-                                  Text(
-                                    aboutMeText,
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontWeight: FontWeight.normal,
-                                      fontSize: 13,
-                                      height: 1.5,
-                                      color: Color(0xFF414844),
+                                  if (_isEditingBio) ...[
+                                    TextField(
+                                      controller: _bioController,
+                                      maxLines: 4,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 13,
+                                        color: Color(0xFF414844),
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: 'Tuliskan deskripsi profil Anda...',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: const BorderSide(color: Color(0xFF012D1D), width: 1.5),
+                                        ),
+                                        contentPadding: const EdgeInsets.all(12),
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        TextButton(
+                                          onPressed: _isSavingBio ? null : () {
+                                            setState(() {
+                                              _isEditingBio = false;
+                                            });
+                                          },
+                                          child: const Text('Batal', style: TextStyle(color: Color(0xFF414844))),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFF012D1D),
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          ),
+                                          onPressed: _isSavingBio ? null : () async {
+                                            setState(() => _isSavingBio = true);
+                                            try {
+                                              await FirebaseFirestore.instance.collection('users').doc(_targetOwnerId).update({
+                                                'bio': _bioController.text.trim(),
+                                              });
+                                              setState(() {
+                                                _isEditingBio = false;
+                                              });
+                                              await _loadProfile(); // Reload the profile
+                                            } catch (e) {
+                                              showAppErrorSnack(context, 'Gagal menyimpan About Me');
+                                            } finally {
+                                              if (mounted) setState(() => _isSavingBio = false);
+                                            }
+                                          },
+                                          child: _isSavingBio 
+                                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                              : const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
+                                        ),
+                                      ],
+                                    ),
+                                  ] else ...[
+                                    Text(
+                                      aboutMeText,
+                                      maxLines: _isBioExpanded ? null : 3,
+                                      overflow: _isBioExpanded ? null : TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.normal,
+                                        fontSize: 13,
+                                        height: 1.5,
+                                        color: Color(0xFF414844),
+                                      ),
+                                    ),
+                                    if (aboutMeText.length > 100 || aboutMeText.split('\n').length > 3)
+                                      Align(
+                                        alignment: Alignment.bottomRight,
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            setState(() {
+                                              _isBioExpanded = !_isBioExpanded;
+                                            });
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(top: 4.0),
+                                            child: Text(
+                                              _isBioExpanded ? "See less" : "See more",
+                                              style: const TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                                color: Color(0xFF012D1D),
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ]
                                 ],
                               ),
                             ),
@@ -773,12 +907,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                               ),
                             )
                           : SliverPadding(
-                              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                              padding: const EdgeInsets.symmetric(horizontal: 10.0),
                               sliver: SliverGrid(
                                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                   crossAxisCount: 2,
-                                  mainAxisSpacing: 16,
-                                  crossAxisSpacing: 16,
+                                  mainAxisSpacing: 10,
+                                  crossAxisSpacing: 10,
                                   childAspectRatio: 0.65,
                                 ),
                                 delegate: SliverChildBuilderDelegate(
