@@ -511,7 +511,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ],
                               ),
                             ),
-
+                            const SizedBox(height: 24),
 
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
