@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -174,13 +175,34 @@ class ChatRepository {
         'deletedAt': null,
       });
 
+      // Parse item_card JSON for notification
+      String notifBody = messageText;
+      String? notifImageUrl;
+
+      if (messageType == 'item_card') {
+        try {
+          final decoded = jsonDecode(messageText);
+          final itemNameFromData = decoded['name'] ?? "Barang";
+          notifBody = '📦 $itemNameFromData';
+          notifImageUrl = decoded['image'];
+        } catch (_) {
+          notifBody = '📦 Barang';
+        }
+      } else if (messageType == 'image') {
+        notifBody = '📷 Foto';
+        notifImageUrl = messageText;
+      }
+
       // Create notification for the partner
       final newNotificationRef = _db.collection('notifications').doc();
       batch.set(newNotificationRef, {
         'userId': partnerId,
         'type': 'reminder',
         'title': 'Pesan baru dari $currentUserName',
-        'body': messageType == 'image' ? '📷 Foto' : messageText,
+        'body': notifBody,
+        if (notifImageUrl != null) 'imageUrl': notifImageUrl,
+        'chatPartnerId': currentUserId,
+        'chatPartnerName': currentUserName,
         'isRead': false,
         'isSent': false, // Cloud Function trigger akan set true setelah kirim FCM
         'transactionId': null,

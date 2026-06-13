@@ -1592,81 +1592,78 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
   Widget _buildOwnerCatalog() {
     final String? currentItemId = widget.itemId ?? widget.item?.id;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<List<ItemModel>>(
+      stream: _ownerItemsStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 220,
+            child: Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
+              ),
+            ),
+          );
+        }
+        
+        List<ItemModel> ownerItems = [];
+        if (snapshot.hasData) {
+          ownerItems = snapshot.data!
+              .where((item) => item.id != currentItemId)
+              .toList();
+        }
+        
+        if (ownerItems.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Lainnya di toko ini",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-                color: Color(0xFF012D1D),
-              ),
-            ),
-            GestureDetector(
-              onTap: () {
-                final sellerName = _itemData?['ownerName'] as String? ?? widget.item?.ownerName ?? 'Owner';
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileViewScreen(
-                      ownerId: _itemData?['ownerId'] as String? ?? widget.item?.ownerId,
-                      ownerName: sellerName,
-                      avatarImage: _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
-                          ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
-                          : const AssetImage('assets/images/profile_user.png'),
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Lainnya di toko ini",
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                    color: Color(0xFF012D1D),
                   ),
-                );
-              },
-              child: const Text(
-                "Lihat Semua",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                  color: Color(0xFF7B5804),
                 ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 220,
-          child: StreamBuilder<List<ItemModel>>(
-            stream: _ownerItemsStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
-                  ),
-                );
-              }
-              List<ItemModel> ownerItems = [];
-              if (snapshot.hasData) {
-                ownerItems = snapshot.data!
-                    .where((item) => item.id != currentItemId)
-                    .toList();
-              }
-              if (ownerItems.isEmpty) {
-                return const Center(
-                  child: Text(
-                    "Tidak ada barang lain",
+                GestureDetector(
+                  onTap: () {
+                    final sellerName = _itemData?['ownerName'] as String? ?? widget.item?.ownerName ?? 'Owner';
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileViewScreen(
+                          ownerId: _itemData?['ownerId'] as String? ?? widget.item?.ownerId,
+                          ownerName: sellerName,
+                          avatarImage: _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
+                              ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
+                              : const AssetImage('assets/images/profile_user.png'),
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text(
+                    "Lihat Semua",
                     style: TextStyle(
                       fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
                       fontSize: 12,
-                      color: Colors.black54,
+                      color: Color(0xFF7B5804),
                     ),
                   ),
-                );
-              }
-              return ListView.separated(
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 220,
+              child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 physics: const ClampingScrollPhysics(),
                 padding: EdgeInsets.zero,
@@ -1695,11 +1692,11 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                     ),
                   );
                 },
-              );
-            },
-          ),
-        ),
-      ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
