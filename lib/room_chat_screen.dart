@@ -623,7 +623,6 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                 ? Column(
                     children: [
                       _buildSecurityWarningBanner(),
-                      _buildPromoBanner(),
                       const Spacer(),
                       const Center(
                         child: Text(
@@ -657,15 +656,12 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         controller: _scrollController,
                         physics: const ClampingScrollPhysics(),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        itemCount: listItems.length + 2, // Warning banner + Promo + items
+                        itemCount: listItems.length + 1, // Warning banner + items
                         itemBuilder: (context, index) {
                           if (index == 0) {
                             return _buildSecurityWarningBanner();
                           }
-                          if (index == 1) {
-                            return _buildPromoBanner();
-                          }
-                          final item = listItems[index - 2];
+                          final item = listItems[index - 1];
                           if (item is String) {
                             return _buildDateSeparator(item);
                           }
@@ -685,71 +681,30 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     return Container(
       margin: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
       alignment: Alignment.center,
-      child: RichText(
-        textAlign: TextAlign.center,
-        text: TextSpan(
-          style: const TextStyle(
-            fontFamily: 'Plus Jakarta Sans',
-            fontWeight: FontWeight.w500,
-            fontSize: 11,
-            color: Color(0xFF414844),
-            height: 1.4,
-          ),
-          children: [
-            const TextSpan(
-              text: "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi kepada penjual, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi SewaIn Aja, ya. ",
-            ),
-            WidgetSpan(
-              child: GestureDetector(
-                onTap: () {},
-                child: const Text(
-                  "Baca Panduan Keamanan",
-                  style: TextStyle(
-                    fontFamily: 'Plus Jakarta Sans',
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF012D1D),
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPromoBanner() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F8F5),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFA3E4D7), width: 1),
-      ),
-      child: Row(
+      child: Column(
         children: [
-          const Icon(Icons.info_outline, color: Color(0xFF1ABC9C), size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: const TextSpan(
-                style: TextStyle(
-                  fontFamily: 'Plus Jakarta Sans',
-                  fontSize: 11,
-                  color: Color(0xFF012D1D),
-                ),
-                children: [
-                  TextSpan(text: "Ada Gratis Ongkir untuk 1 pesanan/transaksi di toko ini! "),
-                  TextSpan(
-                    text: "Cek Info Terbaru",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1ABC9C),
-                    ),
-                  ),
-                ],
+          const Text(
+            "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi kepada penjual, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi SewaIn Aja, ya.",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w500,
+              fontSize: 11,
+              color: Color(0xFF414844),
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 4),
+          GestureDetector(
+            onTap: () {},
+            child: const Text(
+              "Baca Panduan Keamanan",
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                color: Color(0xFF012D1D),
+                decoration: TextDecoration.underline,
               ),
             ),
           ),

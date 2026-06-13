@@ -872,6 +872,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         _itemData?['address']?['fullAddress']?.toString();
     final String sellerLoc =
         addressLabel ?? widget.sellerLocation ?? "Lokasi tidak tersedia";
+    final ImageProvider effectiveAvatar = _ownerAvatarUrl != null && _ownerAvatarUrl!.isNotEmpty
+        ? ImageUploadService().buildImageProvider(_ownerAvatarUrl!)
+        : const AssetImage('assets/images/profile_user.png');
 
     return GestureDetector(
       onTap: () {
@@ -881,7 +884,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
             builder: (context) => ProfileViewScreen(
               ownerId: _itemData?['ownerId'] as String? ?? widget.item?.ownerId,
               ownerName: sellerName,
-              avatarImage: const AssetImage('assets/images/profile_user.png'),
+              avatarImage: effectiveAvatar,
             ),
           ),
         );
@@ -905,8 +908,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                image: const DecorationImage(
-                  image: AssetImage('assets/images/profile_user.png'),
+                image: DecorationImage(
+                  image: effectiveAvatar,
                   fit: BoxFit.cover,
                 ),
                 border: Border.all(color: const Color(0xFFE0E0E0), width: 1),

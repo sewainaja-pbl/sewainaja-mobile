@@ -3978,3 +3978,114 @@ flutter:
 # 1. Image Overlay: Pastikan komponen "Rating Badge" dimasukkan menggunakan widget Stack di dalam kartu produk agar posisinya melayang tepat di pojok kiri atas foto produk.
 # 2. Text Overflow: Judul produk pada item card dibatasi maksimal 2 baris (maxLines: 2) dengan efek ellipsis agar ukuran grid tetap konsisten meskipun nama barang panjang.
 # 3. Bottom Navbar: Berstatus statis (fixed) dan item "Cari" menjadi tab aktif yang disorot dengan latar belakang hijau mint (#C1ECD4).
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - HELP & SUPPORT SCREEN
+# =============================================================
+# Name: SewaIn Aja - Help & Support
+# Description: Pusat bantuan pengguna yang berisi kolom pencarian, 
+#              kartu akses cepat (Chat Support & Laporan Kendala), 
+#              dan daftar kategori kendala operasional/keamanan.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Plus Jakarta Sans & Poppins
+# Icons: Material Icons / Tabler Icons (arrow_back, search, chat, warning_amber, store, shopping_bag, payments, security, description)
+# Layout: Scaffold -> CustomScrollView / SingleChildScrollView
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+
+# --- 1A. TOP APP BAR ---
+# Widget: AppBar (elevation: 0, bg: transparent)
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "Help & Support" (Poppins SemiBold 18, #012D1D)
+# CenterTitle: false
+
+# --- 1B. HEADER & SEARCH SECTION ---
+# Layout: Column, padding horizontal 20px, top 16px
+# Children:
+#   - Title: "Halo, ada yang bisa kami bantu?" (Plus Jakarta Sans Bold 24, #012D1D, height 1.3)
+#   - Subtitle: "Cari solusi atau masalah yang sedang Anda alami." (Plus Jakarta Sans Regular 14, #414844)
+#   - Margin: height 24px
+#   - Search Bar:
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 999px, padding 12x16
+#       - Row: Icon search (#717973) + SizedBox(width 12) + Text "Cari solusi atau masalah" (Plus Jakarta Sans Regular 14, #717973)
+
+# --- 1C. SUPPORT ACTION CARDS ---
+# Layout: Column, padding horizontal 20px, top 24px, gap 16px
+# Children:
+#
+#   # Card 1: Chat Layanan Bantuan
+#   - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (crossAxisAlignment: start):
+#       - Icon Badge: Container bg #C1ECD4 (Light Mint), radius 8px, padding 8px -> Icon chat (#012D1D, size 20)
+#       - Margin: height 12px
+#       - Title: "Chat Layanan Bantuan" (Plus Jakarta Sans Bold 16, #012D1D)
+#       - Description: "Hubungi tim support kami secara langsung untuk bantuan cepat." (Plus Jakarta Sans Regular 12, #414844, height 1.4)
+#       - Margin: height 12px
+#       - Action Link: Row -> Text "Mulai Chat" (Plus Jakarta Sans SemiBold 12, #012D1D) + Icon arrow_forward (#012D1D, size 16)
+#
+#   # Card 2: Laporan Kendala (Keamanan & Transaksi)
+#   - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (crossAxisAlignment: start):
+#       - Icon Badge: Container bg #FFDAD6 (Light Red), radius 8px, padding 8px -> Icon warning_amber (#93000A, size 20)
+#       - Margin: height 12px
+#       - Title: "Laporan Kendala" (Plus Jakarta Sans Bold 16, #012D1D)
+#       - Description: "Pilih peran Anda untuk melaporkan masalah transaksi atau indikasi penipuan." (Plus Jakarta Sans Regular 12, #414844, height 1.4)
+#       - Margin: height 16px
+#       - Action Buttons Row (gap 12px):
+#           - Button Owner (Expanded): OutlinedButton, border 1px #012D1D, radius 8px, padding vertical 12px -> Column -> Icon store (#012D1D, size 18) + Text "Saya Pemilik" (Plus Jakarta Sans SemiBold 12, #012D1D)
+#           - Button Renter (Expanded): OutlinedButton, border 1px #012D1D, radius 8px, padding vertical 12px -> Column -> Icon shopping_bag (#012D1D, size 18) + Text "Saya Penyewa" (Plus Jakarta Sans SemiBold 12, #012D1D)
+
+# --- 1D. HELP CATEGORIES SECTION ---
+# Layout: Column, padding horizontal 20px, top 32px, bottom 40px
+# Children:
+#   - Title: "Kategori Bantuan" (Plus Jakarta Sans Bold 18, #012D1D)
+#   - Margin: height 16px
+#   - List of Category Cards (gap 12px):
+#
+#       # Item 1: Pembayaran
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon payments (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Pembayaran" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Tagihan, deposit, refund" (Plus Jakarta Sans Regular 12, #414844)
+#
+#       # Item 2: Akun & Keamanan
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon security (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Akun & Keamanan" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Password, verifikasi, privasi" (Plus Jakarta Sans Regular 12, #414844)
+#
+#       # Item 3: Ketentuan Sewa
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon description (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Ketentuan Sewa" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Aturan, sanksi, durasi" (Plus Jakarta Sans Regular 12, #414844)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF"
+# Color_Card_Bg: "#FFFFFF"
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Text_Sub: "#414844"
+# Color_Icon_Bg_Mint: "#C1ECD4"
+# Color_Icon_Bg_Red: "#FFDAD6"
+# Color_Icon_Red: "#93000A"
+# Color_Icon_Bg_Gray: "#F3F4F6"

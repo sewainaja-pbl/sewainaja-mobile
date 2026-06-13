@@ -11,6 +11,7 @@ import 'api_config.dart';
 import 'add_phone_screen.dart';
 import 'app_feedback.dart';
 import 'notification_service.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -27,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen>
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isResetLoading = false;
 
   @override
   void initState() {
@@ -253,165 +253,20 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _handleForgotPassword() async {
-    final seedEmail = _emailController.text.trim();
-    final emailController = TextEditingController(text: seedEmail);
-
-    final submittedEmail = await showDialog<String>(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-          backgroundColor: const Color(0xFFFFF8EF),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Lupa Password?',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF012D1D),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Email',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF2F6743),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autofocus: true,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    color: Color(0xFF012D1D),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'nama@email.com',
-                    hintStyle: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: const Color(0xFF717973).withValues(alpha: 0.7),
-                    ),
-                    enabledBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF2F6743), width: 2),
-                    ),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF012D1D), width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF2F6743),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      child: const Text('Batal'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context, emailController.text.trim());
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2F7E5E),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 10,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        textStyle: const TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      child: const Text('Kirim'),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+  void _handleForgotPassword() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ForgotPasswordScreen(),
+      ),
     );
-
-    emailController.dispose();
-
-    if (!mounted || submittedEmail == null) return;
-
-    final email = submittedEmail.trim();
-    if (email.isEmpty) {
-      _showSnackBar('Email wajib diisi.');
-      return;
-    }
-
-    setState(() {
-      _isResetLoading = true;
-    });
-
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      if (!mounted) return;
-      _showSnackBar(
-        'Link reset password sudah dikirim. Cek email kamu ya.',
-        isError: false,
-      );
-    } on FirebaseAuthException catch (e) {
-      if (!mounted) return;
-      if (e.code == 'invalid-email') {
-        _showSnackBar('Format email tidak valid.');
-      } else if (e.code == 'user-not-found') {
-        _showSnackBar('Email belum terdaftar.');
-      } else if (e.code == 'too-many-requests') {
-        _showSnackBar('Terlalu banyak percobaan. Coba beberapa saat lagi.');
-      } else {
-        _showSnackBar('Gagal kirim reset password: ${e.message ?? e.code}');
-      }
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar('Terjadi kesalahan saat reset password.');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isResetLoading = false;
-        });
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
     final isGoogleLoading = authController.status == AuthStatus.loading;
-    final isAnyLoading = _isLoading || _isResetLoading || isGoogleLoading;
+    final isAnyLoading = _isLoading || isGoogleLoading;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(

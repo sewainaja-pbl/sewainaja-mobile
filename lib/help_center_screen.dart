@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'help_support_screen.dart';
 
 class HelpCenterScreen extends StatelessWidget {
   const HelpCenterScreen({super.key});
@@ -55,7 +56,7 @@ class HelpCenterScreen extends StatelessWidget {
             const SizedBox(height: 22),
             _buildFaqSection(),
             const SizedBox(height: 22),
-            _buildSupportCard(),
+            _buildSupportCard(context),
           ],
         ),
       ),
@@ -137,8 +138,15 @@ class HelpCenterScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSupportCard() {
-    return Container(
+  Widget _buildSupportCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HelpSupportScreen()),
+        );
+      },
+      child: Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -187,7 +195,7 @@ class HelpCenterScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

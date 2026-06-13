@@ -99,92 +99,101 @@ class NewArrivalsScreen extends StatelessWidget {
 
           final items = snapshot.data!;
 
-          return GridView.builder(
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 60 + 12,
-              left: 16.0,
-              right: 16.0,
-              bottom: 16.0,
-            ),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16.0,
-              mainAxisSpacing: 16.0,
-              childAspectRatio: 0.65,
-            ),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              final product = ProductData(
-                id: item.id,
-                name: item.name,
-                price: item.formattedPrice,
-                rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
-                image: item.primaryPhoto,
-                isLocalAsset: !item.primaryPhoto.startsWith('http'),
-                originalItem: item,
-              );
-              return SubtleFadeIn(
-                delay: Duration(milliseconds: index * 45),
-                child: PressableScale(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemDetailScreen(
-                        itemId: item.id,
-                        item: item,
-                        itemName: item.name,
-                        pricePerHour: item.pricePerHour,
-                        imagePath: item.primaryPhoto,
-                      ),
-                    ),
+          return CustomScrollView(
+            physics: const ClampingScrollPhysics(),
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 60 + 12,
+                  left: 16.0,
+                  right: 16.0,
+                  bottom: 16.0,
+                ),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16.0,
+                    mainAxisSpacing: 16.0,
+                    childAspectRatio: 0.65,
                   ),
-                  child: ProductCard(
-                  product: product,
-                  onMorePressed: () {
-                    showProductMoreSheet(
-                      context: context,
-                      product: product,
-                      onFavoritePressed: () {
-                        showAppSuccessSnack(
-                          context,
-                          '${item.name} disimpan ke Favorit!',
-                        );
-                      },
-                      onSimilarPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SearchResultScreen(
-                              searchQuery: item.name,
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final item = items[index];
+                      final product = ProductData(
+                        id: item.id,
+                        name: item.name,
+                        price: item.formattedPrice,
+                        rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
+                        image: item.primaryPhoto,
+                        isLocalAsset: !item.primaryPhoto.startsWith('http'),
+                        originalItem: item,
+                      );
+                      return SubtleFadeIn(
+                        delay: Duration(milliseconds: index * 45),
+                        child: PressableScale(
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemDetailScreen(
+                                itemId: item.id,
+                                item: item,
+                                itemName: item.name,
+                                pricePerHour: item.pricePerHour,
+                                imagePath: item.primaryPhoto,
+                              ),
                             ),
                           ),
-                        );
-                      },
-                      onNotInterestedPressed: () {
-                        showAppSuccessSnack(
-                          context,
-                          'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
-                        );
-                      },
-                      onReportPressed: () {
-                        if (item.ownerId.isEmpty) {
-                          showAppErrorSnack(context, 'Data pemilik tidak ditemukan.');
-                          return;
-                        }
-                        showReportDialog(
-                          context,
-                          reportedId: item.ownerId,
-                          itemId: item.id,
-                          itemName: item.name,
-                        );
-                      },
-                    );
-                  },
+                          child: ProductCard(
+                            product: product,
+                            onMorePressed: () {
+                              showProductMoreSheet(
+                                context: context,
+                                product: product,
+                                onFavoritePressed: () {
+                                  showAppSuccessSnack(
+                                    context,
+                                    '\${item.name} disimpan ke Favorit!',
+                                  );
+                                },
+                                onSimilarPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SearchResultScreen(
+                                        searchQuery: item.name,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                onNotInterestedPressed: () {
+                                  showAppSuccessSnack(
+                                    context,
+                                    'Rekomendasi disesuaikan. Kami akan mengurangi rekomendasi serupa.',
+                                  );
+                                },
+                                onReportPressed: () {
+                                  if (item.ownerId.isEmpty) {
+                                    showAppErrorSnack(context, 'Data pemilik tidak ditemukan.');
+                                    return;
+                                  }
+                                  showReportDialog(
+                                    context,
+                                    reportedId: item.ownerId,
+                                    itemId: item.id,
+                                    itemName: item.name,
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    childCount: items.length,
+                  ),
                 ),
               ),
-            );
-          },
+            ],
           );
         },
       ),
