@@ -6,6 +6,7 @@ import 'notification_service.dart';
 import 'rental_request_screen.dart';
 import 'room_chat_screen.dart';
 import 'transaction_detail_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -37,20 +38,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
         return Scaffold(
           backgroundColor: const Color(0xFFFDF9F4),
-          appBar: AppBar(
-            backgroundColor: const Color(0xFFFDF9F4),
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            centerTitle: true,
-            title: const Text(
-              'Notifikasi',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF012D1D),
-              ),
-            ),
+          appBar: CustomAppBar(
+            title: 'Notifikasi',
             actions: [
               if (notificationService.unreadCount > 0)
                 TextButton(

@@ -6,6 +6,7 @@ import 'favorite_service.dart';
 import 'item_detail_screen.dart';
 import 'image_upload_service.dart';
 import 'main_navigation_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key});
@@ -103,33 +104,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDF9F4),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF012D1D)),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        title: const Text(
-          "Favorite Saya",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 26,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332), // Hijau Medium
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Favorite Saya',
       ),
       extendBody: true,
       body: Stack(

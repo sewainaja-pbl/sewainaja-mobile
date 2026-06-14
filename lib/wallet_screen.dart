@@ -4,6 +4,7 @@ import 'widgets/subtle_fade_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'widgets/custom_app_bar.dart';
 
 class WalletScreen extends StatefulWidget {
   final double currentBalance;
@@ -130,23 +131,8 @@ class _WalletScreenState extends State<WalletScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF), // Cream background
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF8EF),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF012D1D), size: 28),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Dompet Saya',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF012D1D),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Dompet Saya',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, color: Color(0xFF012D1D)),

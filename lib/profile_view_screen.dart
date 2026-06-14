@@ -20,6 +20,7 @@ import 'auth_session_service.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
 import 'profile_settings_screen.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileViewScreen extends StatefulWidget {
   final String? ownerId;
@@ -263,56 +264,78 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 75,
-                              height: 75,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                                image: DecorationImage(
-                                  image: effectiveAvatar,
-                                  fit: BoxFit.cover,
+                        GestureDetector(
+                          onTap: () {
+                            if (isOwnProfile) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const EditProfileScreen(),
+                                ),
+                              ).then((_) {
+                                _loadProfile();
+                              });
+                            }
+                          },
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 75,
+                                height: 75,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                                child: ClipOval(
+                                  child: Image(
+                                    image: effectiveAvatar,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/images/no-profile-picture-icon.webp',
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              bottom: -6,
-                              left: 0,
-                              right: 0,
-                              child: Center(
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF8BD00),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.star,
-                                        size: 10,
-                                        color: Color(0xFF012D1D),
-                                      ),
-                                      SizedBox(width: 2),
-                                      Text(
-                                        displayRating,
-                                        style: const TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 11,
+                              Positioned(
+                                bottom: -6,
+                                left: 0,
+                                right: 0,
+                                child: Center(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF8BD00),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.star,
+                                          size: 10,
                                           color: Color(0xFF012D1D),
                                         ),
-                                      ),
-                                    ],
+                                        SizedBox(width: 2),
+                                        Text(
+                                          displayRating,
+                                          style: const TextStyle(
+                                            fontFamily: 'Poppins',
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                            color: Color(0xFF012D1D),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -645,7 +668,12 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                 ],
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            
+                            Container(
+                              height: 0.5,
+                              margin: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                              color: const Color(0xFF414844).withValues(alpha: 0.2),
+                            ),
 
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,

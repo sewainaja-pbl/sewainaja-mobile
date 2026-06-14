@@ -9,7 +9,7 @@ import 'adendum_screen.dart';
 import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'widgets/custom_app_bar.dart';
 
 class RentalDeadlineScreen extends StatefulWidget {
   final String? transactionId;
@@ -180,13 +180,8 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     if (_errorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFDF9F4),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-            onPressed: () => Navigator.pop(context),
-          ),
+        appBar: const CustomAppBar(
+          title: 'Error',
         ),
         body: Center(
           child: Padding(
@@ -242,23 +237,8 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
-        title: const Text(
-          'Tenggat',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: CustomAppBar(
+        title: 'Tenggat',
         actions: [
           if (widget.transactionId != null)
             IconButton(
@@ -266,13 +246,6 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
               onPressed: _fetchTransaction,
             ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2),
-            height: 1.0,
-          ),
-        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),

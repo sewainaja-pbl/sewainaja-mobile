@@ -8,8 +8,9 @@ import 'api_config.dart';
 import 'app_feedback.dart';
 import 'auth_session_service.dart';
 import 'image_upload_service.dart';
-import 'profile_sync_service.dart';
 import 'upload_image_policy.dart';
+import 'widgets/custom_app_bar.dart';
+import 'profile_sync_service.dart';
 
 class KtpUploadScreen extends StatefulWidget {
   final VoidCallback? onVerificationCompleted;
@@ -214,45 +215,8 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF8EF),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 24, top: 8),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF012D1D),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    size: 22,
-                    color: Color(0xFFFFF8EF),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Verifikasi KTP (KYC)',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        centerTitle: true,
+      appBar: const CustomAppBar(
+        title: 'Verifikasi KTP (KYC)',
       ),
       body: SafeArea(
         child: Padding(

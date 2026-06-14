@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'upload_evidence_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class ScanQRRenterScreen extends StatefulWidget {
   final Map<String, String> itemData;
@@ -84,33 +85,8 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(
-            Icons.arrow_back_rounded,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        title: const Text(
-          'Serah Terima',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1B4332),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2).withOpacity(0.5),
-            height: 1.0,
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Serah Terima',
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -160,12 +136,24 @@ class _ScanQRRenterScreenState extends State<ScanQRRenterScreen> with SingleTick
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
                               )
                             : Image.asset(
                                 widget.itemData['image']!,
                                 width: 60,
                                 height: 60,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 60,
+                                  height: 60,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
                               ))
                         : Container(
                             width: 60,

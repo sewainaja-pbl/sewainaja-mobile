@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
+import 'widgets/custom_app_bar.dart';
 
 class AdendumScreen extends StatefulWidget {
   final String? transactionId;
@@ -247,13 +248,8 @@ class _AdendumScreenState extends State<AdendumScreen> {
     if (_errorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFDF9F4),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-            onPressed: () => Navigator.pop(context),
-          ),
+        appBar: const CustomAppBar(
+          title: 'Error',
         ),
         body: Center(
           child: Padding(
@@ -315,44 +311,8 @@ class _AdendumScreenState extends State<AdendumScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Color(0xFFFDF9F4),
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Adendum',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 26,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2).withOpacity(0.5),
-            height: 1.0,
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Adendum',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),

@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'data/models/chat_model.dart';
 import 'data/repositories/chat_repository.dart';
 import 'image_upload_service.dart';
+import 'widgets/custom_app_bar.dart';
 
 class ChatScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -133,60 +134,9 @@ class _ChatScreenState extends State<ChatScreen> {
         0xFFFDF9F4,
       ), // Background Color ID: '217:2058'
       // --- SECTION 1: APPBAR ---
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        titleSpacing: 24,
-        title: Padding(
-          padding: const EdgeInsets.only(top: 10),
-          child: Row(
-            children: [
-              // Back Button
-              GestureDetector(
-                onTap: _handleBack,
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF012D1D), // ID: '635:1593' Color
-                  size: 28,
-                ),
-              ),
-              const Spacer(),
-              // Title "Chat"
-              const Text(
-                "Chat",
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600, // SemiBold
-                  color: Color(0xFF012D1D), // ID: '217:2059' Color
-                ),
-              ),
-              const Spacer(),
-              // Dummy spacing to balance the centered title
-              const SizedBox(width: 28),
-            ],
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                  const Color(0xFF012D1D).withValues(alpha: 0.28),
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                ],
-                stops: const [0, 0.5, 1],
-              ),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Chat',
+        onBack: _handleBack,
       ),
 
       // --- MAIN COLUMN CONTENT ---

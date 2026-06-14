@@ -12,6 +12,7 @@ import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'ktp_upload_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/custom_app_bar.dart';
 
 class AjukanSewaScreen extends StatefulWidget {
   final Map<String, dynamic>? itemData;
@@ -305,49 +306,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
     if (_userStatus != 'verified') {
       return Scaffold(
         backgroundColor: const Color(0xFFFFF8EF),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFFF8EF),
-          elevation: 0,
-          automaticallyImplyLeading: false,
-          toolbarHeight: 80,
-          centerTitle: true,
-          leadingWidth: 90,
-          leading: Padding(
-            padding: const EdgeInsets.only(left: 24, top: 10),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF012D1D),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.arrow_back_rounded,
-                      size: 22,
-                      color: Color(0xFFFFF8EF),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          title: const Padding(
-            padding: EdgeInsets.only(top: 10),
-            child: Text(
-              "Ajukan Sewa",
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF012D1D),
-              ),
-            ),
-          ),
+        appBar: const CustomAppBar(
+          title: 'Ajukan Sewa',
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -582,67 +542,8 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         0xFFFDF9F4,
       ), // Background Utama ID: '300:1159'
       // --- SECTION 1: APPBAR / HEADER ---
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        centerTitle: true,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 24, top: 10),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF012D1D),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    size: 18,
-                    color: Color(0xFFFDF9F4),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            "Ajukan",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                  const Color(0xFF012D1D).withValues(alpha: 0.28),
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                ],
-                stops: const [0, 0.5, 1],
-              ),
-            ),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Ajukan',
       ),
 
       // --- MAIN BODY (Section 2 - 6) ---

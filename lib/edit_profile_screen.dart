@@ -14,6 +14,7 @@ import 'auth_session_service.dart';
 import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'upload_image_policy.dart';
+import 'widgets/custom_app_bar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -367,57 +368,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Color_Background
       // --- SECTION 1: APPBAR / HEADER ---
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        centerTitle: true,
-        leadingWidth: 76,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 24, top: 10),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: _handleBack,
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: Color(0xFF012D1D),
-                size: 28,
-              ),
-            ),
-          ),
-        ),
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            "Edit Profil",
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                  const Color(0xFF012D1D).withValues(alpha: 0.28),
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                ],
-                stops: const [0, 0.5, 1],
-              ),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Edit Profil',
+        onBack: _handleBack,
       ),
 
       // --- MAIN BODY ---

@@ -16,7 +16,7 @@ import 'rental_deadline_screen.dart';
 import 'return_evidence_screen.dart';
 import 'owner_return_evidence_screen.dart';
 import 'payment_webview_screen.dart';
-
+import 'widgets/custom_app_bar.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final String? transactionId;
@@ -426,13 +426,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     if (_errorMessage != null) {
       return Scaffold(
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: AppBar(
-          backgroundColor: const Color(0xFFFDF9F4),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-            onPressed: () => Navigator.pop(context),
-          ),
+        appBar: const CustomAppBar(
+          title: 'Error',
         ),
         body: Center(
           child: Padding(
@@ -483,37 +478,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Color(0xFFFDF9F4),
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Detail',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Detail',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
@@ -521,10 +487,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             onPressed: _fetchTransactionDetails,
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
-        ),
       ),
       body: RefreshIndicator(
         onRefresh: _fetchTransactionDetails,

@@ -12,6 +12,7 @@ import 'app_feedback.dart';
 import 'main_navigation_screen.dart';
 import 'map_common_widgets.dart';
 import 'profile_sync_service.dart';
+import 'widgets/custom_app_bar.dart';
 
 class DefaultAddressResult {
   final String label;
@@ -225,20 +226,8 @@ class _DefaultAddressSetupScreenState extends State<DefaultAddressSetupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF8EF),
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Color(0xFF012D1D)),
-        title: const Text(
-          'Set Alamat Utama',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Set Alamat Utama',
       ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

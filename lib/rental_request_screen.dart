@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'room_chat_screen.dart';
 import 'transaction_detail_screen.dart';
 import 'main_navigation_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class RentalRequestScreen extends StatelessWidget {
   const RentalRequestScreen({super.key});
@@ -11,37 +12,8 @@ class RentalRequestScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Color(0xFFFDF9F4),
-                size: 20,
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Permintaan',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Permintaan',
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

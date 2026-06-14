@@ -20,6 +20,7 @@ import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'transaction_detail_screen.dart';
 import 'package:intl/intl.dart';
+import 'widgets/custom_app_bar.dart';
 
 class ProfileSettingsScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -216,47 +217,9 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
       // --- APPBAR ---
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        centerTitle: true,
-        leadingWidth: 76,
-        leading: (widget.onBack != null || Navigator.canPop(context))
-            ? Padding(
-                padding: const EdgeInsets.only(left: 24, top: 10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: GestureDetector(
-                    onTap: () {
-                      if (widget.onBack != null) {
-                        widget.onBack!();
-                      } else {
-                        Navigator.of(context).maybePop();
-                      }
-                    },
-                    child: const Icon(
-                      Icons.arrow_back_rounded,
-                      color: Color(0xFF012D1D),
-                      size: 28,
-                    ),
-                  ),
-                ),
-              )
-            : null,
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            'Profil',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Profil',
+        onBack: widget.onBack,
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),

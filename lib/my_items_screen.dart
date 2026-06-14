@@ -14,6 +14,7 @@ import 'package:http/http.dart' as http;
 import 'auth_session_service.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
+import 'widgets/custom_app_bar.dart';
 
 class MyItemsScreen extends StatefulWidget {
   const MyItemsScreen({super.key});
@@ -100,33 +101,8 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16.0, top: 8.0, bottom: 8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFFDF9F4),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF012D1D)),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-        ),
-        title: const Text(
-          "Barang Saya",
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30, // Updated size based on spec
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332), // Hijau Medium
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Barang Saya',
       ),
       extendBody: true,
       body: Stack(

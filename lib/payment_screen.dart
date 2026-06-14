@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'payment_webview_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class PaymentScreen extends StatefulWidget {
   final String transactionId;
@@ -257,27 +258,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Pembayaran',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Pembayaran',
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)))
