@@ -108,37 +108,17 @@ class SearchSheetState extends State<SearchSheet>
 
   Future<void> _loadPopularSearches() async {
     try {
-      final response = await http.get(Uri.parse('\${ApiConfig.baseUrl}/categories'));
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          final List<dynamic> data = body['data'] ?? [];
-          final categories = data
-              .map((item) => (item['category'] as String?) ?? '')
-              .where((c) => c.isNotEmpty)
-              .toList();
-
-          if (!mounted) return;
-          setState(() {
-            _suggestions = categories.isNotEmpty 
-              ? categories 
-              : [
-                  'Kamera DSLR',
-                  'Tenda Camping',
-                  'Bor Listrik',
-                  'Kemeja Formal',
-                  'Sepeda Gunung',
-                  'Kompor Portable',
-                  'PS5 Controller',
-                  'Sleeping Bag',
-                ]; // Fallback if no categories
-          });
-          return;
-        }
+      final categories = await _itemRepo.fetchCategoryNames();
+      if (categories.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _suggestions = categories;
+        });
+        return;
       }
     } catch (_) {}
 
-    // Fallback if API fails
+    // Fallback if Firestore fails or empty
     if (mounted) {
       setState(() {
         _suggestions = [

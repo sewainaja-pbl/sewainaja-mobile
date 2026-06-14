@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -180,16 +181,36 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                     // ==========================================
                     // KOMPONEN: LOGO IMAGE
                     // ==========================================
-                    Container(
-                      width: 250,
-                      height: 250,
-                      decoration: BoxDecoration(
-                        image: const DecorationImage(
-                          image: AssetImage('assets/images/logo.png'),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Shadow (bayangan gelap di kanan-bawah)
+                        Transform.translate(
+                          offset: const Offset(8, 8),
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+                            child: ColorFiltered(
+                              colorFilter: ColorFilter.mode(
+                                Colors.black.withValues(alpha: 0.6),
+                                BlendMode.srcATop,
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 250,
+                                height: 250,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Logo asli di paling atas
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 250,
+                          height: 250,
                           fit: BoxFit.contain,
                         ),
-                        borderRadius: BorderRadius.circular(40),
-                      ),
+                      ],
                     ),
 
                     // ==========================================

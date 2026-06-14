@@ -400,6 +400,21 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
                               // --- 2E. OWNER CATALOG ---
                               _buildOwnerCatalog(),
+                              const SizedBox(height: 32),
+
+                              // --- 2F. RECOMMENDATION ---
+                              const Text(
+                                "Rekomendasi",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 20,
+                                  color: Color(0xFF012D1D),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildRecommendationGrid(),
+                              const SizedBox(height: 120), // Spacing to avoid bottom action bar
                             ],
                           ),
                         ),
@@ -409,24 +424,6 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ],
               ),
             ),
-                const SliverPadding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-                  sliver: SliverToBoxAdapter(
-                    child: Text(
-                      "Rekomendasi",
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 20,
-                        color: Color(0xFF012D1D),
-                      ),
-                    ),
-                  ),
-                ),
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 24, 130),
-                  sliver: _buildRecommendationSliverGrid(),
-                ),
               ],
             ),
           ),
@@ -1631,7 +1628,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    fontSize: 20,
                     color: Color(0xFF012D1D),
                   ),
                 ),
@@ -1703,21 +1700,19 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
     );
   }
 
-  // 2F. RECOMMENDATION GRID (SliverGrid)
-  Widget _buildRecommendationSliverGrid() {
+  // 2F. RECOMMENDATION GRID (Non-Sliver Grid)
+  Widget _buildRecommendationGrid() {
     final String? currentItemId = widget.itemId ?? widget.item?.id;
 
     return StreamBuilder<List<ItemModel>>(
       stream: _recommendationStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SliverToBoxAdapter(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
-                ),
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF012D1D)),
               ),
             ),
           );
@@ -1729,56 +1724,55 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               .toList();
         }
         if (recommended.isEmpty) {
-          return const SliverToBoxAdapter(
-            child: Center(
-              child: Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Text(
-                  "Tidak ada rekomendasi lainnya",
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: Text(
+                "Tidak ada rekomendasi lainnya",
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.black54,
                 ),
               ),
             ),
           );
         }
         final itemsToDisplay = recommended.take(10).toList();
-        return SliverGrid(
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
             childAspectRatio: 0.7,
           ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ItemDetailScreen(item: itemsToDisplay[index]),
-                    ),
-                  );
-                },
-                child: ProductCard(
-                  product: ProductData(
-                    id: itemsToDisplay[index].id,
-                    name: itemsToDisplay[index].name,
-                    price: "Rp. ${itemsToDisplay[index].pricePerHour.toStringAsFixed(0)}",
-                    rating: itemsToDisplay[index].ownerRating,
-                    image: itemsToDisplay[index].photos.isNotEmpty ? itemsToDisplay[index].photos[0] : "",
-                    originalItem: itemsToDisplay[index],
+          itemCount: itemsToDisplay.length,
+          itemBuilder: (context, index) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ItemDetailScreen(item: itemsToDisplay[index]),
                   ),
-                  isHorizontal: false,
+                );
+              },
+              child: ProductCard(
+                product: ProductData(
+                  id: itemsToDisplay[index].id,
+                  name: itemsToDisplay[index].name,
+                  price: "Rp. ${itemsToDisplay[index].pricePerHour.toStringAsFixed(0)}",
+                  rating: itemsToDisplay[index].ownerRating,
+                  image: itemsToDisplay[index].photos.isNotEmpty ? itemsToDisplay[index].photos[0] : "",
+                  originalItem: itemsToDisplay[index],
                 ),
-              );
-            },
-            childCount: itemsToDisplay.length,
-          ),
+                isHorizontal: false,
+              ),
+            );
+          },
         );
       },
     );

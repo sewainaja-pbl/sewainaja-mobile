@@ -5,6 +5,7 @@ import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'main_navigation_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class OwnerReturnEvidenceScreen extends StatefulWidget {
   final String? transactionId;
@@ -353,36 +354,15 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: const Color(0xFFFDF9F4),
-          centerTitle: true,
-          automaticallyImplyLeading: !widget.isForced,
-          title: const Text(
-            'Serah Terima',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 30,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1B4332),
-            ),
-          ),
-          leading: widget.isForced
-              ? null
-              : IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-                  onPressed: () => Navigator.pop(context),
-                ),
+        appBar: CustomAppBar(
+          title: 'Serah Terima',
+          showBackButton: !widget.isForced,
           actions: [
             IconButton(
               icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
               onPressed: _fetchDetailsAndEvidences,
             ),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
-          ),
         ),
       body: SingleChildScrollView(
         child: Column(

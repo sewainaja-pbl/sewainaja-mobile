@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'help_support_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class HelpCenterScreen extends StatelessWidget {
   const HelpCenterScreen({super.key});
@@ -31,20 +32,8 @@ class HelpCenterScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: const Text(
-          'Pusat Bantuan',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF012D1D),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Pusat Bantuan',
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),

@@ -320,9 +320,11 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
 
   Future<void> _resolveCenterAddress({String? prefilled}) async {
     if (prefilled != null && prefilled.trim().isNotEmpty) {
+      if (!mounted) return;
       setState(() => _centerAddressLabel = _shortAddress(prefilled));
       return;
     }
+    if (!mounted) return;
     setState(() => _isResolvingAddress = true);
     try {
       final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse').replace(
@@ -630,7 +632,7 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                                 ),
                               ),
                               child: Text(
-                                category.label,
+                                category.label.toUpperCase() == 'OUTFIT' ? 'Outfit' : category.label,
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,

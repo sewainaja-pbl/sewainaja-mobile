@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'dispute_form_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class HelpSupportScreen extends StatefulWidget {
   const HelpSupportScreen({super.key});
@@ -89,47 +90,8 @@ class _HelpSupportScreenState extends State<HelpSupportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 24, top: 10),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF012D1D),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    size: 22,
-                    color: Color(0xFFFFF8EF),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10),
-          child: Text(
-            'Help & Support',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Help & Support',
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),

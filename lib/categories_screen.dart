@@ -8,6 +8,7 @@ import 'models/category_model.dart';
 import 'widgets/subtle_fade_in.dart';
 import 'widgets/pressable_scale.dart';
 import 'widgets/skeleton_loader.dart';
+import 'widgets/custom_app_bar.dart';
 
 class CategoriesScreen extends StatefulWidget {
   final VoidCallback? onBack;
@@ -44,62 +45,9 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // main_bg
       extendBodyBehindAppBar: false,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 56,
-        titleSpacing: 24,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              color: Colors.transparent,
-            ),
-          ),
-        ),
-        title: Row(
-            children: [
-              GestureDetector(
-                onTap: () => _handleBack(context),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF012D1D),
-                  size: 28,
-                ),
-              ),
-              const Spacer(),
-              const Text(
-                'Categories',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const Spacer(),
-              const SizedBox(width: 28),
-            ],
-          ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                  const Color(0xFF012D1D).withValues(alpha: 0.28),
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                ],
-                stops: const [0, 0.5, 1],
-              ),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Categories',
+        onBack: () => _handleBack(context),
       ),
       body: Consumer<CategoryController>(
         builder: (context, controller, child) {

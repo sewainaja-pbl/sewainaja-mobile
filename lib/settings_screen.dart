@@ -10,7 +10,7 @@ import 'login_security_screen.dart';
 import 'animated_splash_screen.dart';
 import 'notification_settings_screen.dart';
 import 'privacy_settings_screen.dart';
-
+import 'widgets/custom_app_bar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -168,37 +168,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 82,
-        titleSpacing: 24,
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: () => Navigator.of(context).maybePop(),
-              child: const Icon(
-                Icons.arrow_back_rounded,
-                color: Color(0xFF012D1D),
-                size: 28,
-              ),
-            ),
-            const Spacer(),
-            const Text(
-              'Pengaturan',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 24,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF012D1D),
-              ),
-            ),
-            const Spacer(),
-            const SizedBox(width: 28),
-          ],
-        ),
+      appBar: const CustomAppBar(
+        title: 'Pengaturan',
       ),
       body: SingleChildScrollView(
         physics: const ClampingScrollPhysics(),

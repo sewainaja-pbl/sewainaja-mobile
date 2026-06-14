@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'app_feedback.dart';
+import 'widgets/custom_app_bar.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -66,34 +67,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF012D1D),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leadingWidth: 90,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 24, top: 10),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF012D1D),
-                  shape: BoxShape.circle,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.arrow_back_rounded,
-                    size: 22,
-                    color: Color(0xFFFFF8EF),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+      appBar: CustomAppBar(
+        title: 'Lupa Sandi',
       ),
       body: Stack(
         children: [

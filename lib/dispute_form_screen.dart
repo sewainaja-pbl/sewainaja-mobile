@@ -8,6 +8,7 @@ import 'app_feedback.dart';
 import 'auth_session_service.dart';
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
+import 'widgets/custom_app_bar.dart';
 
 class DisputeFormScreen extends StatefulWidget {
   final String transactionId;
@@ -247,37 +248,8 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
-        title: const Text(
-          'Ajukan Sengketa',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () => Navigator.pop(context),
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF012D1D),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Color(0xFFFDF9F4),
-                size: 20,
-              ),
-            ),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Ajukan Sengketa',
       ),
       body: !_isDisclaimerAccepted ? _buildDisclaimerView() : _buildFormView(),
     );

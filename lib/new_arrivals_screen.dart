@@ -11,6 +11,7 @@ import 'widgets/report_dialog.dart';
 import 'widgets/subtle_fade_in.dart';
 import 'widgets/pressable_scale.dart';
 import 'app_feedback.dart';
+import 'widgets/custom_app_bar.dart';
 
 class NewArrivalsScreen extends StatelessWidget {
   const NewArrivalsScreen({super.key});
@@ -22,62 +23,8 @@ class NewArrivalsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4).withValues(alpha: 0.6),
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 48,
-        titleSpacing: 24,
-        flexibleSpace: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-            child: Container(
-              color: Colors.transparent,
-            ),
-          ),
-        ),
-        title: Row(
-            children: [
-              GestureDetector(
-                onTap: () => Navigator.maybePop(context),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Color(0xFF012D1D),
-                  size: 28,
-                ),
-              ),
-              const Spacer(),
-              const Text(
-                'New Arrivals',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 26,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF012D1D),
-                ),
-              ),
-              const Spacer(),
-              const SizedBox(width: 28),
-            ],
-          ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-                colors: [
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                  const Color(0xFF012D1D).withValues(alpha: 0.28),
-                  const Color(0xFF012D1D).withValues(alpha: 0),
-                ],
-                stops: const [0, 0.5, 1],
-              ),
-            ),
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'New Arrivals',
       ),
       body: StreamBuilder<List<ItemModel>>(
         stream: itemRepo.watchAllNewArrivals(),

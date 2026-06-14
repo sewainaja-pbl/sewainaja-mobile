@@ -774,7 +774,7 @@ class HomeScreenState extends State<HomeScreen>
               ),
               child: Center(
                 child: Text(
-                  cat,
+                  cat.toUpperCase() == 'OUTFIT' ? 'Outfit' : cat,
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
@@ -862,39 +862,50 @@ class HomeScreenState extends State<HomeScreen>
             ],
           ),
           const SizedBox(height: 12),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(24),
-              onHighlightChanged: (pressed) {
-                setState(() => _isMapCardPressed = pressed);
-              },
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MapExploreScreen()),
-                );
-              },
-              child: AnimatedScale(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                scale: _isMapCardPressed ? 0.98 : 1,
-                child: AnimatedSlide(
-                  duration: const Duration(milliseconds: 250),
-                  curve: Curves.easeInOut,
-                  offset: _isMapCardPressed
-                      ? const Offset(0, 0.005)
-                      : Offset.zero,
-                  child: Ink(
-                    height: 160,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: const Color(0xFF012D1D).withValues(alpha: 0.2),
-                        width: 1,
-                      ),
+          AnimatedScale(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            scale: _isMapCardPressed ? 0.98 : 1,
+            child: AnimatedSlide(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeInOut,
+              offset: _isMapCardPressed ? const Offset(0, 0.005) : Offset.zero,
+              child: Container(
+                height: 160,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF8EF),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF012D1D).withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      offset: const Offset(4, 4),
+                      blurRadius: 10,
                     ),
+                    const BoxShadow(
+                      color: Colors.white,
+                      offset: Offset(-4, -4),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(24),
+                    onHighlightChanged: (pressed) {
+                      setState(() => _isMapCardPressed = pressed);
+                    },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MapExploreScreen()),
+                      );
+                    },
                     child: IgnorePointer(
                       child: Stack(
                         children: [
@@ -1049,6 +1060,7 @@ class HomeScreenState extends State<HomeScreen>
         width: double.infinity,
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
+          color: const Color(0xFFFFF8EF),
           borderRadius: BorderRadius.circular(20),
           image: const DecorationImage(
             image: ResizeImage(AssetImage('assets/images/Iklan.jpg'), width: 600),
@@ -1061,9 +1073,14 @@ class HomeScreenState extends State<HomeScreen>
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.08),
+              offset: const Offset(4, 4),
+              blurRadius: 10,
+            ),
+            const BoxShadow(
+              color: Colors.white,
+              offset: Offset(-4, -4),
+              blurRadius: 10,
             ),
           ],
         ),
@@ -1168,10 +1185,11 @@ class HomeScreenState extends State<HomeScreen>
         _buildSectionHeader("From Your Following", showSeeMore: false),
         const SizedBox(height: 16),
         SizedBox(
-          height: 250,
+          height: 270,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+            clipBehavior: Clip.none,
             physics: const ClampingScrollPhysics(),
             itemCount: _followingItems!.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
@@ -1232,10 +1250,11 @@ class HomeScreenState extends State<HomeScreen>
     final items = _newArrivals!;
 
     return SizedBox(
-      height: 250,
+      height: 270,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+        clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
@@ -1279,10 +1298,11 @@ class HomeScreenState extends State<HomeScreen>
 
   Widget _buildNewArrivalsLoading() {
     return SizedBox(
-      height: 250,
+      height: 270,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+        clipBehavior: Clip.none,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,
         separatorBuilder: (_, __) => const SizedBox(width: 10),

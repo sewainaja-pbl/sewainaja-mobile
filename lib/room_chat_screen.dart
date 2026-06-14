@@ -13,6 +13,7 @@ import 'image_upload_service.dart';
 import 'notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'widgets/custom_app_bar.dart';
 import 'profile_view_screen.dart';
 
 class RoomChatScreen extends StatefulWidget {
@@ -559,21 +560,8 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: const Color(0xFF012D1D),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF9F4),
-        elevation: 3,
-        shadowColor: Colors.black12,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 70,
-        titleSpacing: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: GestureDetector(
+      appBar: CustomAppBar(
+        titleWidget: GestureDetector(
           onTap: () {
             Navigator.push(
               context,

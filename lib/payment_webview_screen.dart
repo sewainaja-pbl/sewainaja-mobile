@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'widgets/custom_app_bar.dart';
 
 class PaymentWebViewScreen extends StatefulWidget {
   final String url;
@@ -107,29 +108,12 @@ class _PaymentWebViewScreenState extends State<PaymentWebViewScreen> {
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: AppBar(
-          title: const Text(
-            'Pembayaran Online',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          backgroundColor: const Color(0xFFFDF9F4),
-          elevation: 0,
-          centerTitle: true,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Color(0xFF012D1D)),
-            onPressed: () {
-              _isPopped = true;
-              Navigator.pop(context, false);
-            },
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(1.0),
-            child: Container(color: const Color(0xFFC1C8C2), height: 1.0),
-          ),
+        appBar: CustomAppBar(
+          title: 'Pembayaran Online',
+          onBack: () {
+            _isPopped = true;
+            Navigator.pop(context, false);
+          },
         ),
         body: Stack(
           children: [

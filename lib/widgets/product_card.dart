@@ -46,13 +46,18 @@ class ProductCard extends StatelessWidget {
         height: 100,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFFFFFFFF), // Diubah menjadi putih sesuai permintaan
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: 0.08), // Bayangan gelap
+              offset: const Offset(4, 4),
               blurRadius: 10,
-              offset: const Offset(0, 4),
+            ),
+            const BoxShadow(
+              color: Colors.white, // Pantulan terang
+              offset: Offset(-4, -4),
+              blurRadius: 10,
             ),
           ],
         ),
@@ -157,8 +162,20 @@ class ProductCard extends StatelessWidget {
     return Container(
       width: 160,
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
+        color: const Color(0xFFFFFFFF), // Diubah menjadi putih sesuai permintaan
         borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08), // Bayangan gelap
+            offset: const Offset(4, 4),
+            blurRadius: 10,
+          ),
+          const BoxShadow(
+            color: Colors.white, // Pantulan terang
+            offset: Offset(-4, -4),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(8.0),

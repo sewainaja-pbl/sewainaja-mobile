@@ -5,6 +5,7 @@ import 'widgets/product_card.dart';
 import 'widgets/subtle_fade_in.dart';
 import 'data/models/item_model.dart';
 import 'item_detail_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class ProfileSearchScreen extends StatefulWidget {
   final String ownerName;
@@ -103,14 +104,8 @@ class _ProfileSearchScreenState extends State<ProfileSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFFF8EF),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFFF8EF),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Container(
+      appBar: CustomAppBar(
+        titleWidget: Container(
           height: 44,
           decoration: BoxDecoration(
             color: Colors.white,

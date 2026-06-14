@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'owner_verify_evidence_screen.dart';
+import 'widgets/custom_app_bar.dart';
 
 class HandoverShowQRScreen extends StatefulWidget {
   final Map<String, String> itemData;
@@ -100,9 +101,9 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.transactionId == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Serah Terima')),
-        body: const Center(child: Text('ID Transaksi tidak ditemukan.')),
+      return const Scaffold(
+        appBar: CustomAppBar(title: 'Serah Terima'),
+        body: Center(child: Text('ID Transaksi tidak ditemukan.')),
       );
     }
 
@@ -189,30 +190,8 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: const Color(0xFFFDF9F4),
-        centerTitle: true,
-        title: const Text(
-          'Serah Terima',
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 30,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332),
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFFC1C8C2),
-            height: 1.0,
-          ),
-        ),
+      appBar: const CustomAppBar(
+        title: 'Serah Terima',
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -261,12 +240,24 @@ class _HandoverShowQRScreenState extends State<HandoverShowQRScreen> {
                                 width: 64,
                                 height: 64,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 64,
+                                  height: 64,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
                               )
                             : Image.asset(
                                 widget.itemData['image']!,
                                 width: 64,
                                 height: 64,
                                 fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  width: 64,
+                                  height: 64,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.broken_image, color: Colors.grey),
+                                ),
                               ))
                         : Container(
                             width: 64,
