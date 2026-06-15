@@ -4,26 +4,26 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'image_upload_service.dart';
 import 'upload_image_policy.dart';
 import 'dispute_form_screen.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
-import 'main_navigation_screen.dart';
-import 'widgets/custom_app_bar.dart';
 
 class ReturnEvidenceScreen extends StatefulWidget {
   final String? transactionId;
   final String? itemName;
+  final String? itemId;
   final bool isForced;
   final bool isRoot;
+
   const ReturnEvidenceScreen({
-    super.key,
-    this.transactionId,
-    this.itemName,
-    this.isForced = true,
+    super.key, 
+    this.transactionId, 
+    this.itemName, 
+    this.itemId,
+    this.isForced = false,
     this.isRoot = false,
   });
 
@@ -33,119 +33,16 @@ class ReturnEvidenceScreen extends StatefulWidget {
 
 class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
   final List<ProcessedImageFile> _selectedImages = [];
-  Map<String, dynamic>? _transactionData;
-  List<dynamic> _details = [];
-  bool _canPop = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _savePendingRatingState();
-    _fetchTransactionDetails();
-  }
-
-  Future<void> _savePendingRatingState() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('pending_rating_id', widget.transactionId ?? '');
-      await prefs.setString('pending_rating_item_name', widget.itemName ?? '');
-      await prefs.setString('pending_rating_role', 'renter');
-    } catch (e) {
-      debugPrint('Error saving pending rating state: $e');
-    }
-  }
-
-  Future<void> _clearPendingRatingState() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('pending_rating_id');
-      await prefs.remove('pending_rating_item_name');
-      await prefs.remove('pending_rating_role');
-    } catch (e) {
-      debugPrint('Error clearing pending rating state: $e');
-    }
-  }
-
-  Future<void> _fetchTransactionDetails() async {
-    final tId = widget.transactionId;
-    if (tId == null || tId.isEmpty) return;
-
-    try {
-      final token = await const AuthSessionService().getValidIdToken();
-      final headers = {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
-
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true && body['data'] != null) {
-          setState(() {
-            _transactionData = body['data'] as Map<String, dynamic>;
-            _details = _transactionData!['details'] as List? ?? [];
-          });
-          return;
-        }
-      }
-    } catch (_) {
-      // Keep mock values if request fails
-    }
-  }
-
-  String _formatDateRange() {
-    if (_details.isEmpty) return '8 Jan - 10 Jan 2025';
-    final detail = _details[0];
-    final start = detail['startDate'];
-    final end = detail['endDate'];
-    if (start == null || end == null) return '8 Jan - 10 Jan 2025';
-    
-    final sDt = _parseTimestamp(start);
-    final eDt = _parseTimestamp(end);
-    if (sDt == null || eDt == null) return '8 Jan - 10 Jan 2025';
-
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
-    ];
-    return '${sDt.day} ${months[sDt.month - 1]} - ${eDt.day} ${months[eDt.month - 1]} ${eDt.year}';
-  }
-
-  DateTime? _parseTimestamp(dynamic ts) {
-    if (ts == null) return null;
-    if (ts is Map) {
-      final sec = ts['_seconds'] ?? ts['seconds'];
-      if (sec is int) {
-        return DateTime.fromMillisecondsSinceEpoch(sec * 1000).toLocal();
-      }
-    } else if (ts is String) {
-      return DateTime.tryParse(ts)?.toLocal();
-    }
-    return null;
-  }
-
-  ImageProvider _getImageProvider() {
-    if (_details.isNotEmpty) {
-      final url = _details[0]['itemPhotoUrlSnapshot']?.toString();
-      if (url != null && url.isNotEmpty) {
-        if (url.startsWith('http')) {
-          return NetworkImage(url);
-        } else if (url.startsWith('assets/')) {
-          return AssetImage(url);
-        }
-      }
-    }
-    return const AssetImage('assets/images/Iklan.jpg');
-  }
   final ImageUploadService _imageService = ImageUploadService();
   final int _maxPhotos = 10;
+  
+  int _itemRating = 0;
+  final TextEditingController _itemReviewController = TextEditingController();
+  
   int _rating = 0;
   final TextEditingController _reviewController = TextEditingController();
   bool _isSubmitting = false;
+  bool _canPop = false;
 
   Future<void> _pickImages() async {
     final remainingSlots = _maxPhotos - _selectedImages.length;
@@ -187,6 +84,17 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
       );
       return;
     }
+    if (_itemRating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Harap berikan rating untuk barang.'),
+          backgroundColor: Color(0xFFF04438),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     if (_rating == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -198,7 +106,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
       return;
     }
 
-    if (_rating <= 2) {
+    if (_itemRating <= 2 || _rating <= 2) {
       _showDisputeRecommendationDialog();
     } else {
       _executeSubmit();
@@ -209,13 +117,15 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
     final tId = widget.transactionId;
 
     if (tId == null || tId.isEmpty) {
+      // Simulasi mode mock jika transactionId kosong
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ID Transaksi tidak valid.'),
-          backgroundColor: Color(0xFFF04438),
+          content: Text('Simulasi: Bukti pengembalian dan rating berhasil dikirim!'),
+          backgroundColor: Color(0xFF1B4332),
           behavior: SnackBarBehavior.floating,
         ),
       );
+      Navigator.popUntil(context, (route) => route.isFirst);
       return;
     }
 
@@ -261,7 +171,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
 
         if (evidenceResp.statusCode != 200) {
           final body = jsonDecode(evidenceResp.body);
-          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengunggah foto bukti pengembalian ke API.');
+          throw Exception(body['message'] ?? 'Gagal mengunggah foto bukti pengembalian ke API.');
         }
       }
 
@@ -277,6 +187,24 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
         }),
       );
 
+      // 3. Kirim rating barang ke API
+      if (widget.itemId != null && widget.itemId!.isNotEmpty) {
+        final itemRatingResp = await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/item-ratings'),
+          headers: headers,
+          body: jsonEncode({
+            'transactionId': tId,
+            'itemId': widget.itemId,
+            'score': _itemRating,
+            'comment': _itemReviewController.text.trim(),
+          }),
+        );
+        
+        if (itemRatingResp.statusCode != 200) {
+           debugPrint('Gagal mengirim rating barang: ${itemRatingResp.body}');
+        }
+      }
+
       // Tutup loading dialog
       if (mounted) Navigator.pop(context);
 
@@ -291,27 +219,14 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                 behavior: SnackBarBehavior.floating,
               ),
             );
-            setState(() {
-              _canPop = true;
-            });
-            await _clearPendingRatingState();
-            if (mounted) {
-              if (widget.isRoot) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-                );
-              } else {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              }
-            }
+            Navigator.popUntil(context, (route) => route.isFirst);
           }
         } else {
-          throw Exception(ratingBody['error']?['message'] ?? ratingBody['message'] ?? 'Gagal mengirim rating.');
+          throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
         }
       } else {
         final ratingBody = jsonDecode(ratingResp.body);
-        throw Exception(ratingBody['error']?['message'] ?? ratingBody['message'] ?? 'Gagal mengirim rating.');
+        throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
       }
     } catch (e) {
       // Tutup loading dialog jika masih tampil
@@ -397,7 +312,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => DisputeFormScreen(
-                            transactionId: widget.transactionId ?? '',
+                            transactionId: widget.transactionId ?? 'dummy_trans_123',
                             category: 'checkout_damage',
                             itemName: widget.itemName ?? 'Sony Camera a6000',
                           ),
@@ -459,6 +374,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
 
   @override
   void dispose() {
+    _itemReviewController.dispose();
     _reviewController.dispose();
     super.dispose();
   }
@@ -522,7 +438,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
         if (widget.isForced) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Anda wajib memberikan rating untuk menyelesaikan transaksi.'),
+              content: Text('Anda wajib mengunggah bukti dan memberikan rating untuk menyelesaikan transaksi.'),
               backgroundColor: Color(0xFFF04438),
             ),
           );
@@ -539,17 +455,34 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
         }
       },
       child: Scaffold(
+      backgroundColor: const Color(0xFFFDF9F4),
+      appBar: AppBar(
+        elevation: 0,
         backgroundColor: const Color(0xFFFDF9F4),
-        appBar: CustomAppBar(
-          title: 'Serah Terima',
-          showBackButton: !widget.isForced,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh, color: Color(0xFF012D1D)),
-              onPressed: _fetchTransactionDetails,
-            ),
-          ],
+        centerTitle: true,
+        title: const Text(
+          'Serah Terima',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 30,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1B4332),
+          ),
         ),
+        leading: widget.isForced
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF012D1D)),
+                onPressed: () => Navigator.pop(context),
+              ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFFC1C8C2),
+            height: 1.0,
+          ),
+        ),
+      ),
       body: _isSubmitting
           ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF012D1D)),
@@ -575,75 +508,62 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                     ),
                     child: Row(
                       children: [
-                        Builder(
-                          builder: (context) {
-                            final imageUrl = _details.isNotEmpty ? _details[0]['itemPhotoUrlSnapshot']?.toString() : null;
-                            final hasImage = imageUrl != null && imageUrl.isNotEmpty;
-                            return Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(15),
-                                color: Colors.grey.shade200,
-                                image: hasImage
-                                    ? DecorationImage(
-                                        image: imageUrl.startsWith('http')
-                                            ? NetworkImage(imageUrl)
-                                            : AssetImage(imageUrl) as ImageProvider,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: !hasImage
-                                  ? const Center(
-                                      child: Icon(
-                                        Icons.image_outlined,
-                                        color: Color(0xFF828282),
-                                        size: 24,
-                                      ),
-                                    )
-                                  : null,
-                            );
-                          },
+                        Container(
+                          width: 60,
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3CD),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFC107), width: 1),
+                          ),
+                          child: const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
+                                SizedBox(height: 2),
+                                Text(
+                                  'DUMMY\n(NO API)',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF856404),
+                                    height: 1.1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                               Row(
-                                 children: [
-                                   Expanded(
-                                     child: Text(
-                                       _details.isNotEmpty
-                                           ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
-                                           : widget.itemName ?? 'Sony Camera a6000',
-                                       style: const TextStyle(
-                                         fontFamily: 'Poppins',
-                                         fontSize: 16,
-                                         fontWeight: FontWeight.w600,
-                                         color: Color(0xFF414844),
-                                       ),
-                                     ),
-                                   ),
-                                 ],
-                               ),
-                              const SizedBox(height: 6),
                               Text(
-                                _transactionData != null
-                                    ? 'Pemilik: ${_transactionData!['ownerName'] ?? 'Owner'}'
-                                    : 'Pemilik: Han so Hee',
+                                widget.itemName ?? 'Sony Camera a6000',
                                 style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF414844),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Pemilik: Han so Hee',
+                                style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
                                   color: Color(0xFF414844),
                                 ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                _formatDateRange(),
-                                style: const TextStyle(
+                              const Text(
+                                '8 Jan - 10 Jan 2025',
+                                style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
@@ -760,9 +680,96 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                     ),
                   ),
 
-                  // --- 3. RATING SECTION ---
+                  // --- 3. RATING BARANG SECTION ---
                   Padding(
                     padding: const EdgeInsets.only(top: 32.0, left: 20.0, right: 20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Rating Barang',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF000000),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16.0),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFFFF),
+                            borderRadius: BorderRadius.circular(20.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: List.generate(5, (index) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _itemRating = index + 1;
+                                      });
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(right: 8.0),
+                                      child: Icon(
+                                        Icons.star_rounded,
+                                        size: 40,
+                                        color: index < _itemRating ? const Color(0xFFF8BD00) : const Color(0xFFEFEFEF),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFEFEF),
+                                  borderRadius: BorderRadius.circular(11.0),
+                                ),
+                                child: TextField(
+                                  controller: _itemReviewController,
+                                  minLines: 5,
+                                  maxLines: 8,
+                                  style: const TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    color: Color(0xFF000000),
+                                  ),
+                                  decoration: const InputDecoration(
+                                    hintText: 'Berikan ulasan tentang barang ini...',
+                                    hintStyle: TextStyle(
+                                      fontFamily: 'Poppins',
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w400,
+                                      color: Color(0xFF717973),
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // --- 4. RATING PEMILIK SECTION ---
+                  Padding(
+                    padding: const EdgeInsets.only(top: 24.0, left: 20.0, right: 20.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -828,7 +835,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                                     color: Color(0xFF000000),
                                   ),
                                   decoration: const InputDecoration(
-                                    hintText: 'Berikan ulasan anda disini...',
+                                    hintText: 'Berikan ulasan tentang pemilik barang...',
                                     hintStyle: TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 13,
@@ -900,7 +907,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                         ),
                       ),
                     ),
-                  ),
+                  ), // Closes GestureDetector
                 ],
               ),
             ),
