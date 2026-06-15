@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
@@ -52,14 +53,18 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
 
     // Initialize location from itemData
     if (widget.itemData != null) {
-      final address = widget.itemData!['address'] as Map<String, dynamic>?;
-      _itemAddressLabel = address?['label']?.toString() ?? address?['fullAddress']?.toString() ?? 'Lokasi pemilik barang';
-      final coordinat = address?['coordinat'] as Map<String, dynamic>?;
-      if (coordinat != null) {
-        final lat = (coordinat['latitude'] as num?)?.toDouble();
-        final lng = (coordinat['longitude'] as num?)?.toDouble();
-        if (lat != null && lng != null) {
-          _itemLocation = LatLng(lat, lng);
+      final address = widget.itemData!['address'];
+      if (address is Map) {
+        _itemAddressLabel = address['label']?.toString() ?? address['fullAddress']?.toString() ?? 'Lokasi pemilik barang';
+        final coordinat = address['coordinat'];
+        if (coordinat is Map) {
+          final lat = (coordinat['latitude'] as num?)?.toDouble();
+          final lng = (coordinat['longitude'] as num?)?.toDouble();
+          if (lat != null && lng != null) {
+            _itemLocation = LatLng(lat, lng);
+          }
+        } else if (coordinat is GeoPoint) {
+          _itemLocation = LatLng(coordinat.latitude, coordinat.longitude);
         }
       }
     }

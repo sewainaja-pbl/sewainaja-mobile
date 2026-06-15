@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class RoomChatScreen extends StatefulWidget {
   State<RoomChatScreen> createState() => _RoomChatScreenState();
 }
 
-class _RoomChatScreenState extends State<RoomChatScreen> {
+class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ScrollController _inputScrollController = ScrollController();
@@ -50,6 +51,11 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   String? _roomId;
   final String? _currentUserId = FirebaseAuth.instance.currentUser?.uid;
   final ImageUploadService _imageUploadService = ImageUploadService();
+  Stream<List<ChatMessageModel>>? _messagesStream;
+
+  // Cache item ownerIds by item ID to prevent FutureBuilder flickering and repeated fetches.
+  final Map<String, String> _itemOwnerCache = {};
+  Timer? _presenceHeartbeatTimer;
 
   String? _actualPartnerName;
   String? _actualPartnerAvatarUrl;
@@ -61,6 +67,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _updateMyOnlineStatus(true);
+    _startPresenceHeartbeat();
     _wasChatAreaActive = NotificationService.instance.isChatAreaActive;
     NotificationService.instance.setChatAreaActive(true);
     _actualPartnerName = widget.partnerName;
@@ -77,17 +86,20 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       _showItemContextPreview = false;
       _chatRepository.markMessagesAsRead(_roomId!);
     }
-    // Auto-scroll when input grows (multiline)
+    _initMessagesStream();
+    // Auto-scroll only when input line count changes to prevent typing lag
+    int previousLineCount = 1;
     _messageController.addListener(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.animateTo(
-            _scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      final text = _messageController.text;
+      final lineCount = '\n'.allMatches(text).length + 1;
+      if (lineCount != previousLineCount) {
+        previousLineCount = lineCount;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+          }
+        });
+      }
     });
   }
 
@@ -136,6 +148,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
       if (existingRoomId != null) {
         setState(() {
           _roomId = existingRoomId;
+          _initMessagesStream();
         });
         targetRoomId = existingRoomId;
         await _chatRepository.markMessagesAsRead(existingRoomId);
@@ -172,6 +185,14 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     }
   }
 
+  void _initMessagesStream() {
+    if (_roomId != null) {
+      _messagesStream = _chatRepository.watchMessages(_roomId!);
+    } else {
+      _messagesStream = null;
+    }
+  }
+
   Future<void> _sendMessage({String? customText, String messageType = 'text'}) async {
     final String text = customText ?? _messageController.text.trim();
     if (text.isNotEmpty) {
@@ -205,6 +226,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
         setState(() {
           if (roomId != null && _roomId == null) {
             _roomId = roomId;
+            _initMessagesStream();
           }
           _showItemContextPreview = false;
         });
@@ -268,6 +290,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           setState(() {
             if (newRoomId != null && _roomId == null) {
               _roomId = newRoomId;
+              _initMessagesStream();
             }
             _showItemContextPreview = false;
           });
@@ -495,13 +518,15 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
           
           // Fix GeoPoint conversion for AjukanSewaScreen
           if (itemData['address'] is Map) {
-            final address = itemData['address'] as Map<String, dynamic>;
-            if (address['coordinat'] is GeoPoint) {
-              final gp = address['coordinat'] as GeoPoint;
-              address['coordinat'] = {
-                'latitude': gp.latitude,
-                'longitude': gp.longitude,
+            final addressMap = itemData['address'] as Map;
+            final coordinat = addressMap['coordinat'];
+            if (coordinat is GeoPoint) {
+              final newAddress = Map<String, dynamic>.from(addressMap);
+              newAddress['coordinat'] = {
+                'latitude': coordinat.latitude,
+                'longitude': coordinat.longitude,
               };
+              itemData['address'] = newAddress;
             }
           }
 
@@ -516,8 +541,43 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     } catch (_) {}
   }
 
+  void _updateMyOnlineStatus(bool online) {
+    if (_currentUserId != null) {
+      FirebaseFirestore.instance.collection('users').doc(_currentUserId).update({
+        'isOnline': online,
+        'lastSeen': FieldValue.serverTimestamp(),
+      }).catchError((_) {});
+    }
+  }
+
+  void _startPresenceHeartbeat() {
+    _presenceHeartbeatTimer?.cancel();
+    _presenceHeartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _updateMyOnlineStatus(true);
+    });
+  }
+
+  void _stopPresenceHeartbeat() {
+    _presenceHeartbeatTimer?.cancel();
+    _presenceHeartbeatTimer = null;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _updateMyOnlineStatus(true);
+      _startPresenceHeartbeat();
+    } else {
+      _stopPresenceHeartbeat();
+      _updateMyOnlineStatus(false);
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopPresenceHeartbeat();
+    _updateMyOnlineStatus(false);
     NotificationService.instance.setChatAreaActive(_wasChatAreaActive);
     _messageController.dispose();
     _scrollController.dispose();
@@ -614,14 +674,73 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                         color: Color(0xFF012D1D),
                       ),
                     ),
-                    const Text(
-                      "Online",
-                      style: TextStyle(
-                        fontFamily: 'Plus Jakarta Sans',
-                        fontWeight: FontWeight.w500,
-                        fontSize: 12,
-                        color: Color(0xFF10B981),
-                      ),
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance.collection('users').doc(widget.partnerId).snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return const Text(
+                            "Offline",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          );
+                        }
+                        
+                        final data = snapshot.data!.data() as Map<String, dynamic>?;
+                        final isOnline = data?['isOnline'] as bool? ?? false;
+                        final lastSeen = data?['lastSeen'] as Timestamp?;
+                        
+                        bool onlineActive = false;
+                        if (isOnline && lastSeen != null) {
+                          final lastSeenDate = lastSeen.toDate();
+                          final now = DateTime.now();
+                          final difference = now.difference(lastSeenDate);
+                          // User is considered online if marked online AND heartbeat is within last 2 minutes (120s)
+                          if (difference.inSeconds.abs() < 120) {
+                            onlineActive = true;
+                          }
+                        }
+                        
+                        if (onlineActive) {
+                          return const Text(
+                            "Online",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: Color(0xFF10B981),
+                            ),
+                          );
+                        } else {
+                          String subtitle = "Offline";
+                          if (lastSeen != null) {
+                            final lastSeenDate = lastSeen.toDate();
+                            final now = DateTime.now();
+                            final difference = now.difference(lastSeenDate);
+                            if (difference.inMinutes < 1) {
+                              subtitle = "Baru saja aktif";
+                            } else if (difference.inMinutes < 60) {
+                              subtitle = "Aktif ${difference.inMinutes} menit lalu";
+                            } else if (difference.inHours < 24) {
+                              subtitle = "Aktif ${difference.inHours} jam lalu";
+                            } else {
+                              subtitle = "Aktif ${DateFormat('d MMM HH:mm').format(lastSeenDate)}";
+                            }
+                          }
+                          return Text(
+                            subtitle,
+                            style: const TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -674,7 +793,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                           ],
                         )
                       : StreamBuilder<List<ChatMessageModel>>(
-                          stream: _chatRepository.watchMessages(_roomId!),
+                          stream: _messagesStream,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
                               return const Center(child: CircularProgressIndicator(color: Colors.white));
@@ -959,6 +1078,33 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
     final String status = item['status']?.toString() ?? 'available';
     final bool isAvailable = status.toLowerCase() == 'available';
 
+    // Retrieve or fetch item owner
+    final String? ownerId = _itemOwnerCache[itemId];
+    if (itemId.isNotEmpty && !_itemOwnerCache.containsKey(itemId)) {
+      _itemOwnerCache[itemId] = 'loading'; // Mark to prevent duplicate fetches
+      FirebaseFirestore.instance.collection('items').doc(itemId).get().then((doc) {
+        if (doc.exists && mounted) {
+          final data = doc.data();
+          final owner = data?['ownerId'] as String? ?? '';
+          setState(() {
+            _itemOwnerCache[itemId] = owner;
+          });
+        } else if (mounted) {
+          setState(() {
+            _itemOwnerCache[itemId] = ''; // Handle non-existent doc
+          });
+        }
+      }).catchError((_) {
+        if (mounted) {
+          setState(() {
+            _itemOwnerCache.remove(itemId); // Retry next time
+          });
+        }
+      });
+    }
+
+    final bool isOwnItem = ownerId != null && ownerId != 'loading' && ownerId == _currentUserId;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -1074,52 +1220,33 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
                   ],
                 ),
               ),
-              FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('items').doc(itemId).get(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const SizedBox.shrink();
-                  }
-
-                  bool isOwnItem = false;
-                  if (snapshot.hasData && snapshot.data!.exists) {
-                    final data = snapshot.data!.data() as Map<String, dynamic>?;
-                    final ownerId = data?['ownerId'] as String?;
-                    isOwnItem = ownerId != null && ownerId == _currentUserId;
-                  }
-
-                  if (isOwnItem) {
-                    return const SizedBox.shrink();
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: () => _navigateToAjukanSewa(itemId),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF012D1D),
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          elevation: 0,
+              if (!isOwnItem && ownerId != null && ownerId != 'loading')
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () => _navigateToAjukanSewa(itemId),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF012D1D),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          "Sewa Sekarang",
-                          style: TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: Colors.white,
-                          ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        "Sewa Sekarang",
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  );
-                },
-              ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
@@ -1153,7 +1280,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> {
             children: [
               _buildMainInputRow(),
               // Fill the system nav bar area so there's no gap on any device
-              SizedBox(height: bottomPadding),
+              SizedBox(height: bottomPadding > 0 ? bottomPadding : 16.0),
             ],
           ),
         ),

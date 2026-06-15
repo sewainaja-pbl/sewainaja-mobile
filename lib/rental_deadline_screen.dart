@@ -89,15 +89,22 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
       final itemDoc = await FirebaseFirestore.instance.collection('items').doc(itemId).get();
       if (itemDoc.exists && mounted) {
         final data = itemDoc.data();
-        final address = data?['address'] as Map<String, dynamic>?;
-        final label = address?['label']?.toString() ?? address?['fullAddress']?.toString() ?? 'Lokasi Barang';
-        final coordinat = address?['coordinat'] as Map<String, dynamic>?;
-        if (coordinat != null) {
-          final lat = (coordinat['latitude'] as num?)?.toDouble();
-          final lng = (coordinat['longitude'] as num?)?.toDouble();
-          if (lat != null && lng != null) {
+        final address = data?['address'];
+        if (address is Map) {
+          final label = address['label']?.toString() ?? address['fullAddress']?.toString() ?? 'Lokasi Barang';
+          final coordinat = address['coordinat'];
+          if (coordinat is Map) {
+            final lat = (coordinat['latitude'] as num?)?.toDouble();
+            final lng = (coordinat['longitude'] as num?)?.toDouble();
+            if (lat != null && lng != null) {
+              setState(() {
+                _itemLocation = LatLng(lat, lng);
+                _itemAddressLabel = label;
+              });
+            }
+          } else if (coordinat is GeoPoint) {
             setState(() {
-              _itemLocation = LatLng(lat, lng);
+              _itemLocation = LatLng(coordinat.latitude, coordinat.longitude);
               _itemAddressLabel = label;
             });
           }
