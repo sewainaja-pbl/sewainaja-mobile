@@ -1291,7 +1291,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       builder: (context) => ReturnEvidenceScreen(
                         transactionId: widget.transactionId,
                         itemName: itemName,
-                        isForced: true,
+                        itemId: detail?.itemId,
                       ),
                     ),
                   ).then((_) => _fetchTransactionDetails());
@@ -1334,20 +1334,20 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
             child: Container(
+              width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFC1C8C2),
                 borderRadius: BorderRadius.circular(9999),
               ),
-              child: const Center(
-                child: Text(
-                  'Menunggu partner memberikan rating',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF012D1D),
-                  ),
+              child: const Text(
+                'Menunggu partner memberikan rating',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF012D1D),
                 ),
               ),
             ),
