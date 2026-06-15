@@ -124,13 +124,17 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
 
   void _updateCenterFromData() {
     if (_itemData == null) return;
-    final address = _itemData!['address'] as Map<String, dynamic>?;
-    final coordinat = address?['coordinat'] as Map<String, dynamic>?;
-    if (coordinat != null) {
-      final lat = (coordinat['latitude'] as num?)?.toDouble();
-      final lng = (coordinat['longitude'] as num?)?.toDouble();
-      if (lat != null && lng != null) {
-        _itemCenter = LatLng(lat, lng);
+    final address = _itemData!['address'];
+    if (address is Map) {
+      final coordinat = address['coordinat'];
+      if (coordinat is Map) {
+        final lat = (coordinat['latitude'] as num?)?.toDouble();
+        final lng = (coordinat['longitude'] as num?)?.toDouble();
+        if (lat != null && lng != null) {
+          _itemCenter = LatLng(lat, lng);
+        }
+      } else if (coordinat is GeoPoint) {
+        _itemCenter = LatLng(coordinat.latitude, coordinat.longitude);
       }
     }
   }
