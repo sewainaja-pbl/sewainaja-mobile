@@ -9,7 +9,10 @@ import 'adendum_screen.dart';
 import 'data/models/transaction_model.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'widgets/custom_app_bar.dart';
+import 'chat_screen.dart';
+import 'dispute_form_screen.dart';
 
 class RentalDeadlineScreen extends StatefulWidget {
   final String? transactionId;
@@ -28,6 +31,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   Duration _remainingDuration = Duration.zero;
   LatLng _itemLocation = const LatLng(-6.966667, 110.416664);
   String _itemAddressLabel = 'Lokasi Barang';
+  StreamSubscription<DatabaseEvent>? _gpsSubscription;
   @override
   void initState() {
     super.initState();
@@ -37,6 +41,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _gpsSubscription?.cancel();
     super.dispose();
   }
 
@@ -72,6 +77,13 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
 
         if (detail?.itemId != null) {
           _fetchItemLocation(detail!.itemId);
+        }
+
+        final currentUser = FirebaseAuth.instance.currentUser;
+        final isOwner = currentUser != null && currentUser.uid == transaction.ownerId;
+        
+        if (transaction.isOverdue && isOwner) {
+          _listenToLiveGps(transaction.id);
         }
       }
     } catch (e) {
@@ -113,6 +125,25 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     } catch (_) {
       // Silently ignore
     }
+  }
+
+  void _listenToLiveGps(String transactionId) {
+    _gpsSubscription?.cancel();
+    final ref = FirebaseDatabase.instance.ref('gps_live/$transactionId');
+    _gpsSubscription = ref.onValue.listen((event) {
+      if (!mounted) return;
+      if (event.snapshot.value != null) {
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        final lat = (data['lat'] as num?)?.toDouble();
+        final lng = (data['lng'] as num?)?.toDouble();
+        if (lat != null && lng != null) {
+          setState(() {
+            _itemLocation = LatLng(lat, lng);
+            _itemAddressLabel = 'Lokasi Penyewa (Live)';
+          });
+        }
+      }
+    });
   }
 
   void _startTimer(DateTime endDate) {
@@ -263,7 +294,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2F6743),
+                color: _transaction?.isOverdue == true ? const Color(0xFFBA1A1A) : const Color(0xFF2F6743),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -342,8 +373,10 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                           flex: flexElapsed,
                           child: Container(
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF2F6743), Color(0xFFA2D7B4)],
+                              gradient: LinearGradient(
+                                colors: _transaction?.isOverdue == true 
+                                  ? const [Color(0xFFBA1A1A), Color(0xFFE57373)]
+                                  : const [Color(0xFF2F6743), Color(0xFFA2D7B4)],
                               ),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -497,6 +530,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   }
 
   Widget _buildTimerBlock(String value, String label) {
+    final isOverdue = _transaction?.isOverdue == true;
     return Column(
       children: [
         Container(
@@ -504,7 +538,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: const Color(0xFF012D1D),
+            color: isOverdue ? const Color(0xFF5E0B0B) : const Color(0xFF012D1D),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Text(
@@ -520,11 +554,11 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF012D1D),
+            color: isOverdue ? const Color(0xFFFFFFFF) : const Color(0xFF012D1D),
           ),
         ),
       ],
@@ -532,15 +566,16 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   }
 
   Widget _buildSeparator() {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+    final isOverdue = _transaction?.isOverdue == true;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Text(
         ':',
         style: TextStyle(
           fontFamily: 'Poppins',
           fontSize: 32,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF012D1D),
+          color: isOverdue ? const Color(0xFFFFFFFF) : const Color(0xFF012D1D),
         ),
       ),
     );
@@ -622,19 +657,64 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     final isRenter = _transaction == null || currentUser?.uid == _transaction?.renterId;
 
     if (!isRenter) {
-      return _buildActionButton(
-        'Scan QR Pengembalian',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ReturnItemScanScreen(
-                transactionId: widget.transactionId,
-                itemName: itemName,
-              ),
+      return Column(
+        children: [
+          _buildActionButton(
+            'Scan QR Pengembalian',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ReturnItemScanScreen(
+                    transactionId: widget.transactionId,
+                    itemName: itemName,
+                  ),
+                ),
+              ).then((_) => _fetchTransaction());
+            },
+          ),
+          if (_transaction?.isOverdue == true) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton(
+                    'Chat Penyewa',
+                    textColor: const Color(0xFF012D1D),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ChatScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildActionButton(
+                    'Laporkan',
+                    textColor: const Color(0xFFBA1A1A),
+                    borderColor: const Color(0xFFBA1A1A),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DisputeFormScreen(
+                            transactionId: widget.transactionId ?? '',
+                            category: 'overdue_report',
+                            itemName: itemName,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ).then((_) => _fetchTransaction());
-        },
+          ],
+        ],
       );
     }
 
@@ -678,7 +758,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     );
   }
 
-  Widget _buildActionButton(String text, {VoidCallback? onPressed}) {
+  Widget _buildActionButton(String text, {VoidCallback? onPressed, Color? textColor, Color? borderColor}) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton(
@@ -686,18 +766,18 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
         style: OutlinedButton.styleFrom(
           backgroundColor: const Color(0xFFFFFFFF),
           padding: const EdgeInsets.symmetric(vertical: 16),
-          side: const BorderSide(color: Color(0xFF012D1D), width: 0.5),
+          side: BorderSide(color: borderColor ?? const Color(0xFF012D1D), width: 0.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1B4332),
+            color: textColor ?? const Color(0xFF1B4332),
           ),
         ),
       ),

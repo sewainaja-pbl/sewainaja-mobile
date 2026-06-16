@@ -13,6 +13,7 @@ import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'return_evidence_screen.dart';
 import 'owner_return_evidence_screen.dart';
+import 'core/services/gps_tracking_service.dart';
 // Note: Other screens will be imported here as they are created.
 
 class MainNavigationScreen extends StatefulWidget {
@@ -46,6 +47,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Ensure chat area state is set to false initially (Home tab)
     NotificationService.instance.setChatAreaActive(false);
     NotificationService.instance.addListener(_onNotificationReceived);
+    
+    // Initialize GPS Tracking Service
+    GpsTrackingService().initialize();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkPendingRatings();
     });
