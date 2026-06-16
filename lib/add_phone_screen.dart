@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'otp_verification_screen.dart';
 import 'app_feedback.dart';
+import 'core/utils/phone_formatter.dart';
 
 class AddPhoneScreen extends StatefulWidget {
   const AddPhoneScreen({super.key});
@@ -66,16 +67,7 @@ class _AddPhoneScreenState extends State<AddPhoneScreen>
       _isLoading = true;
     });
 
-    String formattedPhone = phone;
-    if (formattedPhone.startsWith('+')) {
-      // already formatted
-    } else if (formattedPhone.startsWith('62')) {
-      formattedPhone = '+$formattedPhone';
-    } else if (formattedPhone.startsWith('0')) {
-      formattedPhone = '+62${formattedPhone.substring(1)}';
-    } else {
-      formattedPhone = '+62$formattedPhone';
-    }
+    final formattedPhone = PhoneFormatter.toE164Format(phone);
 
     // Delay simulated for verification code generation
     Future.delayed(const Duration(milliseconds: 600), () {
