@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
 import 'scan_qr_renter_screen.dart';
 import 'dispute_form_screen.dart';
 import 'api_config.dart';
@@ -306,6 +307,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   String _formatStatus(String status) {
+    if (_transaction?.isOverdue == true) return 'Pengembalian Terlambat';
     switch (status.toLowerCase()) {
       case 'pending':
         return 'Menunggu Persetujuan';
@@ -348,6 +350,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   IconData _getStatusIcon(String status) {
+    if (_transaction?.isOverdue == true) return Icons.warning_amber_rounded;
     switch (status.toLowerCase()) {
       case 'pending':
         return Icons.hourglass_empty;
@@ -501,7 +504,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: _getStatusBgColor(status),
+                color: _transaction?.isOverdue == true ? const Color(0xFFBA1A1A) : _getStatusBgColor(status),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
@@ -1078,21 +1081,49 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
             child: ElevatedButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ScanQRRenterScreen(
-                      itemData: {
-                        'title': itemName,
-                        'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
-                        'date': _formatDateRange(startDate, endDate),
-                        'image': itemPhoto,
+              onPressed: () async {
+                bool isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
+                if (!isLocationServiceEnabled) {
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Text('GPS Diperlukan', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold)),
+                          content: const Text(
+                            'Anda harus mengaktifkan GPS (Lokasi) pada perangkat Anda sebelum melakukan proses Serah Terima.',
+                            style: TextStyle(fontFamily: 'Poppins'),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('OK', style: TextStyle(color: Color(0xFF012D1D), fontWeight: FontWeight.bold)),
+                            ),
+                          ],
+                        );
                       },
-                      transactionId: widget.transactionId,
+                    );
+                  }
+                  return; // Stop navigation
+                }
+
+                if (context.mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ScanQRRenterScreen(
+                        itemData: {
+                          'title': itemName,
+                          'owner': 'Pemilik: ${_transaction?.ownerName ?? 'Owner'}',
+                          'date': _formatDateRange(startDate, endDate),
+                          'image': itemPhoto,
+                        },
+                        transactionId: widget.transactionId,
+                      ),
                     ),
-                  ),
-                ).then((_) => _fetchTransactionDetails());
+                  ).then((_) => _fetchTransactionDetails());
+                }
               },
               icon: const Icon(Icons.handshake, color: Colors.white),
               label: const Text(
