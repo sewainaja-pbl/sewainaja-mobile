@@ -5,13 +5,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'presentation/controllers/auth_controller.dart';
+import 'presentation/pages/auth/otp_page.dart';
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
-import 'add_phone_screen.dart';
 import 'app_feedback.dart';
 import 'notification_service.dart';
 import 'forgot_password_screen.dart';
+import 'core/utils/phone_formatter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,11 +39,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
 
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 1.0), // Off-screen bottom
+      begin: const Offset(0.0, 1.0),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
-    // Start animation immediately when screen opens
     _controller.forward();
   }
 
@@ -54,45 +54,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  Future<void> _saveUserDataAndNavigate(Map<String, dynamic> data) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = (data['tokens']?['idToken'] ?? '').toString();
-    final user = data['user'] as Map<String, dynamic>? ?? const {};
-    if (token.isNotEmpty) {
-      await prefs.setString('token', token);
-    }
-    await prefs.setBool('onboarding_seen', true);
-    await prefs.setString('user_id', (user['id'] ?? '').toString());
-    await prefs.setString('user_name', (user['name'] ?? '').toString());
-    await prefs.setString('user_email', (user['email'] ?? '').toString());
-    await prefs.setString('user_phone', (user['phone'] ?? '').toString());
-    await prefs.setString(
-      'user_profile_photo_url',
-      (user['profilePhotoUrl'] ?? '').toString(),
-    );
-    await prefs.setString('user_status', (user['status'] ?? '').toString());
-    await NotificationService.instance.syncAfterLogin();
-    if (!mounted) return;
-    _showSnackBar('Login berhasil!', isError: false);
-    final phoneNum = (user['phone'] ?? '').toString().trim();
-    if (phoneNum.isEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const AddPhoneScreen(),
-        ),
-      );
-    } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const MainNavigationScreen(),
-        ),
-      );
-    }
-  }
-
-  // Custom SnackBar Premium Style
   void _showSnackBar(String message, {bool isError = true}) {
     if (isError) {
       showAppErrorSnack(context, message);
@@ -197,6 +158,49 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
+  /// Simpan sesi ke SharedPreferences lalu navigasi ke home.
+  /// Dipakai bila user tidak punya nomor HP (Google login atau admin).
+  Future<void> _saveSessionAndNavigate(User user, String idToken) async {
+    try {
+      final profileResponse = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+        headers: {'Authorization': 'Bearer $idToken'},
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('token', idToken);
+      await prefs.setString('user_id', user.uid);
+      await prefs.setBool('onboarding_seen', true);
+
+      if (profileResponse.statusCode == 200) {
+        final respData =
+            jsonDecode(profileResponse.body) as Map<String, dynamic>;
+        final userData = respData['data'] as Map<String, dynamic>? ?? {};
+        await prefs.setString('user_name', userData['name']?.toString() ?? '');
+        await prefs.setString('user_email', userData['email']?.toString() ?? '');
+        await prefs.setString('user_phone', userData['phone']?.toString() ?? '');
+        await prefs.setString(
+          'user_profile_photo_url',
+          userData['profilePhotoUrl']?.toString() ?? '',
+        );
+        await prefs.setString(
+            'user_status', userData['status']?.toString() ?? '');
+      }
+
+      await NotificationService.instance.syncAfterLogin();
+
+      if (!mounted) return;
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar('Gagal memuat profil. Coba lagi.');
+    }
+  }
+
   Future<void> _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -206,50 +210,104 @@ class _LoginScreenState extends State<LoginScreen>
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
+      // Langkah 1: Login Firebase dengan email & password
+      final userCredential = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
+
+      if (!mounted) return;
+
+      final user = userCredential.user;
+      if (user == null) {
+        _showSnackBar('Login gagal. Silakan coba lagi.');
+        return;
+      }
+
+      // Langkah 2: Ambil profil dari backend untuk mendapatkan nomor HP
+      final idToken = await user.getIdToken();
+      final profileResponse = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
+        headers: {
+          'Authorization': 'Bearer $idToken',
+          'Content-Type': 'application/json',
+        },
       );
 
       if (!mounted) return;
 
-      final data = jsonDecode(response.body);
+      String? phoneNumber;
 
-      if (response.statusCode == 200) {
-        try {
-          await FirebaseAuth.instance.signInWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
-        } on FirebaseAuthException {
-          // Keep backend login as source of truth if Firebase session fails.
-        }
-
-        await _saveUserDataAndNavigate(data['data'] ?? {});
-      } else {
-        final apiMessage =
-            data['error']?['message']?.toString() ??
-            data['message']?.toString() ??
-            'Login gagal.';
-        _showSnackBar(apiMessage);
+      if (profileResponse.statusCode == 200) {
+        final profileData =
+            jsonDecode(profileResponse.body) as Map<String, dynamic>;
+        phoneNumber =
+            profileData['data']?['phone']?.toString().trim();
       }
+
+      // Jika user belum punya nomor HP, langsung ke home (misal: Google login)
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        await _saveSessionAndNavigate(user, idToken!);
+        return;
+      }
+
+      // Langkah 3: Kirim OTP ke nomor HP user
+      final authController = context.read<AuthController>();
+      _showSnackBar(
+        'Mengirim OTP ke ${PhoneFormatter.maskPhone(phoneNumber)}...',
+        isError: false,
+      );
+
+      final otpSent = await authController.sendOtp(phoneNumber: phoneNumber);
+
+      if (!mounted) return;
+
+      if (!otpSent) {
+        _showSnackBar(
+          authController.errorMessage ?? 'Gagal mengirim OTP. Coba lagi.',
+        );
+        return;
+      }
+
+      _showSnackBar('Kode OTP berhasil dikirim!', isError: false);
+
+      // Langkah 4: Navigasi ke OtpPage
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpPage(
+            phoneNumber: phoneNumber!,
+            flowType: AuthFlowType.login,
+            loginData: OtpLoginData(uid: user.uid, idToken: idToken!),
+          ),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      _showSnackBar(_mapFirebaseLoginError(e.code));
     } catch (e) {
+      if (!mounted) return;
       _showSnackBar('Sistem Error: ${e.toString()}');
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _mapFirebaseLoginError(String code) {
+    switch (code) {
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Email atau password salah.';
+      case 'user-disabled':
+        return 'Akun ini telah dinonaktifkan. Hubungi support.';
+      case 'too-many-requests':
+        return 'Terlalu banyak percobaan. Coba lagi nanti.';
+      case 'network-request-failed':
+        return 'Koneksi internet bermasalah. Coba lagi.';
+      default:
+        return 'Login gagal. Silakan coba lagi.';
     }
   }
 
@@ -266,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen>
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
     final isGoogleLoading = authController.status == AuthStatus.loading;
-    final isAnyLoading = _isLoading || isGoogleLoading;
+    final isAnyLoading = _isLoading || isGoogleLoading || authController.isOtpLoading;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
 
     return Scaffold(
@@ -406,6 +464,7 @@ class _LoginScreenState extends State<LoginScreen>
                           TextField(
                             controller: _emailController,
                             enabled: !isAnyLoading,
+                            keyboardType: TextInputType.emailAddress,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 12,
@@ -534,7 +593,7 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                             elevation: 0,
                           ),
-                          child: _isLoading
+                          child: _isLoading || authController.isOtpLoading
                               ? const SizedBox(
                                   height: 20,
                                   width: 20,
@@ -596,7 +655,12 @@ class _LoginScreenState extends State<LoginScreen>
                             await authController.signInWithGoogle();
                             if (!mounted) return;
                             if (authController.status == AuthStatus.authenticated && authController.userData != null) {
-                               await _saveUserDataAndNavigate(authController.userData!);
+                              // Google login: simpan data dari userData controller
+                              final user = FirebaseAuth.instance.currentUser;
+                              final idToken = await user?.getIdToken();
+                              if (user != null && idToken != null) {
+                                await _saveSessionAndNavigate(user, idToken);
+                              }
                             } else if (authController.status == AuthStatus.error) {
                                final message = authController.errorMessage ?? 'Gagal login dengan Google';
                                final code = authController.errorCode;
