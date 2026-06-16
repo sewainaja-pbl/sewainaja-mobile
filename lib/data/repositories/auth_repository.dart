@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -131,12 +132,6 @@ class AuthRepository {
   // OTP PHONE AUTH METHODS
   // =========================================================================
 
-  /// Kirim OTP ke nomor HP menggunakan Firebase verifyPhoneNumber.
-  ///
-  /// [phoneNumber] harus dalam format E.164 (contoh: +628120000000)
-  /// [onCodeSent] dipanggil saat OTP berhasil dikirim — simpan verificationId & resendToken
-  /// [onFailed] dipanggil saat terjadi error dari Firebase
-  /// [onAutoVerified] dipanggil saat Android berhasil auto-detect SMS (opsional)
   Future<void> sendOtp({
     required String phoneNumber,
     required void Function(String verificationId, int? resendToken) onCodeSent,
@@ -144,17 +139,35 @@ class AuthRepository {
     required void Function(PhoneAuthCredential credential) onAutoVerified,
     int? resendToken,
   }) async {
-    await _firebaseAuth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: const Duration(seconds: 60),
-      forceResendingToken: resendToken,
-      verificationCompleted: onAutoVerified,
-      verificationFailed: onFailed,
-      codeSent: onCodeSent,
-      codeAutoRetrievalTimeout: (String verificationId) {
-        // Timeout auto-retrieval — tidak perlu aksi khusus
-      },
-    );
+    try {
+      debugPrint('==== STARTING FIREBASE verifyPhoneNumber for $phoneNumber ====');
+      await _firebaseAuth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
+        forceResendingToken: resendToken,
+        verificationCompleted: (credential) {
+          debugPrint('==== verifyPhoneNumber: verificationCompleted ====');
+          onAutoVerified(credential);
+        },
+        verificationFailed: (e) {
+          debugPrint('==== verifyPhoneNumber: verificationFailed ====');
+          debugPrint('Error Code: ${e.code}');
+          debugPrint('Error Message: ${e.message}');
+          onFailed(e);
+        },
+        codeSent: (verificationId, resendToken) {
+          debugPrint('==== verifyPhoneNumber: codeSent ====');
+          onCodeSent(verificationId, resendToken);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          debugPrint('==== verifyPhoneNumber: timeout ====');
+        },
+      );
+    } catch (e) {
+      debugPrint('==== verifyPhoneNumber: SYNCHRONOUS EXCEPTION ====');
+      debugPrint(e.toString());
+      onFailed(FirebaseAuthException(code: 'UNKNOWN', message: e.toString()));
+    }
   }
 
   /// Verifikasi OTP untuk alur REGISTRASI:
