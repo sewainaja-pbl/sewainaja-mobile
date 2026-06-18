@@ -13,6 +13,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'widgets/custom_app_bar.dart';
 import 'chat_screen.dart';
 import 'dispute_form_screen.dart';
+import 'core/services/time_sync_service.dart';
 
 class RentalDeadlineScreen extends StatefulWidget {
   final String? transactionId;
@@ -148,13 +149,13 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
 
   void _startTimer(DateTime endDate) {
     _timer?.cancel();
-    final now = DateTime.now();
+    final now = TimeSyncService.instance.now();
     setState(() {
       _remainingDuration = endDate.isAfter(now) ? endDate.difference(now) : Duration.zero;
     });
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      final currentNow = DateTime.now();
+      final currentNow = TimeSyncService.instance.now();
       if (currentNow.isAfter(endDate)) {
         if (mounted) {
           setState(() {
@@ -198,7 +199,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     if (startDate == null || endDate == null) return 0.0;
     final total = endDate.difference(startDate).inMilliseconds;
     if (total <= 0) return 1.0;
-    final elapsed = DateTime.now().difference(startDate).inMilliseconds;
+    final elapsed = TimeSyncService.instance.now().difference(startDate).inMilliseconds;
     if (elapsed <= 0) return 0.0;
     if (elapsed >= total) return 1.0;
     return elapsed / total;

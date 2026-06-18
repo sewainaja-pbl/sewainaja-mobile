@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'presentation/controllers/auth_controller.dart';
@@ -186,6 +187,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     TextInputType? keyboardType,
     bool enabled = true,
     EdgeInsets scrollPadding = const EdgeInsets.all(20.0),
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,6 +214,7 @@ class _SignUpScreenState extends State<SignUpScreen>
           obscureText: isPassword,
           keyboardType: keyboardType,
           enabled: enabled,
+          inputFormatters: inputFormatters,
           style: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 12,
@@ -383,27 +386,17 @@ class _SignUpScreenState extends State<SignUpScreen>
                       ),
                       _buildInputField(
                         label: "Nomor Telepon",
-                        hint: "8xx xxxx xxxx",
+                        hint: "Contoh: +62 8xx-xxxx-xxxx",
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         enabled: !isAnyLoading,
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 16,
-                            right: 8,
-                            top: 15,
-                            bottom: 15,
-                          ),
-                          child: Text(
-                            "+62",
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: const Color(
-                                0xFF717973,
-                              ).withValues(alpha: 0.5),
-                            ),
+                        inputFormatters: [IndonesianPhoneInputFormatter()],
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Icon(
+                            Icons.phone_outlined,
+                            size: 20,
+                            color: Color(0xFF012D1D),
                           ),
                         ),
                       ),

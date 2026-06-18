@@ -83,7 +83,6 @@ class _OtpPageState extends State<OtpPage> {
   void initState() {
     super.initState();
     _startTimer();
-    _setupAutoVerification();
     // Fokus ke slot pertama saat halaman dibuka
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNodes[0].requestFocus();
@@ -124,21 +123,6 @@ class _OtpPageState extends State<OtpPage> {
         setState(() => _secondsRemaining--);
       }
     });
-  }
-
-  /// Setup auto-verification untuk Android (SMS otomatis terdeteksi).
-  void _setupAutoVerification() {
-    final authController = context.read<AuthController>();
-    // Kirim ulang OTP dengan handler auto-verification yang akan langsung submit
-    authController.sendOtp(
-      phoneNumber: widget.phoneNumber,
-      onAutoVerified: (PhoneAuthCredential credential) {
-        // Android berhasil auto-detect SMS — langsung proses tanpa user input
-        if (mounted) {
-          _processAutoVerification(credential);
-        }
-      },
-    );
   }
 
   /// Proses auto-verification dari Android.

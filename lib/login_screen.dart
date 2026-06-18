@@ -5,14 +5,12 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import 'presentation/controllers/auth_controller.dart';
-import 'presentation/pages/auth/otp_page.dart';
 import 'signup_screen.dart';
 import 'main_navigation_screen.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
 import 'notification_service.dart';
 import 'forgot_password_screen.dart';
-import 'core/utils/phone_formatter.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -131,64 +129,13 @@ class _LoginScreenState extends State<LoginScreen>
         return;
       }
 
-      // Langkah 2: Ambil profil dari backend untuk mendapatkan nomor HP
+      // Langkah 2: Ambil token dan langsung ke home
       final idToken = await user.getIdToken();
-      final profileResponse = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/auth/profile'),
-        headers: {
-          'Authorization': 'Bearer $idToken',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (!mounted) return;
-
-      String? phoneNumber;
-
-      if (profileResponse.statusCode == 200) {
-        final profileData =
-            jsonDecode(profileResponse.body) as Map<String, dynamic>;
-        phoneNumber =
-            profileData['data']?['phone']?.toString().trim();
+      if (idToken != null) {
+        await _saveSessionAndNavigate(user, idToken);
+      } else {
+        _showSnackBar('Token tidak ditemukan. Silakan login ulang.');
       }
-
-      // Jika user belum punya nomor HP, langsung ke home (misal: Google login)
-      if (phoneNumber == null || phoneNumber.isEmpty) {
-        await _saveSessionAndNavigate(user, idToken!);
-        return;
-      }
-
-      // Langkah 3: Kirim OTP ke nomor HP user
-      final authController = context.read<AuthController>();
-      _showSnackBar(
-        'Mengirim OTP ke ${PhoneFormatter.maskPhone(phoneNumber)}...',
-        isError: false,
-      );
-
-      final otpSent = await authController.sendOtp(phoneNumber: phoneNumber);
-
-      if (!mounted) return;
-
-      if (!otpSent) {
-        _showSnackBar(
-          authController.errorMessage ?? 'Gagal mengirim OTP. Coba lagi.',
-        );
-        return;
-      }
-
-      _showSnackBar('Kode OTP berhasil dikirim!', isError: false);
-
-      // Langkah 4: Navigasi ke OtpPage
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OtpPage(
-            phoneNumber: phoneNumber!,
-            flowType: AuthFlowType.login,
-            loginData: OtpLoginData(uid: user.uid, idToken: idToken!),
-          ),
-        ),
-      );
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       _showSnackBar(_mapFirebaseLoginError(e.code));

@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import '../../api_config.dart';
 import '../../auth_session_service.dart';
 import '../models/transaction_model.dart';
+import '../../core/services/time_sync_service.dart';
 
 class TransactionRepository {
   final AuthSessionService _authService = const AuthSessionService();
@@ -24,6 +25,9 @@ class TransactionRepository {
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       if (body['success'] == true) {
+        if (body['serverTime'] != null) {
+          TimeSyncService.instance.updateServerTime(body['serverTime'] as int);
+        }
         final List<dynamic> data = body['data'] ?? [];
         return data.map((json) => TransactionModel.fromJson(json)).toList();
       } else {
@@ -51,6 +55,9 @@ class TransactionRepository {
     if (response.statusCode == 200) {
       final body = jsonDecode(response.body);
       if (body['success'] == true) {
+        if (body['serverTime'] != null) {
+          TimeSyncService.instance.updateServerTime(body['serverTime'] as int);
+        }
         return TransactionModel.fromJson(body['data']);
       } else {
         throw Exception(body['error']?['message'] ?? 'Gagal mengambil detail transaksi.');
