@@ -1023,6 +1023,38 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
                     message.message,
                     width: 200,
                     fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 200,
+                        height: 150,
+                        color: Colors.black.withValues(alpha: 0.05),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Color(0xFF012D1D),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 200,
+                      height: 150,
+                      color: Colors.black.withValues(alpha: 0.05),
+                      child: const Center(
+                        child: Icon(
+                          Icons.broken_image_rounded,
+                          color: Colors.grey,
+                          size: 32,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
