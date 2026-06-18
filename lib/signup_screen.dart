@@ -62,101 +62,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     showAppSuccessSnack(context, message);
   }
 
-  void _showGoogleLoginDebugDialog(AuthController authController) {
-    final errorMessage =
-        authController.errorMessage ?? 'Gagal login dengan Google.';
-    final errorCode = authController.errorCode ?? 'UNKNOWN';
-    final errorStage = authController.errorStage ?? 'unknown';
-    final rawDetail = authController.errorRawDetail?.trim();
 
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFFFFF8EF),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: const Text(
-            'Google Login Gagal',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF012D1D),
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildGoogleErrorRow('Pesan', errorMessage),
-                const SizedBox(height: 12),
-                _buildGoogleErrorRow('Kode', errorCode),
-                const SizedBox(height: 12),
-                _buildGoogleErrorRow('Tahap', errorStage),
-                if (rawDetail != null && rawDetail.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  _buildGoogleErrorRow('Detail', rawDetail),
-                ],
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
-                'Tutup',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF717973),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildGoogleErrorRow(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF012D1D),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE1DDD6)),
-          ),
-          child: Text(
-            value,
-            style: const TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              height: 1.45,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF414844),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   /// Sign Up flow OTP:
   /// 1. Validasi input
@@ -614,16 +520,10 @@ class _SignUpScreenState extends State<SignUpScreen>
                               // AuthController.signInWithGoogle() sudah handle navigasi
                             } else if (authController.status == AuthStatus.error) {
                                final message = authController.errorMessage ?? 'Gagal login dengan Google';
-                               final code = authController.errorCode;
-                               _showSnackBar(
-                                 code != null && code.isNotEmpty
-                                     ? '$message [Code: $code]'
-                                     : message,
-                               );
+                               _showSnackBar(message);
                                debugPrint(
                                  'Google login failed | code=${authController.errorCode} | stage=${authController.errorStage} | detail=${authController.errorRawDetail}',
                                );
-                               _showGoogleLoginDebugDialog(authController);
                             }
                           },
                           style: OutlinedButton.styleFrom(

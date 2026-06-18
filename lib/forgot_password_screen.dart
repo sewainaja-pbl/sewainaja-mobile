@@ -84,107 +84,109 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 50),
-                  const Text(
-                    'Pemulihan Akun & Data',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 32,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 50),
+                    const Text(
+                      'Pemulihan Akun & Data',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Masukkan email yang terdaftar. Kami akan mengirimkan seluruh detail informasi pribadi Anda (termasuk password, data verifikasi KTP, dan informasi akun lainnya) secara aman ke email Anda.',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  const Text(
-                    "Email",
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    style: const TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 14,
-                      color: Color(0xFF012D1D),
-                    ),
-                    decoration: InputDecoration(
-                      hintText: "nama@email.com",
-                      hintStyle: TextStyle(
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Masukkan email yang terdaftar. Kami akan mengirimkan seluruh detail informasi pribadi Anda (termasuk password, data verifikasi KTP, dan informasi akun lainnya) secara aman ke email Anda.',
+                      style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 14,
+                        height: 1.5,
                         fontWeight: FontWeight.w400,
-                        color: const Color(0xFF717973).withValues(alpha: 0.5),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                        color: Colors.white70,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 40),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleResetPassword,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF7B5804),
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFF7B5804).withValues(alpha: 0.6),
-                        disabledForegroundColor: Colors.white70,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(9999),
+                    const SizedBox(height: 48),
+                    const Text(
+                      "Email",
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        color: Color(0xFF012D1D),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "nama@email.com",
+                        hintStyle: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF717973).withValues(alpha: 0.5),
                         ),
-                        elevation: 0,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Text(
-                              "Kirim Detail Akun",
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleResetPassword,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B5804),
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFF7B5804).withValues(alpha: 0.6),
+                          disabledForegroundColor: Colors.white70,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(9999),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                "Kirim Detail Akun",
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

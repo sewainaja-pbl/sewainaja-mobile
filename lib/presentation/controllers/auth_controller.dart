@@ -255,7 +255,11 @@ class AuthController extends ChangeNotifier {
       _errorCode = e.debugCode;
       _errorStage = e.stage;
       _errorRawDetail = e.rawMessage;
-      _status = AuthStatus.error;
+      if (e.debugCode == 'GOOGLE_CANCELLED') {
+        _status = AuthStatus.idle;
+      } else {
+        _status = AuthStatus.error;
+      }
     } on Exception catch (e) {
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
       _errorCode = 'GOOGLE_LOGIN_EXCEPTION';

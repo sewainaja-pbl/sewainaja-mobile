@@ -244,6 +244,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
         widget.imagePath!.isNotEmpty) {
       photos.add(widget.imagePath!);
     }
+    if (photos.isEmpty) {
+      photos.add('');
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Base canvas color
@@ -294,17 +297,32 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                                 color: Color(0xFF012D1D),
                               ),
                             ),
-                            errorWidget: (context, url, error) => Image.asset(
-                              'assets/images/Iklan.jpg',
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
+                            errorWidget: (context, url, error) => Container(
+                              color: const Color(0xFFD9D9D9),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Color(0xFFB0B0B0),
+                                  size: 48,
+                                ),
+                              ),
                             ),
                           );
                         } else {
+                          if (photoPath.isEmpty) {
+                            return Container(
+                              color: const Color(0xFFD9D9D9),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  color: Color(0xFFB0B0B0),
+                                  size: 48,
+                                ),
+                              ),
+                            );
+                          }
                           return Image.asset(
-                            photoPath.isEmpty
-                                ? 'assets/images/Iklan.jpg'
-                                : photoPath,
+                            photoPath,
                             fit: BoxFit.cover,
                             alignment: Alignment.center,
                           );
