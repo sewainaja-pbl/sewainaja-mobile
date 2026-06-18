@@ -235,13 +235,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
     final latest = service.notifications.first;
 
-    // Check if this is a new unread notification and the user is NOT in the chat area
+    // We no longer show a SnackBar banner because flutter_local_notifications already
+    // displays a system heads-up notification in the foreground.
     if (latest.id != _lastProcessedNotificationId && !latest.isRead) {
       _lastProcessedNotificationId = latest.id;
-
-      if (!service.isChatAreaActive) {
-        _showInAppNotificationBanner(latest);
-      }
     }
   }
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,6 +12,7 @@ import 'map_common_widgets.dart';
 import 'api_config.dart';
 import 'app_feedback.dart';
 import 'auth_session_service.dart';
+import 'core/utils/phone_formatter.dart';
 import 'image_upload_service.dart';
 import 'profile_sync_service.dart';
 import 'upload_image_policy.dart';
@@ -504,6 +506,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             controller: _phoneController,
             focusNode: _phoneFocusNode,
             keyboardType: TextInputType.phone,
+            inputFormatters: [IndonesianPhoneInputFormatter()],
             helperText: 'Tap untuk ubah nomor telepon.',
           ),
           const SizedBox(height: 16),
@@ -532,6 +535,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     bool readOnly = false,
     TextInputType keyboardType = TextInputType.text,
     String? helperText,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     final accentColor = readOnly
         ? const Color(0xFF717973)
@@ -624,6 +628,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       focusNode: focusNode,
                       readOnly: readOnly,
                       keyboardType: keyboardType,
+                      inputFormatters: inputFormatters,
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 15,

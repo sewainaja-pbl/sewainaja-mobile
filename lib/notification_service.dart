@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'api_config.dart';
 import 'auth_session_service.dart';
@@ -232,6 +233,7 @@ class NotificationService extends ChangeNotifier {
 
   FirebaseMessaging? _messaging;
   final AuthSessionService _authSessionService = const AuthSessionService();
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
   bool _isLoading = false;
@@ -275,6 +277,13 @@ class NotificationService extends ChangeNotifier {
     _initialized = true;
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    await _localNotifications.initialize(initializationSettings);
+
     // Set default presentation options for foreground notifications
     await messaging.setForegroundNotificationPresentationOptions(
       alert: !_isChatAreaActive,
@@ -290,6 +299,10 @@ class NotificationService extends ChangeNotifier {
       ];
       notifyListeners();
       fetchNotifications(silent: true);
+      
+      if (!_isChatAreaActive || incoming.type != 'chat') {
+        _showForegroundNotification(incoming);
+      }
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((_) {
@@ -313,6 +326,27 @@ class NotificationService extends ChangeNotifier {
     await _ensurePermissionRequested();
     await syncFcmToken();
     await fetchNotifications();
+  }
+
+  Future<void> _showForegroundNotification(AppNotification notification) async {
+    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails(
+      'high_importance_channel',
+      'High Importance Notifications',
+      channelDescription: 'This channel is used for important notifications.',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/launcher_icon',
+    );
+    const NotificationDetails platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await _localNotifications.show(
+      notification.id.hashCode,
+      notification.title,
+      notification.message,
+      platformChannelSpecifics,
+    );
   }
 
   Future<void> syncFcmToken({String? tokenOverride}) async {

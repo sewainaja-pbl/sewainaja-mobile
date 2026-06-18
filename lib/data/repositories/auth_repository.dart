@@ -187,15 +187,36 @@ class AuthRepository {
         smsCode: otpCode,
       );
 
-      // Buat akun email/password terlebih dahulu
-      final UserCredential emailCredential =
-          await _firebaseAuth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential emailCredential;
+      try {
+        // Buat akun email/password terlebih dahulu
+        emailCredential = await _firebaseAuth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          // Jika email sudah ada, mungkin ini adalah akun orphaned dari percobaan sebelumnya yang gagal di tengah jalan.
+          // Coba login untuk melanjutkan proses linking.
+          emailCredential = await _firebaseAuth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+        } else {
+          rethrow;
+        }
+      }
 
-      // Link nomor HP ke akun yang baru dibuat
-      await emailCredential.user!.linkWithCredential(phoneCredential);
+      // Link nomor HP ke akun
+      try {
+        await emailCredential.user!.linkWithCredential(phoneCredential);
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'provider-already-linked' || e.code == 'credential-already-in-use') {
+          // Jika sudah ter-link, abaikan error ini
+        } else {
+          rethrow; // Error lain seperti kode OTP salah (invalid-verification-code)
+        }
+      }
 
       return emailCredential;
     } on FirebaseAuthException catch (e) {
