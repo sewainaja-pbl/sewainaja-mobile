@@ -8,6 +8,7 @@ import 'dispute_form_screen.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'data/models/transaction_model.dart';
+import 'data/models/dispute_model.dart';
 import 'data/repositories/transaction_repository.dart';
 import 'handover_show_qr_screen.dart';
 import 'return_item_scan_screen.dart';
@@ -34,6 +35,8 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   String? _errorMessage;
   TransactionModel? _transaction;
   bool _isPaid = false;
+  DisputeModel? _dispute;
+  bool _isLoadingDispute = false;
 
   @override
   void initState() {
@@ -73,6 +76,46 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
+  Future<void> _fetchDisputeDetails() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) return;
+
+    setState(() {
+      _isLoadingDispute = true;
+    });
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/disputes/transaction/$tId'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          final disputeData = body['data'] as Map<String, dynamic>;
+          if (mounted) {
+            setState(() {
+              _dispute = DisputeModel.fromJson(disputeData);
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching dispute details: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingDispute = false;
+        });
+      }
+    }
+  }
+
   Future<void> _fetchTransactionDetails() async {
     final tId = widget.transactionId;
     if (tId == null || tId.isEmpty) {
@@ -96,6 +139,14 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       } else {
         setState(() {
           _isPaid = false;
+        });
+      }
+
+      if (statusLower == 'disputed') {
+        await _fetchDisputeDetails();
+      } else {
+        setState(() {
+          _dispute = null;
         });
       }
 
@@ -262,12 +313,22 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final token = await const AuthSessionService().getValidIdToken();
+      final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
+      if (token == null) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sesi Anda telah berakhir. Harap login kembali.'),
+            backgroundColor: Color(0xFFBA1A1A),
+          ),
+        );
+        return;
+      }
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
         headers: {
           'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'transactionId': tId,
@@ -900,32 +961,45 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
             // KONDISI TOMBOL AKSI
             if (status.toLowerCase() == 'disputed') ...[
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF4DB),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFF5D3A1)),
+              if (_dispute != null) ...[
+                _buildDisputeTracker(_dispute!, FirebaseAuth.instance.currentUser?.uid ?? ''),
+                _buildDisputeDetailsSection(_dispute!),
+                _buildTransactionEvidencesSection(_dispute!.transactionEvidences),
+              ] else if (_isLoadingDispute) ...[
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                    child: CircularProgressIndicator(color: Color(0xFF012D1D)),
+                  ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Icon(Icons.gpp_maybe, color: Color(0xFF9A6700)),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Transaksi ini ditangguhkan karena dalam Sengketa (Disputed). Menunggu proses peninjauan bukti-bukti dan keputusan mediasi dari Admin.',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 13,
-                          color: Color(0xFF6B4B02),
-                          height: 1.45,
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF4DB),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFF5D3A1)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Icon(Icons.gpp_maybe, color: Color(0xFF9A6700)),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Transaksi ini ditangguhkan karena dalam Sengketa (Disputed). Menunggu proses peninjauan bukti-bukti dan keputusan mediasi dari Admin.',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 13,
+                            color: Color(0xFF6B4B02),
+                            height: 1.45,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ]
             ] else ...[
               _buildDisputeActionButtons(status, isRenter, itemName),
             ],
@@ -941,6 +1015,60 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   Widget? _buildBottomNavigationBar(String status, bool isRenter, String itemName, String itemPhoto) {
     status = status.toLowerCase();
     
+    if (status == 'disputed') {
+      final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+      final dispute = _dispute;
+      if (dispute != null &&
+          currentUserId != null &&
+          dispute.reportedBy != currentUserId &&
+          dispute.respondentId == null &&
+          !dispute.isOverdue) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DisputeFormScreen(
+                      transactionId: widget.transactionId ?? '',
+                      category: dispute.category,
+                      itemName: itemName,
+                      disputeId: dispute.id,
+                    ),
+                  ),
+                ).then((value) {
+                  if (value == true) {
+                    _fetchTransactionDetails();
+                  }
+                });
+              },
+              icon: const Icon(Icons.reply_all_outlined, color: Colors.white),
+              label: const Text(
+                'Berikan Sanggahan',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B5804),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                elevation: 0,
+              ),
+            ),
+          ),
+        );
+      }
+      return null;
+    }
+
     final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
     final startDate = detail?.startDate;
     final endDate = detail?.endDate;
@@ -1859,6 +1987,424 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDisputeTracker(DisputeModel dispute, String currentUserId) {
+    final status = dispute.status.toLowerCase(); // 'open' | 'under_review' | 'resolved' | 'closed'
+    
+    // SLA deadline remaining calculation
+    String deadlineStr = '';
+    bool isOverdue = dispute.isOverdue;
+    if (dispute.deadlineAt != null) {
+      final now = DateTime.now();
+      if (dispute.deadlineAt!.isAfter(now)) {
+        final diff = dispute.deadlineAt!.difference(now);
+        if (diff.inHours > 0) {
+          deadlineStr = 'Sisa waktu sanggahan: ${diff.inHours} jam';
+        } else {
+          deadlineStr = 'Sisa waktu sanggahan: ${diff.inMinutes} menit';
+        }
+      } else {
+        isOverdue = true;
+        deadlineStr = 'Batas waktu sanggahan habis';
+      }
+    }
+
+    // Determine current step index
+    // 0: Sengketa Diajukan
+    // 1: Menunggu Sanggahan / Sanggahan Dikirim
+    // 2: Sedang Ditinjau Admin
+    // 3: Selesai (Resolved)
+    int currentStep = 0;
+    if (status == 'resolved' || status == 'closed') {
+      currentStep = 3;
+    } else if (status == 'under_review') {
+      currentStep = 2;
+    } else if (dispute.respondentId != null) {
+      currentStep = 2; // Respondent has responded, under review
+    } else {
+      currentStep = 1; // Waiting for respondent
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2DCD3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.scale_outlined, color: Color(0xFF7B5804), size: 24),
+              SizedBox(width: 10),
+              Text(
+                'Status Pelacakan Mediasi',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Step 1: Sengketa Diajukan
+          _buildTrackerStep(
+            title: 'Sengketa Diajukan',
+            subtitle: 'Oleh ${dispute.reporterName}',
+            time: dispute.createdAt != null ? _formatDate(dispute.createdAt) : '',
+            isActive: currentStep >= 0,
+            isCompleted: currentStep > 0,
+          ),
+          
+          // Step 2: Sanggahan Terlapor
+          _buildTrackerStep(
+            title: dispute.respondentId != null ? 'Sanggahan Terlapor Dikirim' : 'Menunggu Sanggahan Terlapor',
+            subtitle: dispute.respondentId != null
+                ? 'Oleh ${dispute.respondentName}'
+                : (isOverdue ? 'Terlapor melewati batas waktu 3x24 jam.' : deadlineStr),
+            time: dispute.respondentRespondedAt != null ? _formatDate(dispute.respondentRespondedAt) : '',
+            isActive: currentStep >= 1,
+            isCompleted: currentStep > 1,
+            isAlert: dispute.respondentId == null && isOverdue,
+          ),
+          
+          // Step 3: Peninjauan Admin
+          _buildTrackerStep(
+            title: 'Peninjauan oleh Admin',
+            subtitle: status == 'resolved' 
+                ? 'Peninjauan selesai' 
+                : (currentStep == 2 ? 'Sedang meninjau bukti kedua belah pihak.' : 'Menunggu berkas sengketa lengkap.'),
+            time: '',
+            isActive: currentStep >= 2,
+            isCompleted: currentStep > 2,
+          ),
+          
+          // Step 4: Keputusan Mediasi
+          _buildTrackerStep(
+            title: 'Keputusan Final Admin',
+            subtitle: status == 'resolved'
+                ? 'Keputusan: ${dispute.resolutionNote ?? "Sengketa Selesai"}'
+                : 'Menunggu mediasi selesai.',
+            time: dispute.resolvedAt != null ? _formatDate(dispute.resolvedAt) : '',
+            isActive: currentStep >= 3,
+            isCompleted: currentStep > 3,
+            isLast: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrackerStep({
+    required String title,
+    required String subtitle,
+    required String time,
+    required bool isActive,
+    required bool isCompleted,
+    bool isLast = false,
+    bool isAlert = false,
+  }) {
+    Color iconColor = const Color(0xFFC1C8C2);
+    Widget iconWidget = const Icon(Icons.circle_outlined, size: 16, color: Color(0xFFC1C8C2));
+
+    if (isCompleted) {
+      iconColor = const Color(0xFF1B4332);
+      iconWidget = const Icon(Icons.check_circle, size: 18, color: Color(0xFF1B4332));
+    } else if (isActive) {
+      iconColor = isAlert ? Colors.red : const Color(0xFF7B5804);
+      iconWidget = Icon(isAlert ? Icons.error : Icons.pending, size: 18, color: iconColor);
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              iconWidget,
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: isCompleted ? const Color(0xFF1B4332) : const Color(0xFFE2DCD3),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 14,
+                      fontWeight: isActive ? FontWeight.bold : FontWeight.w600,
+                      color: isActive ? const Color(0xFF012D1D) : const Color(0xFF717973),
+                    ),
+                  ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: isAlert ? Colors.red : const Color(0xFF717973),
+                      ),
+                    ),
+                  ],
+                  if (time.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      time,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 11,
+                        color: Color(0xFFC1C8C2),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDisputeDetailsSection(DisputeModel dispute) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        
+        // Pelapor Claim
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2DCD3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Laporan Pelapor (Pernyataan)',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF012D1D),
+                    ),
+                  ),
+                  Text(
+                    dispute.reporterName,
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF7B5804),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 20, color: Color(0xFFE2DCD3)),
+              Text(
+                dispute.description,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  color: Color(0xFF414844),
+                  height: 1.5,
+                ),
+              ),
+              if (dispute.evidenceUrls.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildEvidencePhotoGrid(dispute.evidenceUrls),
+              ] else if (dispute.evidenceUrl != null) ...[
+                const SizedBox(height: 12),
+                _buildEvidencePhotoGrid([dispute.evidenceUrl!]),
+              ],
+            ],
+          ),
+        ),
+
+        // Terlapor Claim (Sanggahan)
+        if (dispute.respondentId != null) ...[
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFE2DCD3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Sanggahan Terlapor',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF012D1D),
+                      ),
+                    ),
+                    Text(
+                      dispute.respondentName ?? 'Terlapor',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF7B5804),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 20, color: Color(0xFFE2DCD3)),
+                Text(
+                  dispute.respondentDescription ?? '',
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: Color(0xFF414844),
+                    height: 1.5,
+                  ),
+                ),
+                if (dispute.respondentEvidenceUrls.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  _buildEvidencePhotoGrid(dispute.respondentEvidenceUrls),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildEvidencePhotoGrid(List<String> urls) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: urls.map((url) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Image.network(
+            url,
+            width: 80,
+            height: 80,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              width: 80,
+              height: 80,
+              color: Colors.grey[200],
+              child: const Icon(Icons.broken_image, size: 24, color: Colors.grey),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTransactionEvidencesSection(List<TransactionEvidenceModel> evidences) {
+    if (evidences.isEmpty) return const SizedBox.shrink();
+    
+    final beforeEvidences = evidences.where((e) => e.type == 'before').toList();
+    final afterEvidences = evidences.where((e) => e.type == 'after').toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFE2DCD3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bukti Foto Kondisi Asli Transaksi',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Foto yang diunggah saat serah-terima check-in dan checkout.',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 11,
+                  color: Color(0xFF717973),
+                ),
+              ),
+              const Divider(height: 20, color: Color(0xFFE2DCD3)),
+              if (beforeEvidences.isNotEmpty) ...[
+                const Text(
+                  'Saat Mulai Sewa (Check-in):',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildEvidencePhotoGrid(beforeEvidences.map((e) => e.mediaUrl).toList()),
+                const SizedBox(height: 12),
+              ],
+              if (afterEvidences.isNotEmpty) ...[
+                const Text(
+                  'Saat Pengembalian (Checkout):',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                _buildEvidencePhotoGrid(afterEvidences.map((e) => e.mediaUrl).toList()),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

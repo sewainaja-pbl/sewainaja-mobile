@@ -34,6 +34,7 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
+        navigatorKey: NotificationService.navigatorKey,
         title: 'SewainAja',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

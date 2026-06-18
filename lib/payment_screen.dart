@@ -42,12 +42,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await const AuthSessionService().getValidIdToken();
+      final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
+      if (token == null) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Sesi Anda telah berakhir. Harap login kembali.');
+        return;
+      }
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/payments/initiate'),
         headers: {
           'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'transactionId': widget.transactionId,
@@ -94,12 +99,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await const AuthSessionService().getValidIdToken();
+      final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
+      if (token == null) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Sesi Anda telah berakhir. Harap login kembali.');
+        return;
+      }
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/payments/initiate-cash'),
         headers: {
           'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
           'transactionId': widget.transactionId,
@@ -124,12 +134,17 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final token = await const AuthSessionService().getValidIdToken();
+      final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
+      if (token == null) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Sesi Anda telah berakhir. Harap login kembali.');
+        return;
+      }
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/payments/${widget.transactionId}'),
         headers: {
           'Content-Type': 'application/json',
-          if (token != null) 'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $token',
         },
       );
 

@@ -216,12 +216,21 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
 
                           if (confirm == true) {
                             try {
-                              final token = await const AuthSessionService().getValidIdToken();
+                              final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
+                              if (token == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Sesi Anda telah berakhir. Harap login kembali.'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                                return;
+                              }
                               final response = await http.post(
                                 Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
                                 headers: {
                                   'Content-Type': 'application/json',
-                                  if (token != null) 'Authorization': 'Bearer $token',
+                                  'Authorization': 'Bearer $token',
                                 },
                                 body: jsonEncode({
                                   'transactionId': widget.transactionId,

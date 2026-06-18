@@ -197,7 +197,7 @@ class ChatRepository {
       final newNotificationRef = _db.collection('notifications').doc();
       batch.set(newNotificationRef, {
         'userId': partnerId,
-        'type': 'reminder',
+        'type': 'chat',
         'title': 'Pesan baru dari $currentUserName',
         'body': notifBody,
         if (notifImageUrl != null) 'imageUrl': notifImageUrl,

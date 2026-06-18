@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'notification_service.dart';
-import 'rental_request_screen.dart';
-import 'room_chat_screen.dart';
-import 'transaction_detail_screen.dart';
 import 'widgets/custom_app_bar.dart';
 
 class NotificationScreen extends StatefulWidget {
@@ -139,21 +135,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return;
     }
 
-    if (item.transactionId != null && item.transactionId!.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TransactionDetailScreen(transactionId: item.transactionId!),
-        ),
-      );
-      return;
-    }
-
-    if (item.type == 'request') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const RentalRequestScreen()),
-      );
+    if ((item.transactionId != null && item.transactionId!.isNotEmpty) ||
+        (item.chatPartnerId != null && item.chatPartnerId!.isNotEmpty)) {
+      context.read<NotificationService>().handleNotificationTap(item);
       return;
     }
 
@@ -325,7 +309,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.of(context).pop();
-                          _navigateFromNotification(item);
+                          context.read<NotificationService>().handleNotificationTap(item);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF012D1D),
@@ -353,106 +337,6 @@ class _NotificationScreenState extends State<NotificationScreen> {
         );
       },
     );
-  }
-
-  Future<void> _navigateFromNotification(AppNotification item) async {
-    // If transaction-related, open transaction detail
-    if (item.transactionId != null && item.transactionId!.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TransactionDetailScreen(transactionId: item.transactionId!),
-        ),
-      );
-      return;
-    }
-
-    // If rental request type, open rental request screen
-    if (item.type == 'request') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const RentalRequestScreen()),
-      );
-      return;
-    }
-
-    // If chat notification with partner info, open the chat
-    if (item.chatPartnerId != null && item.chatPartnerId!.isNotEmpty) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RoomChatScreen(
-            partnerId: item.chatPartnerId!,
-            partnerName: item.chatPartnerName ?? 'Pengguna',
-          ),
-        ),
-      );
-      return;
-    }
-
-    // Fallback: try to extract partner name from title "Pesan baru dari [Name]"
-    if (item.title.startsWith('Pesan baru dari ')) {
-      final nameToQuery = item.title.replaceFirst('Pesan baru dari ', '').trim();
-      if (nameToQuery.isNotEmpty) {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF012D1D),
-            ),
-          ),
-        );
-
-        try {
-          final querySnapshot = await FirebaseFirestore.instance
-              .collection('users')
-              .where('name', isEqualTo: nameToQuery)
-              .limit(1)
-              .get();
-
-          if (!mounted) return;
-
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context); // Close loading dialog
-          }
-
-          if (querySnapshot.docs.isNotEmpty) {
-            final userDoc = querySnapshot.docs.first;
-            final partnerId = userDoc.id;
-            final partnerAvatarUrl = userDoc.data()['profilePhotoUrl'] as String?;
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => RoomChatScreen(
-                  partnerId: partnerId,
-                  partnerName: nameToQuery,
-                  partnerAvatarUrl: partnerAvatarUrl,
-                ),
-              ),
-            );
-            return;
-          }
-        } catch (e) {
-          if (!mounted) return;
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context); // Close loading dialog on error
-          }
-        }
-      }
-
-      if (!mounted) return;
-      // If name resolution fails, show the fallback snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Buka menu Chat untuk melihat pesan ini'),
-          backgroundColor: Color(0xFF012D1D),
-        ),
-      );
-      return;
-    }
   }
 }
 

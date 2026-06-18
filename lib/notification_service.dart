@@ -2,14 +2,17 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'firebase_options.dart';
+import 'transaction_detail_screen.dart';
+import 'room_chat_screen.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -54,6 +57,44 @@ class AppNotification {
     this.chatPartnerId,
     this.chatPartnerName,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'message': message,
+      'timeLabel': timeLabel,
+      'category': category,
+      'initials': initials,
+      'isRead': isRead,
+      'highlight': highlight,
+      'isPinned': isPinned,
+      'type': type,
+      'transactionId': transactionId,
+      'imageUrl': imageUrl,
+      'chatPartnerId': chatPartnerId,
+      'chatPartnerName': chatPartnerName,
+    };
+  }
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    return AppNotification(
+      id: json['id'] ?? '',
+      title: json['title'] ?? '',
+      message: json['message'] ?? '',
+      timeLabel: json['timeLabel'] ?? 'Baru saja',
+      category: json['category'] ?? 'Info',
+      initials: json['initials'] ?? 'NA',
+      isRead: json['isRead'] ?? false,
+      highlight: json['highlight'] ?? true,
+      isPinned: json['isPinned'] ?? false,
+      type: json['type'],
+      transactionId: json['transactionId'],
+      imageUrl: json['imageUrl'],
+      chatPartnerId: json['chatPartnerId'],
+      chatPartnerName: json['chatPartnerName'],
+    );
+  }
 
   factory AppNotification.fromApi(Map<String, dynamic> json) {
     final title = (json['title'] ?? '').toString().trim();
@@ -154,6 +195,8 @@ class AppNotification {
 
   static String _categoryFromType(String type) {
     switch (type.toLowerCase()) {
+      case 'chat':
+        return 'Pesan';
       case 'request':
         return 'Sewa';
       case 'approved':
@@ -230,6 +273,7 @@ class NotificationService extends ChangeNotifier {
   NotificationService._();
 
   static final NotificationService instance = NotificationService._();
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   FirebaseMessaging? _messaging;
   final AuthSessionService _authSessionService = const AuthSessionService();
@@ -259,6 +303,106 @@ class NotificationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void handleNotificationTap(AppNotification item) {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      debugPrint("handleNotificationTap skipped: navigatorKey context is null");
+      return;
+    }
+
+    // Direct navigation for chat
+    if (item.chatPartnerId != null && item.chatPartnerId!.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RoomChatScreen(
+            partnerId: item.chatPartnerId!,
+            partnerName: item.chatPartnerName ?? 'Pengguna',
+          ),
+        ),
+      );
+      return;
+    }
+
+    // Direct navigation for transaction detail
+    if (item.transactionId != null && item.transactionId!.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TransactionDetailScreen(transactionId: item.transactionId!),
+        ),
+      );
+      return;
+    }
+
+    // Fallback for chat via title
+    if (item.title.startsWith('Pesan baru dari ')) {
+      final nameToQuery = item.title.replaceFirst('Pesan baru dari ', '').trim();
+      if (nameToQuery.isNotEmpty) {
+        _resolveChatPartnerAndNavigate(context, nameToQuery);
+      }
+      return;
+    }
+  }
+
+  Future<void> _resolveChatPartnerAndNavigate(BuildContext context, String nameToQuery) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(
+          color: Color(0xFF012D1D),
+        ),
+      ),
+    );
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('name', isEqualTo: nameToQuery)
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Close loading dialog
+      }
+
+      if (querySnapshot.docs.isNotEmpty) {
+        final userDoc = querySnapshot.docs.first;
+        final partnerId = userDoc.id;
+        final partnerAvatarUrl = userDoc.data()['profilePhotoUrl'] as String?;
+
+        if (!context.mounted) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RoomChatScreen(
+              partnerId: partnerId,
+              partnerName: nameToQuery,
+              partnerAvatarUrl: partnerAvatarUrl,
+            ),
+          ),
+        );
+        return;
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context); // Close loading dialog on error
+      }
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Buka menu Chat untuk melihat pesan ini'),
+        backgroundColor: Color(0xFF012D1D),
+      ),
+    );
+  }
+
   Future<void> initialize() async {
     if (_initialized) {
       return;
@@ -282,7 +426,21 @@ class NotificationService extends ChangeNotifier {
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
     );
-    await _localNotifications.initialize(initializationSettings);
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final payloadStr = response.payload;
+        if (payloadStr != null && payloadStr.isNotEmpty) {
+          try {
+            final Map<String, dynamic> data = jsonDecode(payloadStr);
+            final notification = AppNotification.fromJson(data);
+            handleNotificationTap(notification);
+          } catch (e) {
+            debugPrint("Error handling local notification tap: $e");
+          }
+        }
+      },
+    );
 
     // Set default presentation options for foreground notifications
     await messaging.setForegroundNotificationPresentationOptions(
@@ -305,8 +463,10 @@ class NotificationService extends ChangeNotifier {
       }
     });
 
-    FirebaseMessaging.onMessageOpenedApp.listen((_) {
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       fetchNotifications(silent: true);
+      final notification = AppNotification.fromRemoteMessage(message);
+      handleNotificationTap(notification);
     });
 
     messaging.onTokenRefresh.listen((token) {
@@ -316,6 +476,10 @@ class NotificationService extends ChangeNotifier {
     final initialMessage = await messaging.getInitialMessage();
     if (initialMessage != null) {
       fetchNotifications(silent: true);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final notification = AppNotification.fromRemoteMessage(initialMessage);
+        handleNotificationTap(notification);
+      });
     }
 
     // Sync FCM token on startup if already logged in
@@ -346,6 +510,7 @@ class NotificationService extends ChangeNotifier {
       notification.title,
       notification.message,
       platformChannelSpecifics,
+      payload: jsonEncode(notification.toJson()),
     );
   }
 
