@@ -14,12 +14,14 @@ class DisputeFormScreen extends StatefulWidget {
   final String transactionId;
   final String category; // 'handover_rejection' | 'ongoing_damage' | 'checkout_damage'
   final String itemName;
+  final String? disputeId; // Optional parameter for rebuttal/sanggahan mode
 
   const DisputeFormScreen({
     super.key,
     required this.transactionId,
     required this.category,
     required this.itemName,
+    this.disputeId,
   });
 
   @override
@@ -105,27 +107,43 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
         return;
       }
 
-      String? uploadedPhotoUrl;
-      if (_selectedImages.isNotEmpty) {
-        // Upload first image as primary evidence
-        uploadedPhotoUrl = await _imageService.uploadProcessedImage(
-          processed: _selectedImages.first,
-          storagePath: 'disputes/${widget.transactionId}/evidence_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      // Upload all selected images
+      List<String> uploadedPhotoUrls = [];
+      for (int i = 0; i < _selectedImages.length; i++) {
+        final url = await _imageService.uploadProcessedImage(
+          processed: _selectedImages[i],
+          storagePath: 'disputes/${widget.transactionId}/evidence_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
         );
+        if (url != null) {
+          uploadedPhotoUrls.add(url);
+        }
       }
 
+      final isRebuttal = widget.disputeId != null;
+      final url = isRebuttal
+          ? '${ApiConfig.baseUrl}/disputes/${widget.disputeId}/respond'
+          : '${ApiConfig.baseUrl}/disputes';
+
+      final bodyData = isRebuttal
+          ? {
+              'description': description,
+              'evidenceUrls': uploadedPhotoUrls,
+            }
+          : {
+              'transactionId': widget.transactionId,
+              'description': description,
+              'category': widget.category,
+              'evidenceUrls': uploadedPhotoUrls,
+              'evidenceUrl': uploadedPhotoUrls.isNotEmpty ? uploadedPhotoUrls.first : null, // keep legacy field just in case
+            };
+
       final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/disputes'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'transactionId': widget.transactionId,
-          'description': description,
-          'category': widget.category,
-          'evidenceUrl': uploadedPhotoUrl,
-        }),
+        body: jsonEncode(bodyData),
       );
 
       final body = jsonDecode(response.body);
@@ -133,7 +151,7 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
         if (!mounted) return;
         _showSuccessDialog();
       } else {
-        final errorMsg = body['error']?['message'] ?? 'Gagal mengajukan sengketa.';
+        final errorMsg = body['error']?['message'] ?? 'Gagal memproses laporan.';
         if (!mounted) return;
         showAppErrorSnack(context, errorMsg);
       }
@@ -188,9 +206,9 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                const Text(
-                  'Sengketa Diajukan!',
-                  style: TextStyle(
+                Text(
+                  widget.disputeId != null ? 'Sanggahan Terkirim!' : 'Sengketa Diajukan!',
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -199,9 +217,11 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Laporan Anda telah diterima. Transaksi saat ini ditangguhkan dan dana sewa akan ditahan sementara hingga mediasi Admin selesai.',
-                  style: TextStyle(
+                Text(
+                  widget.disputeId != null
+                      ? 'Sanggahan dan bukti Anda telah diterima. Admin akan segera meninjau argumen dari kedua belah pihak.'
+                      : 'Laporan Anda telah diterima. Transaksi saat ini ditangguhkan dan dana sewa akan ditahan sementara hingga mediasi Admin selesai.',
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     height: 1.5,
@@ -248,8 +268,8 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
-      appBar: const CustomAppBar(
-        title: 'Ajukan Sengketa',
+      appBar: CustomAppBar(
+        title: widget.disputeId != null ? 'Kirim Sanggahan' : 'Ajukan Sengketa',
       ),
       body: !_isDisclaimerAccepted ? _buildDisclaimerView() : _buildFormView(),
     );
@@ -411,9 +431,9 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
           const SizedBox(height: 24),
 
           // Kronologi Field
-          const Text(
-            'Kronologi Kejadian',
-            style: TextStyle(
+          Text(
+            widget.disputeId != null ? 'Kronologi Sanggahan Anda' : 'Kronologi Kejadian',
+            style: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
               fontWeight: FontWeight.w600,
@@ -436,15 +456,17 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
                 fontSize: 14,
                 color: Color(0xFF012D1D),
               ),
-              decoration: const InputDecoration(
-                hintText: 'Ceritakan kronologi masalah secara lengkap dan jujur...',
-                hintStyle: TextStyle(
+              decoration: InputDecoration(
+                hintText: widget.disputeId != null
+                    ? 'Ceritakan alasan/sanggahan Anda secara lengkap dan jujur...'
+                    : 'Ceritakan kronologi masalah secara lengkap dan jujur...',
+                hintStyle: const TextStyle(
                   fontFamily: 'Poppins',
                   fontSize: 12,
                   color: Color(0xFF717973),
                 ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.all(16),
+                contentPadding: const EdgeInsets.all(16),
               ),
             ),
           ),
@@ -561,9 +583,9 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
                       color: Colors.white,
                     ),
                   )
-                : const Text(
-                    'Kirim Laporan Sengketa',
-                    style: TextStyle(
+                : Text(
+                    widget.disputeId != null ? 'Kirim Sanggahan' : 'Kirim Laporan Sengketa',
+                    style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

@@ -15,6 +15,7 @@ class CachedUserProfile {
   final String status;
   final double walletBalance;
   final String bio;
+  final String rejectionReason;
 
   const CachedUserProfile({
     required this.name,
@@ -24,6 +25,7 @@ class CachedUserProfile {
     required this.status,
     this.walletBalance = 0.0,
     this.bio = '',
+    this.rejectionReason = '',
   });
 
   factory CachedUserProfile.fromPrefs(SharedPreferences prefs) {
@@ -35,6 +37,7 @@ class CachedUserProfile {
       status: prefs.getString('user_status')?.trim() ?? '',
       walletBalance: prefs.getDouble('user_wallet_balance') ?? 0.0,
       bio: prefs.getString('user_bio')?.trim() ?? '',
+      rejectionReason: prefs.getString('user_rejection_reason')?.trim() ?? '',
     );
   }
 
@@ -47,6 +50,7 @@ class CachedUserProfile {
       status: (json['status'] ?? '').toString().trim(),
       walletBalance: (json['walletBalance'] as num?)?.toDouble() ?? 0.0,
       bio: (json['bio'] ?? '').toString().trim(),
+      rejectionReason: (json['rejectionReason'] ?? '').toString().trim(),
     );
   }
 
@@ -56,6 +60,7 @@ class CachedUserProfile {
   String get displayBio => bio;
   bool get isVerified => status.toLowerCase() == 'verified';
   bool get isPendingVerification => status.toLowerCase() == 'pending';
+  bool get isRejectedVerification => status.toLowerCase() == 'rejected';
 }
 
 class ProfileSyncService {

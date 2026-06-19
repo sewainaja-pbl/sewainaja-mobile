@@ -30,6 +30,7 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
   ProcessedImageFile? _selfieFile;
   bool _isSubmitting = false;
   String _userStatus = 'unverified';
+  String _rejectionReason = '';
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
       if (mounted) {
         setState(() {
           _userStatus = cached.status.toLowerCase();
+          _rejectionReason = cached.rejectionReason;
           if (_userStatus == 'pending') {
             _currentStep = 2; // Jump to under review if already submitted
           }
@@ -228,6 +230,9 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
   }
 
   Widget _buildBody() {
+    if (_userStatus == 'rejected') {
+      return _buildRejectedStep();
+    }
     if (_currentStep == 0) {
       return _buildOnboardingStep();
     } else if (_currentStep == 1) {
@@ -235,6 +240,145 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
     } else {
       return _buildUnderReviewStep();
     }
+  }
+
+  Widget _buildRejectedStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        const Text(
+          'Verifikasi Ditolak',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF012D1D),
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Mohon maaf, berkas KYC yang Anda unggah sebelumnya ditolak oleh admin SewainAja. Silakan periksa alasan penolakan di bawah ini dan unggah ulang berkas Anda.',
+          style: TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            color: Color(0xFF5C635E),
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 24),
+        
+        // Rejection Reason Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFDECEC),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF5B7B1)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Color(0xFFB42318), size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'ALASAN PENOLAKAN ADMIN',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFB42318),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _rejectionReason.isNotEmpty 
+                    ? _rejectionReason 
+                    : 'Berkas KTP atau Selfie yang diunggah tidak jelas atau tidak sesuai ketentuan.',
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF7B241C),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const Spacer(),
+        
+        // Start Re-verification Button
+        GestureDetector(
+          onTap: () {
+            setState(() {
+              _userStatus = 'unverified';
+              _currentStep = 1; // Direct to capture step
+            });
+          },
+          child: Container(
+            height: 56,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF012D1D),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF012D1D).withValues(alpha: 0.25),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Center(
+              child: Text(
+                'Mulai Verifikasi Ulang',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Close Button
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: Container(
+            height: 56,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF012D1D)),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: const Center(
+              child: Text(
+                'Kembali ke Menu Utama',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   // --- STEP 0: ONBOARDING ---
