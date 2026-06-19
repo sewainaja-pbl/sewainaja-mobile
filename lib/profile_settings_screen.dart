@@ -544,7 +544,7 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
                   );
                 },
                 child: const Text(
-                  'More',
+                  'Lebih banyak',
                   style: TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 14,

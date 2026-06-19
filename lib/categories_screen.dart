@@ -46,7 +46,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       backgroundColor: const Color(0xFFFDF9F4), // main_bg
       extendBodyBehindAppBar: false,
       appBar: CustomAppBar(
-        title: 'Categories',
+        title: 'Kategori',
         onBack: () => _handleBack(context),
       ),
       body: Consumer<CategoryController>(
@@ -144,10 +144,20 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               
               final color = colors[index % colors.length];
 
+              String displayTitle = cat.category;
+              final upper = displayTitle.toUpperCase();
+              if (upper == 'OUTFIT') {
+                displayTitle = 'PAKAIAN';
+              } else if (upper == 'SPORTS') {
+                displayTitle = 'OLAHRAGA';
+              } else if (upper == 'ALAT CAMPING' || upper == 'CAMP TOOLS' || upper == 'CAMPING TOOLS') {
+                displayTitle = 'ALAT KEMAH';
+              }
+
               return SubtleFadeIn(
                 delay: Duration(milliseconds: index * 40),
                 child: _CategoryCard(
-                  title: cat.category,
+                  title: displayTitle,
                   fontSize: 32, // Ukuran teks diperkecil agar kata panjang seperti KAMERA & LENSA tidak terpotong
                   photoUrl: cat.photoUrl,
                   gradientOverlay: LinearGradient(

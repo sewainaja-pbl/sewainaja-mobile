@@ -65,6 +65,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
   double? _itemPricePerHour;
   late bool _wasChatAreaActive;
   bool _showItemContextPreview = true;
+  bool _isFirstLoad = true;
 
   @override
   void initState() {
@@ -98,11 +99,33 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
         previousLineCount = lineCount;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController.hasClients) {
-            _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
           }
         });
       }
     });
+  }
+
+  String _formatIndonesianDate(DateTime dt) {
+    final months = [
+      "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+      "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+    ];
+    return "${dt.day} ${months[dt.month - 1]} ${dt.year}";
+  }
+
+  String _formatIndonesianDateTime(DateTime dt) {
+    final months = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agt", "Sep", "Okt", "Nov", "Des"
+    ];
+    final hour = dt.hour.toString().padLeft(2, '0');
+    final minute = dt.minute.toString().padLeft(2, '0');
+    return "${dt.day} ${months[dt.month - 1]} $hour:$minute";
   }
 
   Future<void> _fetchPartnerProfile() async {
@@ -763,7 +786,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
           } else if (msgDate == yesterday) {
             dateText = "Kemarin";
           } else {
-            dateText = DateFormat('d MMMM yyyy').format(message.sentAt!);
+            dateText = _formatIndonesianDate(message.sentAt!);
           }
           items.add(dateText);
         }
@@ -885,7 +908,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
                             } else if (difference.inHours < 24) {
                               subtitle = "Aktif ${difference.inHours} jam lalu";
                             } else {
-                              subtitle = "Aktif ${DateFormat('d MMM HH:mm').format(lastSeenDate)}";
+                              subtitle = "Aktif ${_formatIndonesianDateTime(lastSeenDate)}";
                             }
                           }
                           return Text(
@@ -914,14 +937,23 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
         ],
       ),
       body: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Positioned.fill(
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).size.height,
             child: Image.asset(
               'assets/images/background.png',
               fit: BoxFit.cover,
             ),
           ),
-          Positioned.fill(
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).size.height,
             child: Container(
               color: const Color(0xFF012D1D).withValues(alpha: 0.8),
             ),
@@ -962,7 +994,20 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
                             
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               if (_scrollController.hasClients) {
-                                _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                                if (_isFirstLoad) {
+                                  _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                                  _isFirstLoad = false;
+                                } else {
+                                  final maxScroll = _scrollController.position.maxScrollExtent;
+                                  final currentOffset = _scrollController.offset;
+                                  if (maxScroll - currentOffset < 300) {
+                                    _scrollController.animateTo(
+                                      maxScroll,
+                                      duration: const Duration(milliseconds: 300),
+                                      curve: Curves.easeOut,
+                                    );
+                                  }
+                                }
                               }
                             });
 

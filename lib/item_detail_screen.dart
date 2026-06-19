@@ -815,7 +815,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text(
-              "Description", // ID: '270:1322'
+              "Deskripsi", // ID: '270:1322'
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w600, // SemiBold
@@ -834,8 +834,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 children: [
                   Text(
                     isDescriptionExpanded
-                        ? "See less"
-                        : "See more", // ID: '270:1324'
+                        ? "Lihat lebih sedikit"
+                        : "Lihat lebih banyak", // ID: '270:1324'
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontWeight: FontWeight.w500,

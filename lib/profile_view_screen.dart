@@ -142,9 +142,9 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
       }
     } catch (_) {}
     final int followersCount = _userProfile?['followersCount'] ?? 0;
-    final String statsFollowers = "$followersCount Followers";
+    final String statsFollowers = "$followersCount Pengikut";
     final int totalTransactions = _userProfile?['totalTransactions'] ?? 0;
-    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Active Listings" : "$totalTransactions Transactions";
+    final String statsListings = widget.listingCount != null ? "${widget.listingCount} Barang Aktif" : "$totalTransactions Transaksi";
     final String aboutMeText = _userProfile?['bio'] ?? "Belum ada deskripsi profil.";
     
     final String? avatarUrl = () {
@@ -538,7 +538,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text(
-                                        "ABOUT ME",
+                                        "TENTANG SAYA",
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.bold,
@@ -652,7 +652,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                           child: Padding(
                                             padding: const EdgeInsets.only(top: 4.0),
                                             child: Text(
-                                              _isBioExpanded ? "See less" : "See more",
+                                              _isBioExpanded ? "Lihat sebagian" : "Lihat semua",
                                               style: const TextStyle(
                                                 fontFamily: 'Poppins',
                                                 fontWeight: FontWeight.bold,
@@ -684,7 +684,7 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       const Text(
-                                        "User Reviews",
+                                        "Ulasan Pengguna",
                                         style: TextStyle(
                                           fontFamily: 'Poppins',
                                           fontWeight: FontWeight.bold,

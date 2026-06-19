@@ -160,7 +160,7 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
       appBar: const CustomAppBar(
-        title: 'History',
+        title: 'Sejarah',
       ),
       extendBody: true,
       body: Stack(
