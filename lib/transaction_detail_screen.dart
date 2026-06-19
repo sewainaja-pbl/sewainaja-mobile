@@ -449,7 +449,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       case 'pending':
         return Icons.hourglass_empty;
       case 'approved':
-        return Icons.sync;
+        return Icons.schedule_send;
       case 'ongoing':
         return Icons.play_arrow;
       case 'completed':
@@ -602,7 +602,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -619,6 +619,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   const SizedBox(height: 16),
                   Text(
                     _formatStatus(status),
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 20,
@@ -930,7 +931,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   ),
                   const SizedBox(height: 24),
                   _buildTimelineStep(
-                    title: 'Requested',
+                    title: 'Diajukan',
                     time: _formatDate(_transaction?.createdAt),
                     note: 'Transaksi diajukan oleh penyewa.',
                     badgeColor: const Color(0xFFC1ECD4),
@@ -938,7 +939,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                     isCurrent: status.toLowerCase() == 'pending',
                   ),
                   _buildTimelineStep(
-                    title: 'Approved',
+                    title: 'Disetujui',
                     time: _formatDate(_transaction?.updatedAt),
                     note: 'Transaksi disetujui oleh pemilik barang.',
                     badgeColor: status.toLowerCase() == 'pending'
