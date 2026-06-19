@@ -17,6 +17,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
 import 'widgets/custom_app_bar.dart';
 import 'profile_view_screen.dart';
+import 'select_product_screen.dart';
 
 class RoomChatScreen extends StatefulWidget {
   final String partnerId;
@@ -169,9 +170,17 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
         for (var doc in msgs.docs) {
           final data = doc.data();
           final text = data['message'] as String? ?? '';
-          if (text.contains('"id":"${widget.itemId}"') || text.contains('"id": "${widget.itemId}"')) {
-            hasAlreadySentItem = true;
-            break;
+          try {
+            final itemMap = json.decode(text) as Map<String, dynamic>;
+            if (itemMap['id'] == widget.itemId) {
+              hasAlreadySentItem = true;
+              break;
+            }
+          } catch (_) {
+            if (text.contains('"id":"${widget.itemId}"') || text.contains('"id": "${widget.itemId}"')) {
+              hasAlreadySentItem = true;
+              break;
+            }
           }
         }
       } catch (_) {}
@@ -208,7 +217,40 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
             _showItemContextPreview = false;
           });
         }
-        await _sendItemCard();
+        
+        bool shouldSendItemCard = true;
+        final checkRoomId = _roomId ?? await _chatRepository.findRoom(widget.partnerId);
+        if (checkRoomId != null && checkRoomId.isNotEmpty) {
+          try {
+            final msgs = await FirebaseFirestore.instance
+                .collection('chat_rooms')
+                .doc(checkRoomId)
+                .collection('messages')
+                .where('messageType', isEqualTo: 'item_card')
+                .get();
+            
+            for (var doc in msgs.docs) {
+              final data = doc.data();
+              final msgText = data['message'] as String? ?? '';
+              try {
+                final itemMap = json.decode(msgText) as Map<String, dynamic>;
+                if (itemMap['id'] == widget.itemId) {
+                  shouldSendItemCard = false;
+                  break;
+                }
+              } catch (_) {
+                if (msgText.contains('"id":"${widget.itemId}"') || msgText.contains('"id": "${widget.itemId}"')) {
+                  shouldSendItemCard = false;
+                  break;
+                }
+              }
+            }
+          } catch (_) {}
+        }
+        
+        if (shouldSendItemCard) {
+          await _sendItemCard();
+        }
       }
 
       final roomId = await _chatRepository.sendMessage(
@@ -262,15 +304,107 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
     await _sendMessage(customText: jsonStr, messageType: 'item_card');
   }
 
-  Future<void> _pickAndSendImage() async {
+  Future<void> _showAttachmentMenu() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFFFFF8EF),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Lampirkan',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF012D1D),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Pilih apa yang ingin Anda kirimkan.',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 13,
+                    color: Color(0xFF5C635E),
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F3EE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.photo_camera_outlined, color: Color(0xFF012D1D)),
+                  ),
+                  title: const Text('Kamera', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Color(0xFF012D1D))),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndSendImageWithSource(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F3EE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.photo_library_outlined, color: Color(0xFF012D1D)),
+                  ),
+                  title: const Text('Galeri', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Color(0xFF012D1D))),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickAndSendImageWithSource(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF7F3EE),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.inventory_2_outlined, color: Color(0xFF012D1D)),
+                  ),
+                  title: const Text('Produk', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: Color(0xFF012D1D))),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SelectProductScreen(partnerId: widget.partnerId),
+                      ),
+                    );
+                    if (result != null && result is String) {
+                      await _sendMessage(customText: result, messageType: 'item_card');
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickAndSendImageWithSource(ImageSource imageSource) async {
     try {
-      final sourceChoice = await _imageUploadService.chooseImageSource(context);
-      if (sourceChoice == null || !mounted) return;
-
-      final imageSource = sourceChoice == ImageSourceChoice.camera 
-          ? ImageSource.camera 
-          : ImageSource.gallery;
-
       setState(() {
         _isUploadingImage = true;
       });
@@ -1503,7 +1637,7 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
               ),
               child: IconButton(
                 icon: const Icon(Icons.add, color: Colors.white),
-                onPressed: _pickAndSendImage,
+                onPressed: _showAttachmentMenu,
               ),
             ),
           ),
