@@ -186,6 +186,39 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     }
   }
 
+  Future<void> _showCancelDialog({required bool isOwner}) async {
+    final title = isOwner ? 'Tolak Permintaan' : 'Batalkan Sewa';
+    final content = isOwner 
+        ? 'Apakah Anda yakin ingin menolak permintaan sewa ini?'
+        : 'Apakah Anda yakin ingin membatalkan penyewaan ini?';
+    final confirmBtn = isOwner ? 'Ya, Tolak' : 'Ya, Batalkan';
+    
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFFFFF8EF),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(title, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
+        content: Text(content, style: const TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tidak', style: TextStyle(color: Color(0xFF414844), fontFamily: 'Poppins')),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFBA1A1A)),
+            child: Text(confirmBtn, style: const TextStyle(color: Colors.white, fontFamily: 'Poppins')),
+          ),
+        ],
+      ),
+    );
+    
+    if (confirm == true) {
+      await _cancelTransaction();
+    }
+  }
+
   Future<void> _approveAdendum() async {
     final tId = widget.transactionId;
     if (tId == null) return;
@@ -955,7 +988,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _cancelTransaction,
+                    onPressed: () => _showCancelDialog(isOwner: true),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFFBA1A1A),
                       side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
@@ -1007,7 +1040,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
             child: OutlinedButton(
-              onPressed: _cancelTransaction,
+              onPressed: () => _showCancelDialog(isOwner: false),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFBA1A1A),
                 side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
@@ -1036,8 +1069,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-              child: ElevatedButton.icon(
-                onPressed: () {
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -1074,13 +1111,39 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                   elevation: 0,
                 ),
               ),
-            ),
-          );
-        }
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-            child: ElevatedButton.icon(
+              const SizedBox(height: 12),
+              OutlinedButton(
+                onPressed: () => _showCancelDialog(isOwner: false),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFFBA1A1A),
+                  side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                ),
+                child: const Text(
+                  'Batalkan Sewa',
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ElevatedButton.icon(
               onPressed: () async {
                 bool isLocationServiceEnabled = await Geolocator.isLocationServiceEnabled();
                 if (!isLocationServiceEnabled) {
@@ -1144,9 +1207,31 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 elevation: 0,
               ),
             ),
-          ),
-        );
-      } else {
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: () => _showCancelDialog(isOwner: false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFBA1A1A),
+                side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+              ),
+              child: const Text(
+                'Batalkan Sewa',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  } else {
         // Owner approved: show QR code and COD confirmation if unpaid
         return SafeArea(
           child: Padding(

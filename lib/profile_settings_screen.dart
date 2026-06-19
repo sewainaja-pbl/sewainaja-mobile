@@ -221,25 +221,35 @@ class _ProfileSettingsScreenState extends State<ProfileSettingsScreen> {
         title: 'Profil',
         onBack: widget.onBack,
       ),
-      body: SingleChildScrollView(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 110),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ### [SECTION 1: PROFILE CARD] ###
-            _buildProfileCard(),
+      body: RefreshIndicator(
+        color: const Color(0xFF012D1D),
+        onRefresh: () async {
+          await Future.wait([
+            _loadUserData(),
+            _loadUserStats(),
+            _loadActiveTransactions(),
+          ]);
+        },
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: 110),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ### [SECTION 1: PROFILE CARD] ###
+              _buildProfileCard(),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // ### [SECTION 2: SEDANG BERLANGSUNG] ###
-            _buildActiveRentalSection(),
+              // ### [SECTION 2: SEDANG BERLANGSUNG] ###
+              _buildActiveRentalSection(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ### [SECTION 3: MENU LIST] ###
-            _buildMenuList(),
-          ],
+              // ### [SECTION 3: MENU LIST] ###
+              _buildMenuList(),
+            ],
+          ),
         ),
       ),
     );
