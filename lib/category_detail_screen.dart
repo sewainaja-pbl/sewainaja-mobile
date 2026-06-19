@@ -148,8 +148,15 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
     String displayCategory = widget.category.category;
     if (displayCategory == "Komputer & Aksesoris") {
       displayCategory = "Komp & Aksesoris";
-    } else if (displayCategory.toUpperCase() == "OUTFIT") {
-      displayCategory = "Outfit";
+    } else {
+      final upper = displayCategory.toUpperCase();
+      if (upper == 'OUTFIT') {
+        displayCategory = "Pakaian";
+      } else if (upper == 'SPORTS') {
+        displayCategory = "Olahraga";
+      } else if (upper == 'ALAT CAMPING' || upper == 'CAMP TOOLS' || upper == 'CAMPING TOOLS') {
+        displayCategory = "Alat Kemah";
+      }
     }
 
     return Scaffold(

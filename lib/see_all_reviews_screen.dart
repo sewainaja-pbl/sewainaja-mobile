@@ -80,7 +80,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
-              "Reviews for $ownerName",
+              "Ulasan untuk $ownerName",
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.bold,
@@ -129,7 +129,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "$count reviews",
+                        "$count ulasan",
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w500,
@@ -221,7 +221,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
-              "Reviews for $ownerName",
+              "Ulasan untuk $ownerName",
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.bold,
@@ -267,7 +267,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        "10 reviews",
+                        "10 ulasan",
                         style: TextStyle(
                           fontFamily: 'Poppins',
                           fontWeight: FontWeight.w500,
@@ -520,7 +520,7 @@ class SeeAllReviewsScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              "Helpful (${isHelpful ? helpfulCount + 1 : helpfulCount})",
+                              "Membantu (${isHelpful ? helpfulCount + 1 : helpfulCount})",
                               style: const TextStyle(
                                 fontFamily: 'Poppins',
                                 fontWeight: FontWeight.w500,

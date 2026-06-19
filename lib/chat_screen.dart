@@ -24,6 +24,47 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
 
+  int _getTabFlex(String label) {
+    if (selectedTab == label) {
+      return label == "All" ? 3 : 4;
+    }
+    return 2;
+  }
+
+  String _getTabLabel(String tabKey) {
+    if (tabKey == "All") {
+      return "Semua";
+    }
+    if (tabKey == "Unread") {
+      return selectedTab == "Unread" ? "Belum Dibaca" : "Belum...";
+    }
+    if (tabKey == "Request") {
+      return selectedTab == "Request" ? "Permintaan" : "Minta...";
+    }
+    return tabKey;
+  }
+
+  String _getIndonesianWeekday(int weekday) {
+    switch (weekday) {
+      case 1:
+        return "Senin";
+      case 2:
+        return "Selasa";
+      case 3:
+        return "Rabu";
+      case 4:
+        return "Kamis";
+      case 5:
+        return "Jumat";
+      case 6:
+        return "Sabtu";
+      case 7:
+        return "Minggu";
+      default:
+        return "";
+    }
+  }
+
   void _handleBack() {
     final didPop = Navigator.of(context).maybePop();
     didPop.then((popped) {
@@ -305,7 +346,7 @@ class _ChatScreenState extends State<ChatScreen> {
           color: Colors.black,
         ),
         decoration: InputDecoration(
-          hintText: "Search . . .", // Placeholder
+          hintText: "Cari...", // Placeholder
           hintStyle: const TextStyle(
             fontFamily: 'Poppins',
             fontSize: 12,
@@ -337,19 +378,30 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Widget for Section 3: Tab Filter Bar
   Widget _buildTabFilterBar() {
-    return Row(
-      children: [
-        Expanded(child: _buildTabItem("All")),
-        const SizedBox(width: 12),
-        Expanded(child: _buildTabItem("Unread")),
-        const SizedBox(width: 12),
-        Expanded(child: _buildTabItem("Request")),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final double availableWidth = constraints.maxWidth - 24; // 12 + 12 gap
+        final int totalFlex = _getTabFlex("All") + _getTabFlex("Unread") + _getTabFlex("Request");
+
+        double getWidth(String label) {
+          return (availableWidth * _getTabFlex(label)) / totalFlex;
+        }
+
+        return Row(
+          children: [
+            _buildTabItem("All", getWidth("All")),
+            const SizedBox(width: 12),
+            _buildTabItem("Unread", getWidth("Unread")),
+            const SizedBox(width: 12),
+            _buildTabItem("Request", getWidth("Request")),
+          ],
+        );
+      },
     );
   }
 
   // Helper Tab Item Widget
-  Widget _buildTabItem(String label) {
+  Widget _buildTabItem(String label, double width) {
     final bool isActive = selectedTab == label;
 
     return GestureDetector(
@@ -358,7 +410,10 @@ class _ChatScreenState extends State<ChatScreen> {
           selectedTab = label;
         });
       },
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+        width: width,
         height: 40,
         decoration: BoxDecoration(
           color: isActive
@@ -371,15 +426,21 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'Poppins',
-            fontSize: 12,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            color: isActive
-                ? Colors.white
-                : const Color(0xFF414844), // Text active/inactive
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Text(
+            _getTabLabel(label),
+            key: ValueKey(_getTabLabel(label)),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              color: isActive
+                  ? Colors.white
+                  : const Color(0xFF414844), // Text active/inactive
+            ),
           ),
         ),
       ),
@@ -421,7 +482,7 @@ class _ChatScreenState extends State<ChatScreen> {
       } else if (diff.inDays == 1) {
         timeString = "Kemarin";
       } else if (diff.inDays < 7) {
-        timeString = DateFormat('EEEE').format(room.lastMessageAt!);
+        timeString = _getIndonesianWeekday(room.lastMessageAt!.weekday);
       } else {
         timeString = DateFormat('dd/MM/yy').format(room.lastMessageAt!);
       }

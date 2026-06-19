@@ -57,7 +57,7 @@ class HomeScreenState extends State<HomeScreen>
   List<ItemModel>? _trustedNearby;
   bool _isLoadingNewArrivals = true;
   bool _isLoadingTrustedNearby = true;
-  
+
   List<ItemModel>? _followingItems;
   bool _isLoadingFollowing = true;
 
@@ -128,7 +128,8 @@ class HomeScreenState extends State<HomeScreen>
 
   void _updateTime() {
     final now = DateTime.now();
-    final timeStr = "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB";
+    final timeStr =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')} WIB";
     if (_currentTimeString != timeStr) {
       if (mounted) {
         setState(() {
@@ -206,20 +207,25 @@ class HomeScreenState extends State<HomeScreen>
       _isLoadingNewArrivals = true;
       _updateShimmerControllerStatus();
     });
-    _newArrivalsSub = _itemRepo.watchNewArrivals(limit: 5).listen((items) {
-      if (!mounted) return;
-      setState(() {
-        _newArrivals = items;
-        _isLoadingNewArrivals = false;
-        _updateShimmerControllerStatus();
-      });
-    }, onError: (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingNewArrivals = false;
-        _updateShimmerControllerStatus();
-      });
-    });
+    _newArrivalsSub = _itemRepo
+        .watchNewArrivals(limit: 5)
+        .listen(
+          (items) {
+            if (!mounted) return;
+            setState(() {
+              _newArrivals = items;
+              _isLoadingNewArrivals = false;
+              _updateShimmerControllerStatus();
+            });
+          },
+          onError: (_) {
+            if (!mounted) return;
+            setState(() {
+              _isLoadingNewArrivals = false;
+              _updateShimmerControllerStatus();
+            });
+          },
+        );
   }
 
   void _listenToTrustedNearby() {
@@ -228,22 +234,27 @@ class HomeScreenState extends State<HomeScreen>
       _isLoadingTrustedNearby = true;
       _updateShimmerControllerStatus();
     });
-    _trustedNearbySub = _itemRepo.watchAvailableItems(
-      categoryName: selectedCategory == 'All' ? null : selectedCategory,
-    ).listen((items) {
-      if (!mounted) return;
-      setState(() {
-        _trustedNearby = items;
-        _isLoadingTrustedNearby = false;
-        _updateShimmerControllerStatus();
-      });
-    }, onError: (_) {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingTrustedNearby = false;
-        _updateShimmerControllerStatus();
-      });
-    });
+    _trustedNearbySub = _itemRepo
+        .watchAvailableItems(
+          categoryName: selectedCategory == 'All' ? null : selectedCategory,
+        )
+        .listen(
+          (items) {
+            if (!mounted) return;
+            setState(() {
+              _trustedNearby = items;
+              _isLoadingTrustedNearby = false;
+              _updateShimmerControllerStatus();
+            });
+          },
+          onError: (_) {
+            if (!mounted) return;
+            setState(() {
+              _isLoadingTrustedNearby = false;
+              _updateShimmerControllerStatus();
+            });
+          },
+        );
   }
 
   /// Load kategori dari Firestore collection `item_categories`.
@@ -289,9 +300,7 @@ class HomeScreenState extends State<HomeScreen>
     }
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileSettingsScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ProfileSettingsScreen()),
     ).then((_) {
       _loadDefaultLocationLabel();
     });
@@ -301,7 +310,8 @@ class HomeScreenState extends State<HomeScreen>
     final result = await Navigator.push<DefaultAddressResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const DefaultAddressSetupScreen(returnSelectionOnSave: true),
+        builder: (_) =>
+            const DefaultAddressSetupScreen(returnSelectionOnSave: true),
       ),
     );
 
@@ -437,7 +447,9 @@ class HomeScreenState extends State<HomeScreen>
                         ),
                         Positioned.fill(
                           child: Container(
-                            color: const Color(0xFF012D1D).withValues(alpha: 0.8),
+                            color: const Color(
+                              0xFF012D1D,
+                            ).withValues(alpha: 0.8),
                           ),
                         ),
                         Column(
@@ -446,7 +458,9 @@ class HomeScreenState extends State<HomeScreen>
                             SafeArea(
                               bottom: false,
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16.0,
+                                ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -470,7 +484,9 @@ class HomeScreenState extends State<HomeScreen>
                       width: double.infinity,
                       decoration: const BoxDecoration(
                         color: Color(0xFFFFF8EF),
-                        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(30),
+                        ),
                       ),
                       child: Center(
                         child: Container(
@@ -498,7 +514,7 @@ class HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 28),
                         _buildFollowingSection(),
                         _buildSectionHeader(
-                          "New Arrivals",
+                          "Terbaru",
                           onSeeMoreTap: () {
                             Navigator.push(
                               context,
@@ -508,19 +524,19 @@ class HomeScreenState extends State<HomeScreen>
                             );
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         _buildNewArrivals(),
                         const SizedBox(height: 28),
                         Container(
                           key: _trustedSectionKey,
                           child: _buildSectionHeader(
-                            "Most Trusted Nearby",
+                            "Terdekat & Terpercaya",
                             showSeeMore: false,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                         _buildCategoryFilter(),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -578,9 +594,19 @@ class HomeScreenState extends State<HomeScreen>
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
                 image: DecorationImage(
-                  image: (!_profilePhotoUrl.startsWith('http://') && !_profilePhotoUrl.startsWith('https://'))
-                      ? const ResizeImage(AssetImage('assets/images/no-profile-picture-icon.webp'), width: 90)
-                      : _imageUploadService.buildImageProvider(_profilePhotoUrl, targetWidth: 90),
+                  image:
+                      (!_profilePhotoUrl.startsWith('http://') &&
+                          !_profilePhotoUrl.startsWith('https://'))
+                      ? const ResizeImage(
+                          AssetImage(
+                            'assets/images/no-profile-picture-icon.webp',
+                          ),
+                          width: 90,
+                        )
+                      : _imageUploadService.buildImageProvider(
+                          _profilePhotoUrl,
+                          targetWidth: 90,
+                        ),
                   fit: BoxFit.cover,
                 ),
               ),
@@ -702,10 +728,7 @@ class HomeScreenState extends State<HomeScreen>
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             border: InputBorder.none,
-            prefixIcon: const Icon(
-              Icons.search,
-              color: Color(0xFF012D1D),
-            ),
+            prefixIcon: const Icon(Icons.search, color: Color(0xFF012D1D)),
             suffixIcon: _isSearchActive
                 ? GestureDetector(
                     onTap: _closeSearch,
@@ -716,7 +739,7 @@ class HomeScreenState extends State<HomeScreen>
                     ),
                   )
                 : null,
-            hintText: "Search....",
+            hintText: "cari....",
             hintStyle: const TextStyle(
               fontFamily: 'Poppins',
               fontSize: 14,
@@ -774,13 +797,12 @@ class HomeScreenState extends State<HomeScreen>
               ),
               child: Center(
                 child: Text(
-                  cat.toUpperCase() == 'OUTFIT' ? 'Outfit' : cat,
+                  cat.toUpperCase() == 'OUTFIT' ? 'Pakaian' : cat,
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 13,
                     color: isSelected ? Colors.white : const Color(0xFF012D1D),
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   ),
                 ),
               ),
@@ -805,7 +827,7 @@ class HomeScreenState extends State<HomeScreen>
             children: [
               const Expanded(
                 child: Text(
-                  "Your Current Location",
+                  "Lokasi Anda Saat Ini",
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 20,
@@ -903,7 +925,9 @@ class HomeScreenState extends State<HomeScreen>
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MapExploreScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const MapExploreScreen(),
+                        ),
                       );
                     },
                     child: IgnorePointer(
@@ -939,7 +963,9 @@ class HomeScreenState extends State<HomeScreen>
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   child: Text(
-                                    _currentTimeString.isNotEmpty ? _currentTimeString : "20:10 WIB",
+                                    _currentTimeString.isNotEmpty
+                                        ? _currentTimeString
+                                        : "20:10 WIB",
                                     style: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 11,
@@ -996,7 +1022,8 @@ class HomeScreenState extends State<HomeScreen>
                                 ],
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Expanded(
@@ -1033,7 +1060,9 @@ class HomeScreenState extends State<HomeScreen>
                                       fontFamily: 'Poppins',
                                       fontSize: 11,
                                       fontWeight: FontWeight.w400,
-                                      color: const Color(0xFFFDF9F4).withValues(alpha: 0.7),
+                                      color: const Color(
+                                        0xFFFDF9F4,
+                                      ).withValues(alpha: 0.7),
                                     ),
                                   ),
                                 ],
@@ -1063,7 +1092,10 @@ class HomeScreenState extends State<HomeScreen>
           color: const Color(0xFFFFF8EF),
           borderRadius: BorderRadius.circular(20),
           image: const DecorationImage(
-            image: ResizeImage(AssetImage('assets/images/Iklan.jpg'), width: 600),
+            image: ResizeImage(
+              AssetImage('assets/images/Iklan.jpg'),
+              width: 600,
+            ),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(
               Colors
@@ -1115,7 +1147,7 @@ class HomeScreenState extends State<HomeScreen>
                 foregroundColor: const Color(0xFF012D1D),
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
+                  horizontal: 32,
                   vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
@@ -1123,7 +1155,7 @@ class HomeScreenState extends State<HomeScreen>
                 ),
               ),
               child: const Text(
-                "EXPLORE MORE",
+                "JELAJAHI SEKARANG!",
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
@@ -1160,7 +1192,7 @@ class HomeScreenState extends State<HomeScreen>
             GestureDetector(
               onTap: onSeeMoreTap,
               child: const Text(
-                "See More...",
+                "Lainnya...",
                 style: TextStyle(
                   fontFamily: 'Poppins',
                   fontWeight: FontWeight.w600,
@@ -1175,20 +1207,27 @@ class HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildFollowingSection() {
-    if (_isLoadingFollowing || _followingItems == null || _followingItems!.isEmpty) {
+    if (_isLoadingFollowing ||
+        _followingItems == null ||
+        _followingItems!.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("From Your Following", showSeeMore: false),
-        const SizedBox(height: 16),
+        _buildSectionHeader("Pemilik yang Kamu Ikuti", showSeeMore: false),
+        const SizedBox(height: 8),
         SizedBox(
           height: 270,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+            padding: const EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 10,
+              bottom: 15,
+            ),
             clipBehavior: Clip.none,
             physics: const ClampingScrollPhysics(),
             itemCount: _followingItems!.length,
@@ -1222,7 +1261,8 @@ class HomeScreenState extends State<HomeScreen>
                   child: ProductCard(
                     product: product,
                     heroTagPrefix: 'following-',
-                    onMorePressed: () => _showProductOptions(context, item, product),
+                    onMorePressed: () =>
+                        _showProductOptions(context, item, product),
                   ),
                 ),
               );
@@ -1253,7 +1293,12 @@ class HomeScreenState extends State<HomeScreen>
       height: 270,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+        padding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 10,
+          bottom: 15,
+        ),
         clipBehavior: Clip.none,
         physics: const ClampingScrollPhysics(),
         itemCount: items.length,
@@ -1287,7 +1332,8 @@ class HomeScreenState extends State<HomeScreen>
               child: ProductCard(
                 product: product,
                 heroTagPrefix: 'new-arrivals-',
-                onMorePressed: () => _showProductOptions(context, item, product),
+                onMorePressed: () =>
+                    _showProductOptions(context, item, product),
               ),
             ),
           );
@@ -1301,7 +1347,12 @@ class HomeScreenState extends State<HomeScreen>
       height: 270,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 24, right: 24, top: 10, bottom: 15),
+        padding: const EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 10,
+          bottom: 15,
+        ),
         clipBehavior: Clip.none,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 3,
@@ -1374,7 +1425,7 @@ class HomeScreenState extends State<HomeScreen>
                 Text(
                   selectedCategory == 'All'
                       ? 'Belum ada barang tersedia'
-                      : 'Tidak ada barang di kategori "$selectedCategory"',
+                      : 'Tidak ada barang di kategori "${selectedCategory.toUpperCase() == 'OUTFIT' ? 'Pakaian' : selectedCategory}"',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Poppins',
@@ -1400,52 +1451,52 @@ class HomeScreenState extends State<HomeScreen>
           mainAxisSpacing: 10,
           childAspectRatio: 0.65,
         ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final item = items[index];
-            final product = ProductData(
-              id: item.id,
-              name: item.name,
-              price: item.formattedPrice,
-              rating: item.ownerRating > 0
-                  ? item.ownerRating.toStringAsFixed(1)
-                  : '—',
-              image: item.primaryPhoto,
-            );
-            return SubtleFadeIn(
-              key: ValueKey(
-                '${selectedCategory}_${item.id}_$index',
-              ),
-              child: GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ItemDetailScreen(
-                        itemId: item.id,
-                        item: item,
-                        itemName: item.name,
-                        pricePerHour: item.pricePerHour,
-                        imagePath: item.primaryPhoto,
-                      ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final item = items[index];
+          final product = ProductData(
+            id: item.id,
+            name: item.name,
+            price: item.formattedPrice,
+            rating: item.ownerRating > 0
+                ? item.ownerRating.toStringAsFixed(1)
+                : '—',
+            image: item.primaryPhoto,
+          );
+          return SubtleFadeIn(
+            key: ValueKey('${selectedCategory}_${item.id}_$index'),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItemDetailScreen(
+                      itemId: item.id,
+                      item: item,
+                      itemName: item.name,
+                      pricePerHour: item.pricePerHour,
+                      imagePath: item.primaryPhoto,
                     ),
-                  );
-                },
-                child: ProductCard(
-                  product: product,
-                  heroTagPrefix: 'trusted-',
-                  onMorePressed: () => _showProductOptions(context, item, product),
-                ),
+                  ),
+                );
+              },
+              child: ProductCard(
+                product: product,
+                heroTagPrefix: 'trusted-',
+                onMorePressed: () =>
+                    _showProductOptions(context, item, product),
               ),
-            );
-          },
-          childCount: items.length,
-        ),
+            ),
+          );
+        }, childCount: items.length),
       ),
     );
   }
 
-  void _showProductOptions(BuildContext context, ItemModel item, ProductData product) async {
+  void _showProductOptions(
+    BuildContext context,
+    ItemModel item,
+    ProductData product,
+  ) async {
     final isFav = await FavoriteService.isFavorite(item.id);
     if (!context.mounted) return;
     showProductMoreSheet(
@@ -1457,16 +1508,16 @@ class HomeScreenState extends State<HomeScreen>
         if (!context.mounted) return;
         showAppSuccessSnack(
           context,
-          nowFav ? '${item.name} disimpan ke Favorit!' : '${item.name} dihapus dari Favorit!',
+          nowFav
+              ? '${item.name} disimpan ke Favorit!'
+              : '${item.name} dihapus dari Favorit!',
         );
       },
       onSimilarPressed: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => SearchResultScreen(
-              searchQuery: item.name,
-            ),
+            builder: (context) => SearchResultScreen(searchQuery: item.name),
           ),
         );
       },
@@ -1490,7 +1541,6 @@ class HomeScreenState extends State<HomeScreen>
       },
     );
   }
-
 }
 
 /// Widget skeleton loading terstruktur yang meniru layout ProductCard vertikal

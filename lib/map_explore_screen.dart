@@ -632,7 +632,13 @@ class _MapExploreScreenState extends State<MapExploreScreen> {
                                 ),
                               ),
                               child: Text(
-                                category.label.toUpperCase() == 'OUTFIT' ? 'Outfit' : category.label,
+                                category.label.toUpperCase() == 'OUTFIT'
+                                    ? 'Pakaian'
+                                    : category.label.toUpperCase() == 'SPORTS'
+                                        ? 'Olahraga'
+                                        : (category.label.toUpperCase() == 'CAMP TOOLS' || category.label.toUpperCase() == 'ALAT CAMPING')
+                                            ? 'Alat Kemah'
+                                            : category.label,
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,

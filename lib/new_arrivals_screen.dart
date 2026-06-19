@@ -24,7 +24,7 @@ class NewArrivalsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFFDF9F4),
       extendBodyBehindAppBar: true,
       appBar: const CustomAppBar(
-        title: 'New Arrivals',
+        title: 'Terbaru',
       ),
       body: StreamBuilder<List<ItemModel>>(
         stream: itemRepo.watchAllNewArrivals(),

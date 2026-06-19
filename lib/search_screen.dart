@@ -316,13 +316,14 @@ class SearchSheetState extends State<SearchSheet>
               }
 
               Widget buildItem(String s) {
+                final displayStr = s.toUpperCase() == 'OUTFIT' ? 'Pakaian' : s;
                 return Padding(
                   padding: const EdgeInsets.only(right: 10),
                   child: GestureDetector(
                     onTap: () {
-                      widget.controller.text = s;
+                      widget.controller.text = displayStr;
                       widget.controller.selection = TextSelection.fromPosition(
-                        TextPosition(offset: s.length),
+                        TextPosition(offset: displayStr.length),
                       );
                       widget.focusNode.requestFocus();
                     },
@@ -349,7 +350,7 @@ class SearchSheetState extends State<SearchSheet>
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            s,
+                            displayStr,
                             style: const TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: 13,
