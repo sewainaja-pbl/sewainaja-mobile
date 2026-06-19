@@ -44,6 +44,75 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
   bool _isSubmitting = false;
   bool _canPop = false;
 
+  Map<String, dynamic>? _transactionData;
+  List<dynamic> _details = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDetails();
+  }
+
+  Future<void> _fetchDetails() async {
+    final tId = widget.transactionId;
+    if (tId == null || tId.isEmpty) return;
+
+    try {
+      final token = await const AuthSessionService().getValidIdToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+
+      final detailsResp = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId'),
+        headers: headers,
+      );
+
+      if (detailsResp.statusCode == 200) {
+        final body = jsonDecode(detailsResp.body);
+        if (body['success'] == true && body['data'] != null) {
+          setState(() {
+            _transactionData = body['data'] as Map<String, dynamic>;
+            _details = _transactionData!['details'] as List? ?? [];
+          });
+        }
+      }
+    } catch (e) {
+    }
+  }
+
+  String _formatDateRange() {
+    if (_details.isEmpty) return '8 Jan - 10 Jan 2025';
+    final detail = _details[0];
+    final start = detail['startDate'];
+    final end = detail['endDate'];
+    if (start == null || end == null) return '8 Jan - 10 Jan 2025';
+    
+    final sDt = _parseTimestamp(start);
+    final eDt = _parseTimestamp(end);
+    if (sDt == null || eDt == null) return '8 Jan - 10 Jan 2025';
+
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+      'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+    ];
+    return '${sDt.day} ${months[sDt.month - 1]} - ${eDt.day} ${months[eDt.month - 1]} ${eDt.year}';
+  }
+
+  DateTime? _parseTimestamp(dynamic ts) {
+    if (ts == null) return null;
+    if (ts is Map) {
+      final sec = ts['_seconds'] ?? ts['seconds'];
+      if (sec is int) {
+        return DateTime.fromMillisecondsSinceEpoch(sec * 1000).toLocal();
+      }
+    } else if (ts is String) {
+      return DateTime.tryParse(ts)?.toLocal();
+    }
+    return null;
+  }
+
   Future<void> _pickImages() async {
     final remainingSlots = _maxPhotos - _selectedImages.length;
     if (remainingSlots <= 0) return;
@@ -508,34 +577,36 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                     ),
                     child: Row(
                       children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3CD),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFFFC107), width: 1),
-                          ),
-                          child: const Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.warning_amber_rounded, color: Color(0xFF856404), size: 16),
-                                SizedBox(height: 2),
-                                Text(
-                                  'DUMMY\n(NO API)',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF856404),
-                                    height: 1.1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                        Builder(
+                          builder: (context) {
+                            final imageUrl = _details.isNotEmpty ? _details[0]['itemPhotoUrlSnapshot']?.toString() : null;
+                            final hasImage = imageUrl != null && imageUrl.isNotEmpty;
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                color: Colors.grey.shade200,
+                                image: hasImage
+                                    ? DecorationImage(
+                                        image: imageUrl.startsWith('http')
+                                            ? NetworkImage(imageUrl)
+                                            : AssetImage(imageUrl) as ImageProvider,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
+                              ),
+                              child: !hasImage
+                                  ? const Center(
+                                      child: Icon(
+                                        Icons.image_outlined,
+                                        color: Color(0xFF828282),
+                                        size: 24,
+                                      ),
+                                    )
+                                  : null,
+                            );
+                          },
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -543,7 +614,9 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.itemName ?? 'Sony Camera a6000',
+                                _details.isNotEmpty
+                                    ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang Sewaan'
+                                    : widget.itemName ?? 'Sony Camera a6000',
                                 style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 16,
@@ -552,18 +625,21 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
-                                'Pemilik: Han so Hee',
-                                style: TextStyle(
+                              Text(
+                                _transactionData != null
+                                    ? 'Pemilik: ${_transactionData!['ownerName'] ?? 'Pemilik'}'
+                                    : 'Pemilik: Han so Hee',
+                                style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,
                                   color: Color(0xFF414844),
                                 ),
                               ),
-                              const Text(
-                                '8 Jan - 10 Jan 2025',
-                                style: TextStyle(
+                              const SizedBox(height: 2),
+                              Text(
+                                _formatDateRange(),
+                                style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
                                   fontWeight: FontWeight.w400,

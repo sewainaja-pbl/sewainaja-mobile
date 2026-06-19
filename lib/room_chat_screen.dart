@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'data/models/chat_model.dart';
 import 'data/repositories/chat_repository.dart';
 import 'image_upload_service.dart';
+import 'upload_image_policy.dart';
 import 'notification_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
@@ -262,41 +263,64 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
   }
 
   Future<void> _pickAndSendImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
-    
-    if (pickedFile != null && mounted) {
+    try {
+      final sourceChoice = await _imageUploadService.chooseImageSource(context);
+      if (sourceChoice == null || !mounted) return;
+
+      final imageSource = sourceChoice == ImageSourceChoice.camera 
+          ? ImageSource.camera 
+          : ImageSource.gallery;
+
       setState(() {
         _isUploadingImage = true;
       });
 
-      final folderId = _roomId ?? '${_currentUserId}_${widget.partnerId}';
-      final downloadUrl = await _chatRepository.uploadImage(File(pickedFile.path), folderId);
-      
-      if (downloadUrl != null && mounted) {
-        final newRoomId = await _chatRepository.sendMessage(
-          existingRoomId: _roomId,
-          partnerId: widget.partnerId,
-          partnerName: _actualPartnerName ?? widget.partnerName,
-          partnerAvatarUrl: _actualPartnerAvatarUrl ?? widget.partnerAvatarUrl,
-          itemId: widget.itemId,
-          itemName: widget.itemName,
-          itemPhotoUrl: widget.itemPhotoUrl,
-          messageText: downloadUrl,
-          messageType: 'image',
+      final processed = await _imageUploadService.pickSingleImageFromSource(
+        policy: UploadImagePolicy.chat,
+        source: imageSource,
+      );
+
+      if (processed != null && mounted) {
+        final folderId = _roomId ?? '${_currentUserId}_${widget.partnerId}';
+        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+        final storagePath = 'chat_media/$folderId/$fileName.jpg';
+        
+        final downloadUrl = await _imageUploadService.uploadProcessedImage(
+          processed: processed,
+          storagePath: storagePath,
         );
 
-        if (mounted) {
-          setState(() {
-            if (newRoomId != null && _roomId == null) {
-              _roomId = newRoomId;
-              _initMessagesStream();
-            }
-            _showItemContextPreview = false;
-          });
+        if (downloadUrl.isNotEmpty && mounted) {
+          final newRoomId = await _chatRepository.sendMessage(
+            existingRoomId: _roomId,
+            partnerId: widget.partnerId,
+            partnerName: _actualPartnerName ?? widget.partnerName,
+            partnerAvatarUrl: _actualPartnerAvatarUrl ?? widget.partnerAvatarUrl,
+            itemId: widget.itemId,
+            itemName: widget.itemName,
+            itemPhotoUrl: widget.itemPhotoUrl,
+            messageText: downloadUrl,
+            messageType: 'image',
+          );
+
+          if (mounted) {
+            setState(() {
+              if (newRoomId != null && _roomId == null) {
+                _roomId = newRoomId;
+                _initMessagesStream();
+              }
+              _showItemContextPreview = false;
+            });
+          }
         }
       }
-
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(safeImageError(e))),
+        );
+      }
+    } finally {
       if (mounted) {
         setState(() {
           _isUploadingImage = false;

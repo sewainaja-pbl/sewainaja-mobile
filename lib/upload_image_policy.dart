@@ -1,4 +1,4 @@
-enum UploadImageKind { profile, product, kyc }
+enum UploadImageKind { profile, product, kyc, chat }
 
 class UploadImagePolicy {
   final UploadImageKind kind;
@@ -49,12 +49,22 @@ class UploadImagePolicy {
     minimumQuality: 60,
   );
 
+  static const chat = UploadImagePolicy(
+    kind: UploadImageKind.chat,
+    storageFolder: 'chat_media',
+    maxBytes: 1500 * 1024,
+    maxImages: 1,
+    targetLongestSide: 1200,
+    initialQuality: 80,
+    minimumQuality: 60,
+  );
+
   String get sizeLabelMb => (maxBytes / (1024 * 1024)).toStringAsFixed(
         maxBytes % (1024 * 1024) == 0 ? 0 : 1,
       );
 
   String get recommendationLabel {
-    if (kind == UploadImageKind.profile || kind == UploadImageKind.kyc) {
+    if (kind == UploadImageKind.profile || kind == UploadImageKind.kyc || kind == UploadImageKind.chat) {
       return 'JPG sampai $sizeLabelMb MB';
     }
     return 'JPG sampai $sizeLabelMb MB, longest side ${targetLongestSide}px';
