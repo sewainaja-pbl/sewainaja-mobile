@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'api_config.dart';
 import 'auth_session_service.dart';
 import 'owner_return_evidence_screen.dart';
@@ -149,6 +148,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
       final idToken = await const AuthSessionService().getValidIdToken();
       final headers = {
         'Content-Type': 'application/json',
+        'Connection': 'close',
         if (idToken != null) 'Authorization': 'Bearer $idToken',
       };
 
@@ -159,7 +159,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
       );
 
       final body = jsonDecode(response.body);
-      if (response.statusCode == 200 && body['success'] == true) {
+      if ((response.statusCode == 200 && body['success'] == true) || response.statusCode == 409) {
         if (mounted) Navigator.pop(context); // Tutup loading dialog
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,51 +189,6 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal check-out: ${e.toString()}'),
-            backgroundColor: const Color(0xFFF04438),
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _simulateCheckout() async {
-    final tId = widget.transactionId;
-    if (tId == null || tId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID Transaksi tidak ditemukan untuk simulasi.')),
-      );
-      return;
-    }
-    setState(() {
-      _isNavigating = true;
-    });
-    try {
-      // Tampilkan loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(color: Color(0xFF1B4332)),
-        ),
-      );
-
-      final doc = await FirebaseFirestore.instance.collection('transactions').doc(tId).get();
-      final token = doc.data()?['qrCheckoutTokenHash']?.toString();
-      
-      if (mounted) Navigator.pop(context); // Tutup loading dialog untuk Firestore fetch
-
-      if (token == null || token.isEmpty) {
-        throw Exception('Token QR Checkout tidak ditemukan di database.');
-      }
-      await _performCheckout(token);
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isNavigating = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal simulasi: ${e.toString()}'),
             backgroundColor: const Color(0xFFF04438),
           ),
         );
@@ -383,9 +338,7 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
             ),
 
             // --- 3. CAMERA SCANNER VIEWPORT ---
-            GestureDetector(
-              onTap: _isNavigating ? null : _simulateCheckout, // Dummy simulation here!
-              child: Container(
+            Container(
                 margin: const EdgeInsets.only(top: 32.0, left: 24.0, right: 24.0),
                 height: 350.0,
                 decoration: BoxDecoration(
@@ -457,22 +410,6 @@ class _ReturnItemScanScreenState extends State<ReturnItemScanScreen> with Single
                     ],
                   ),
                 ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            TextButton(
-              onPressed: _isNavigating ? null : _simulateCheckout,
-              child: const Text(
-                'Gunakan Barcode Dummy (Simulasi)',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 12,
-                  color: Color(0xFF717973),
-                  decoration: TextDecoration.underline,
-                ),
-              ),
             ),
 
             // --- 4. RETURN WARNING BANNER (CRITICAL) ---

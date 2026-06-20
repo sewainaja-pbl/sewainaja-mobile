@@ -186,15 +186,13 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
     final tId = widget.transactionId;
 
     if (tId == null || tId.isEmpty) {
-      // Simulasi mode mock jika transactionId kosong
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Simulasi: Bukti pengembalian dan rating berhasil dikirim!'),
-          backgroundColor: Color(0xFF1B4332),
+          content: Text('ID Transaksi tidak ditemukan. Tidak dapat mengirim bukti pengembalian.'),
+          backgroundColor: Color(0xFFF04438),
           behavior: SnackBarBehavior.floating,
         ),
       );
-      Navigator.popUntil(context, (route) => route.isFirst);
       return;
     }
 
@@ -215,6 +213,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
       final idToken = await const AuthSessionService().getValidIdToken();
       final headers = {
         'Content-Type': 'application/json',
+        'Connection': 'close',
         if (idToken != null) 'Authorization': 'Bearer $idToken',
       };
 
@@ -228,48 +227,88 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
           storagePath: storagePath,
         );
 
-        final evidenceResp = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
-          headers: headers,
-          body: jsonEncode({
-            'type': 'after',
-            'mediaUrl': downloadUrl,
-            'mediaType': 'photo',
-          }),
-        );
+        http.Response? evidenceResp;
+        int retryCount = 0;
+        while (retryCount < 3) {
+          try {
+            evidenceResp = await http.post(
+              Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
+              headers: headers,
+              body: jsonEncode({
+                'type': 'after',
+                'mediaUrl': downloadUrl,
+                'mediaType': 'photo',
+              }),
+            );
+            break;
+          } catch (e) {
+            retryCount++;
+            if (retryCount >= 3) {
+              rethrow;
+            }
+            await Future.delayed(Duration(milliseconds: 500 * retryCount));
+          }
+        }
 
-        if (evidenceResp.statusCode != 200) {
-          final body = jsonDecode(evidenceResp.body);
+        if (evidenceResp == null || evidenceResp.statusCode != 200) {
+          final body = evidenceResp != null ? jsonDecode(evidenceResp.body) : {};
           throw Exception(body['message'] ?? 'Gagal mengunggah foto bukti pengembalian ke API.');
         }
       }
 
       // 2. Kirim rating ke API
-      final ratingResp = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/ratings'),
-        headers: headers,
-        body: jsonEncode({
-          'transactionId': tId,
-          'ratedAs': 'owner',
-          'score': _rating,
-          'comment': _reviewController.text.trim(),
-        }),
-      );
+      http.Response? ratingResp;
+      int retryCountRating = 0;
+      while (retryCountRating < 3) {
+        try {
+          ratingResp = await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/ratings'),
+            headers: headers,
+            body: jsonEncode({
+              'transactionId': tId,
+              'ratedAs': 'owner',
+              'score': _rating,
+              'comment': _reviewController.text.trim(),
+            }),
+          );
+          break;
+        } catch (e) {
+          retryCountRating++;
+          if (retryCountRating >= 3) {
+            rethrow;
+          }
+          await Future.delayed(Duration(milliseconds: 500 * retryCountRating));
+        }
+      }
 
       // 3. Kirim rating barang ke API
       if (widget.itemId != null && widget.itemId!.isNotEmpty) {
-        final itemRatingResp = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/item-ratings'),
-          headers: headers,
-          body: jsonEncode({
-            'transactionId': tId,
-            'itemId': widget.itemId,
-            'score': _itemRating,
-            'comment': _itemReviewController.text.trim(),
-          }),
-        );
+        http.Response? itemRatingResp;
+        int retryCountItemRating = 0;
+        while (retryCountItemRating < 3) {
+          try {
+            itemRatingResp = await http.post(
+              Uri.parse('${ApiConfig.baseUrl}/item-ratings'),
+              headers: headers,
+              body: jsonEncode({
+                'transactionId': tId,
+                'itemId': widget.itemId,
+                'score': _itemRating,
+                'comment': _itemReviewController.text.trim(),
+              }),
+            );
+            break;
+          } catch (e) {
+            retryCountItemRating++;
+            if (retryCountItemRating >= 3) {
+              debugPrint('Gagal mengirim rating barang setelah 3 kali mencoba: $e');
+              break;
+            }
+            await Future.delayed(Duration(milliseconds: 500 * retryCountItemRating));
+          }
+        }
         
-        if (itemRatingResp.statusCode != 200) {
+        if (itemRatingResp != null && itemRatingResp.statusCode != 200) {
            debugPrint('Gagal mengirim rating barang: ${itemRatingResp.body}');
         }
       }
@@ -277,21 +316,16 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
       // Tutup loading dialog
       if (mounted) Navigator.pop(context);
 
-      if (ratingResp.statusCode == 200) {
-        final ratingBody = jsonDecode(ratingResp.body);
-        if (ratingBody['success'] == true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Bukti pengembalian dan rating berhasil dikirim!'),
-                backgroundColor: Color(0xFF1B4332),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-            Navigator.popUntil(context, (route) => route.isFirst);
-          }
-        } else {
-          throw Exception(ratingBody['message'] ?? 'Gagal mengirim rating.');
+      if (ratingResp!.statusCode == 200 || ratingResp.statusCode == 409) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bukti pengembalian dan ulasan berhasil dikirim!'),
+              backgroundColor: Color(0xFF1B4332),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.popUntil(context, (route) => route.isFirst);
         }
       } else {
         final ratingBody = jsonDecode(ratingResp.body);
@@ -381,7 +415,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => DisputeFormScreen(
-                            transactionId: widget.transactionId ?? 'dummy_trans_123',
+                            transactionId: widget.transactionId ?? '',
                             category: 'checkout_damage',
                             itemName: widget.itemName ?? 'Sony Camera a6000',
                           ),

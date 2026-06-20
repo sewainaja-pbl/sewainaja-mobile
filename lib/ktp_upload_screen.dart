@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -116,6 +117,9 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
           storagePath: 'users/$currentUserId/kyc/ktp_${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
       } catch (uploadError) {
+        if (!kDebugMode) {
+          rethrow;
+        }
         debugPrint('Firebase Storage upload failed: $uploadError. Using mock URL for dev.');
         ktpUrl = 'https://mock.storage/users/$currentUserId/kyc/ktp.jpg';
       }
@@ -128,6 +132,9 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
           storagePath: 'users/$currentUserId/kyc/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg',
         );
       } catch (uploadError) {
+        if (!kDebugMode) {
+          rethrow;
+        }
         debugPrint('Firebase Storage upload failed: $uploadError. Using mock URL for dev.');
         selfieUrl = 'https://mock.storage/users/$currentUserId/kyc/selfie.jpg';
       }
@@ -135,20 +142,40 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
       // 3. Post to `/auth/upload-kyc` API
       if (token != null && token.isNotEmpty) {
         try {
-          final response = await http.post(
-            Uri.parse('${ApiConfig.baseUrl}/auth/upload-kyc'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'ktpPhotoUrl': ktpUrl,
-              'selfiePhotoUrl': selfieUrl,
-            }),
-          );
+          http.Response? response;
+          int retryCount = 0;
+          while (retryCount < 3) {
+            try {
+              response = await http.post(
+                Uri.parse('${ApiConfig.baseUrl}/auth/upload-kyc'),
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Connection': 'close',
+                  'Authorization': 'Bearer $token',
+                },
+                body: jsonEncode({
+                  'ktpPhotoUrl': ktpUrl,
+                  'selfiePhotoUrl': selfieUrl,
+                }),
+              );
+              break;
+            } catch (e) {
+              retryCount++;
+              if (retryCount >= 3) {
+                rethrow;
+              }
+              await Future.delayed(Duration(milliseconds: 500 * retryCount));
+            }
+          }
           
+          if (response == null || (response.statusCode != 200 && response.statusCode != 201)) {
+            throw Exception('Gagal menyimpan berkas KYC ke server (Status ${response?.statusCode}).');
+          }
           debugPrint('KYC upload status response: ${response.statusCode}');
         } catch (apiError) {
+          if (!kDebugMode) {
+            rethrow;
+          }
           debugPrint('Backend KYC upload endpoint failed: $apiError. Proceeding with simulated status update.');
         }
       }
@@ -185,33 +212,6 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
     }
   }
 
-  Future<void> _simulateAdminApproval() async {
-    try {
-      final cached = await _profileSyncService.readCachedProfile();
-      final updatedProfile = CachedUserProfile(
-        name: cached.name,
-        email: cached.email,
-        phone: cached.phone,
-        profilePhotoUrl: cached.profilePhotoUrl,
-        status: 'verified',
-      );
-      await _profileSyncService.saveProfileToCache(updatedProfile, notify: true);
-      
-      // Update shared preferences key manually to match sync profile structure
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('user_status', 'verified');
-
-      if (mounted) {
-        showAppSuccessSnack(context, 'Simulasi: Akun Anda berhasil diverifikasi!');
-        widget.onVerificationCompleted?.call();
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        showAppErrorSnack(context, 'Gagal melakukan simulasi approval: $e');
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -829,71 +829,6 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
             fontWeight: FontWeight.w400,
             color: Color(0xFF5C635E),
             height: 1.5,
-          ),
-        ),
-        
-        const Spacer(),
-        
-        // Developer Demo Box
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFDECEC),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFF5B7B1)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Row(
-                children: [
-                  Icon(Icons.bug_report_outlined, color: Color(0xFFB42318), size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'DEVELOPMENT TOOLS',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFFB42318),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Alur persetujuan admin manual belum sepenuhnya terhubung di backend/admin panel. Tekan tombol di bawah untuk mensimulasikan persetujuan instan dari admin dan melanjutkan pengetesan aplikasi.',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 11,
-                  color: Color(0xFF7B241C),
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 14),
-              GestureDetector(
-                onTap: _simulateAdminApproval,
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFB42318),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Simulasikan Approve Admin (Dev)',
-                      style: TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
         

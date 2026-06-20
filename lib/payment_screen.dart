@@ -553,59 +553,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 48),
-
-                  // 4. DEVELOPER MODE SIMULATION TOOLS
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF2F2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.bug_report_outlined, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text(
-                              'DEVELOPER FLOW BYPASS',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                                color: Colors.red,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Simulasikan pembayaran langsung di server (tanpa Midtrans/tunai asli) untuk pengujian cepat.',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Color(0xFF5C3C3C)),
-                        ),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
-                          onPressed: _confirmCashPayment,
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.red, width: 1.5),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                          child: const Text(
-                            'Simulasikan Sukses Instan (Bypass)',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
