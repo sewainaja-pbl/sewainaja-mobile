@@ -1130,7 +1130,7 @@ class HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(height: 6),
             const Text(
-              "If you can rent it? Why\nwould you buy it?",
+              "Kalau bisa sewa, kenapa\nharus beli?",
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
