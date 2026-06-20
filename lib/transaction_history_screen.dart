@@ -47,18 +47,21 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       // Fetch details for each transaction asynchronously to get the item names and photos
       for (var tx in data) {
         if (tx.details.isEmpty) {
-          _repository.fetchTransactionById(tx.id).then((fullTx) {
-            if (mounted) {
-              setState(() {
-                final idx = _transactions.indexWhere((t) => t.id == tx.id);
-                if (idx != -1) {
-                  _transactions[idx] = fullTx;
+          _repository
+              .fetchTransactionById(tx.id)
+              .then((fullTx) {
+                if (mounted) {
+                  setState(() {
+                    final idx = _transactions.indexWhere((t) => t.id == tx.id);
+                    if (idx != -1) {
+                      _transactions[idx] = fullTx;
+                    }
+                  });
                 }
+              })
+              .catchError((_) {
+                // Ignore error for individual transaction
               });
-            }
-          }).catchError((_) {
-            // Ignore error for individual transaction
-          });
         }
       }
     } catch (e) {
@@ -159,233 +162,278 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4), // Krem Terang
-      appBar: const CustomAppBar(
-        title: 'Sejarah',
-      ),
+      appBar: const CustomAppBar(title: 'Riwayat'),
       extendBody: true,
       body: Stack(
         children: [
           Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Filter Tabs
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 12.0),
-            child: Row(
-              children: _tabs.asMap().entries.map((entry) {
-                int index = entry.key;
-                String label = entry.value;
-                bool isActive = index == _selectedTabIndex;
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Filter Tabs
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8.0,
+                  vertical: 12.0,
+                ),
+                child: Row(
+                  children: _tabs.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    String label = entry.value;
+                    bool isActive = index == _selectedTabIndex;
 
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedTabIndex = index;
-                      });
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Center(
-                      child: IntrinsicWidth(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              label,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 13,
-                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                                color: isActive
-                                    ? const Color(0xFF1B4332)
-                                    : const Color(0xFF828282),
-                              ),
+                    return Expanded(
+                      child: GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTabIndex = index;
+                          });
+                        },
+                        behavior: HitTestBehavior.opaque,
+                        child: Center(
+                          child: IntrinsicWidth(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  label,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontSize: 13,
+                                    fontWeight: isActive
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                    color: isActive
+                                        ? const Color(0xFF1B4332)
+                                        : const Color(0xFF828282),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                if (isActive)
+                                  Container(
+                                    height: 2,
+                                    color: const Color(0xFF1B4332),
+                                  )
+                                else
+                                  const SizedBox(
+                                    height: 2,
+                                  ), // Hindari layout melompat
+                              ],
                             ),
-                            const SizedBox(height: 6),
-                            if (isActive)
-                              Container(
-                                height: 2,
-                                color: const Color(0xFF1B4332),
-                              )
-                            else
-                              const SizedBox(height: 2), // Hindari layout melompat
-                          ],
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          
-          const SizedBox(height: 8),
+                    );
+                  }).toList(),
+                ),
+              ),
 
-          // ListView History
-          Expanded(
-            child: _isLoading 
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF1B4332)))
-                : _errorMessage != null
-                    ? Center(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)))
+              const SizedBox(height: 8),
+
+              // ListView History
+              Expanded(
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF1B4332),
+                        ),
+                      )
+                    : _errorMessage != null
+                    ? Center(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                      )
                     : _filteredTransactions.isEmpty
-                        ? const Center(
-                            child: Text(
-                              "Tidak ada riwayat transaksi.",
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                color: Color(0xFF414844),
-                              ),
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadTransactions,
-                            color: const Color(0xFF1B4332),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(24.0, 8.0, 24.0, 120.0),
-                              itemCount: _filteredTransactions.length,
-                              itemBuilder: (context, index) {
-                                final item = _filteredTransactions[index];
-                                final detail = item.details.isNotEmpty ? item.details.first : null;
-                                final String itemName = detail?.itemNameSnapshot ?? "Transaksi ${item.id.substring(0, 5)}";
-                                final String itemImage = (detail != null && detail.itemPhotoUrlSnapshot.isNotEmpty) 
-                                    ? detail.itemPhotoUrlSnapshot 
-                                    : "";
-                                
-                                String dateRange = "";
-                                if (detail != null && detail.startDate != null && detail.endDate != null) {
-                                  dateRange = "${DateFormat('d MMM').format(detail.startDate!)} - ${DateFormat('d MMM yyyy').format(detail.endDate!)}";
-                                }
+                    ? const Center(
+                        child: Text(
+                          "Tidak ada riwayat transaksi.",
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            color: Color(0xFF414844),
+                          ),
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadTransactions,
+                        color: const Color(0xFF1B4332),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(
+                            24.0,
+                            8.0,
+                            24.0,
+                            120.0,
+                          ),
+                          itemCount: _filteredTransactions.length,
+                          itemBuilder: (context, index) {
+                            final item = _filteredTransactions[index];
+                            final detail = item.details.isNotEmpty
+                                ? item.details.first
+                                : null;
+                            final String itemName =
+                                detail?.itemNameSnapshot ??
+                                "Transaksi ${item.id.substring(0, 5)}";
+                            final String itemImage =
+                                (detail != null &&
+                                    detail.itemPhotoUrlSnapshot.isNotEmpty)
+                                ? detail.itemPhotoUrlSnapshot
+                                : "";
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16.0),
-                                  child: InkWell(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => TransactionDetailScreen(transactionId: item.id),
-                                        ),
-                                      ).then((_) => _loadTransactions());
-                                    },
+                            String dateRange = "";
+                            if (detail != null &&
+                                detail.startDate != null &&
+                                detail.endDate != null) {
+                              dateRange =
+                                  "${DateFormat('d MMM').format(detail.startDate!)} - ${DateFormat('d MMM yyyy').format(detail.endDate!)}";
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 16.0),
+                              child: InkWell(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          TransactionDetailScreen(
+                                            transactionId: item.id,
+                                          ),
+                                    ),
+                                  ).then((_) => _loadTransactions());
+                                },
+                                borderRadius: BorderRadius.circular(20),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12.0),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFFFFF),
                                     borderRadius: BorderRadius.circular(20),
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12.0),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFFFFF),
-                                        borderRadius: BorderRadius.circular(20),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(alpha: 0.03),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.03,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 4),
                                       ),
-                                      child: Row(
-                                        children: [
-                                          // Image Thumbnail
-                                          Container(
-                                            width: 80,
-                                            height: 80,
-                                            decoration: BoxDecoration(
-                                              borderRadius: BorderRadius.circular(15),
-                                              color: Colors.grey.shade200,
-                                              image: itemImage.isNotEmpty 
-                                                ? DecorationImage(
-                                                    image: NetworkImage(itemImage),
-                                                    fit: BoxFit.cover,
-                                                  )
-                                                : null,
-                                            ),
-                                            child: itemImage.isEmpty
-                                                ? const Center(
-                                                    child: Icon(
-                                                      Icons.image_outlined,
-                                                      color: Color(0xFF828282),
-                                                      size: 32,
-                                                    ),
-                                                  )
-                                                : null,
+                                    ],
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      // Image Thumbnail
+                                      Container(
+                                        width: 80,
+                                        height: 80,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            15,
                                           ),
-                                          const SizedBox(width: 16),
-                                          
-                                          // Details
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Expanded(
-                                                      child: Text(
-                                                        itemName,
-                                                        style: const TextStyle(
-                                                          fontFamily: 'Poppins',
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w600, // Semibold
-                                                          color: Color(0xFF414844),
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 4),
-                                                    _buildStatusBadge(item.status),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  _getPartnerName(item),
-                                                  style: const TextStyle(
-                                                    fontFamily: 'Poppins',
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w400, // Regular
-                                                    color: Color(0xFF414844),
+                                          color: Colors.grey.shade200,
+                                          image: itemImage.isNotEmpty
+                                              ? DecorationImage(
+                                                  image: NetworkImage(
+                                                    itemImage,
                                                   ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : null,
+                                        ),
+                                        child: itemImage.isEmpty
+                                            ? const Center(
+                                                child: Icon(
+                                                  Icons.image_outlined,
+                                                  color: Color(0xFF828282),
+                                                  size: 32,
                                                 ),
-                                                const SizedBox(height: 4),
-                                                Row(
-                                                  children: [
-                                                    const Icon(
-                                                      Icons.calendar_month_rounded,
-                                                      size: 14,
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 16),
+
+                                      // Details
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    itemName,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Poppins',
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight
+                                                          .w600, // Semibold
                                                       color: Color(0xFF414844),
                                                     ),
-                                                    const SizedBox(width: 4),
-                                                    Expanded(
-                                                      child: Text(
-                                                        dateRange,
-                                                        style: const TextStyle(
-                                                          fontFamily: 'Poppins',
-                                                          fontSize: 12,
-                                                          fontWeight: FontWeight.w400, // Regular
-                                                          color: Color(0xFF414844),
-                                                        ),
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow.ellipsis,
-                                                      ),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                _buildStatusBadge(item.status),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              _getPartnerName(item),
+                                              style: const TextStyle(
+                                                fontFamily: 'Poppins',
+                                                fontSize: 12,
+                                                fontWeight:
+                                                    FontWeight.w400, // Regular
+                                                color: Color(0xFF414844),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                const Icon(
+                                                  Icons.calendar_month_rounded,
+                                                  size: 14,
+                                                  color: Color(0xFF414844),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Expanded(
+                                                  child: Text(
+                                                    dateRange,
+                                                    style: const TextStyle(
+                                                      fontFamily: 'Poppins',
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight
+                                                          .w400, // Regular
+                                                      color: Color(0xFF414844),
                                                     ),
-                                                  ],
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                  ),
                                                 ),
                                               ],
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
-                                );
-                              },
-                            ),
-                          ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+              ),
+            ],
           ),
-        ],
-      ),
           _buildBottomNavigationBar(),
         ],
       ),
@@ -393,13 +441,23 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double horizontalMargin = screenWidth < 360 ? 12.0 : 20.0;
+    final double horizontalPadding = screenWidth < 360 ? 8.0 : 10.0;
+    final double itemSize = screenWidth < 360 ? 46.0 : 55.0;
+    final double iconSize = screenWidth < 360 ? 20.0 : 24.0;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
         child: Container(
           height: 75,
-          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          margin: EdgeInsets.only(
+            left: horizontalMargin,
+            right: horizontalMargin,
+            bottom: 20,
+          ),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           decoration: BoxDecoration(
             color: const Color(0xFF012D1D),
             borderRadius: BorderRadius.circular(40),
@@ -414,11 +472,41 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(index: 0, activeIcon: Icons.home_rounded, inactiveIcon: Icons.home_outlined),
-              _buildNavItem(index: 1, activeIcon: Icons.grid_view_rounded, inactiveIcon: Icons.grid_view_outlined),
-              _buildNavItem(index: 2, activeIcon: Icons.add_box_rounded, inactiveIcon: Icons.add_box_outlined),
-              _buildNavItem(index: 3, activeIcon: Icons.chat_bubble_rounded, inactiveIcon: Icons.chat_bubble_outline_rounded),
-              _buildNavItem(index: 4, activeIcon: Icons.person_rounded, inactiveIcon: Icons.person_outline_rounded),
+              _buildNavItem(
+                index: 0,
+                activeIcon: Icons.home_rounded,
+                inactiveIcon: Icons.home_outlined,
+                itemSize: itemSize,
+                iconSize: iconSize,
+              ),
+              _buildNavItem(
+                index: 1,
+                activeIcon: Icons.grid_view_rounded,
+                inactiveIcon: Icons.grid_view_outlined,
+                itemSize: itemSize,
+                iconSize: iconSize,
+              ),
+              _buildNavItem(
+                index: 2,
+                activeIcon: Icons.add_box_rounded,
+                inactiveIcon: Icons.add_box_outlined,
+                itemSize: itemSize,
+                iconSize: iconSize,
+              ),
+              _buildNavItem(
+                index: 3,
+                activeIcon: Icons.chat_bubble_rounded,
+                inactiveIcon: Icons.chat_bubble_outline_rounded,
+                itemSize: itemSize,
+                iconSize: iconSize,
+              ),
+              _buildNavItem(
+                index: 4,
+                activeIcon: Icons.person_rounded,
+                inactiveIcon: Icons.person_outline_rounded,
+                itemSize: itemSize,
+                iconSize: iconSize,
+              ),
             ],
           ),
         ),
@@ -426,7 +514,13 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
     );
   }
 
-  Widget _buildNavItem({required int index, required IconData activeIcon, required IconData inactiveIcon}) {
+  Widget _buildNavItem({
+    required int index,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
+    required double itemSize,
+    required double iconSize,
+  }) {
     final bool isActive = 4 == index; // Profile is always active
 
     return GestureDetector(
@@ -446,8 +540,8 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        width: 55,
-        height: 55,
+        width: itemSize,
+        height: itemSize,
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFFFFF8EF) : const Color(0xFF1B4332),
           shape: BoxShape.circle,
@@ -461,8 +555,10 @@ class _TransactionHistoryScreenState extends State<TransactionHistoryScreen> {
             child: Icon(
               isActive ? activeIcon : inactiveIcon,
               key: ValueKey<bool>(isActive),
-              color: isActive ? const Color(0xFF012D1D) : const Color(0xFFFFF8EF),
-              size: 24,
+              color: isActive
+                  ? const Color(0xFF012D1D)
+                  : const Color(0xFFFFF8EF),
+              size: iconSize,
             ),
           ),
         ),
