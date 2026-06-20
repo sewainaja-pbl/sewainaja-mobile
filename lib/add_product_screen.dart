@@ -355,86 +355,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  // Developer Demo Box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFDECEC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFF5B7B1)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.bug_report_outlined, color: Color(0xFFB42318), size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'DEVELOPMENT TOOLS',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFFB42318),
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Tekan tombol di bawah untuk mensimulasikan persetujuan instan dari admin dan melanjutkan.',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 11,
-                            color: Color(0xFF7B241C),
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        GestureDetector(
-                          onTap: () async {
-                            final prefs = await SharedPreferences.getInstance();
-                            await prefs.setString('user_status', 'verified');
-                            final cached = await const ProfileSyncService().readCachedProfile();
-                            final updated = CachedUserProfile(
-                              name: cached.name,
-                              email: cached.email,
-                              phone: cached.phone,
-                              profilePhotoUrl: cached.profilePhotoUrl,
-                              status: 'verified',
-                            );
-                            await const ProfileSyncService().saveProfileToCache(updated, notify: true);
-                            if (!context.mounted) return;
-                            setState(() {
-                              _userStatus = 'verified';
-                            });
-                            showAppSuccessSnack(context, 'Simulasi: Akun berhasil diverifikasi!');
-                          },
-                          child: Container(
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFB42318),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Simulasikan Approve Admin (Dev)',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ] else ...[
                   Container(
                     width: 80,
@@ -1519,6 +1439,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       final headers = {
         'Content-Type': 'application/json',
+        'Connection': 'close',
         'Authorization': 'Bearer $token',
       };
 

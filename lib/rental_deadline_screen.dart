@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'widgets/custom_app_bar.dart';
 import 'chat_screen.dart';
+import 'room_chat_screen.dart';
 import 'dispute_form_screen.dart';
 import 'core/services/time_sync_service.dart';
 
@@ -656,6 +657,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
   ) {
     final currentUser = FirebaseAuth.instance.currentUser;
     final isRenter = _transaction == null || currentUser?.uid == _transaction?.renterId;
+    final detail = _transaction?.details.isNotEmpty == true ? _transaction!.details.first : null;
 
     if (!isRenter) {
       return Column(
@@ -686,7 +688,13 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const ChatScreen(),
+                          builder: (context) => RoomChatScreen(
+                            partnerId: _transaction!.renterId,
+                            partnerName: _transaction!.renterName,
+                            itemId: detail?.itemId,
+                            itemName: detail?.itemNameSnapshot,
+                            itemPhotoUrl: detail?.itemPhotoUrlSnapshot,
+                          ),
                         ),
                       );
                     },

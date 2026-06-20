@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'widgets/custom_app_bar.dart';
+import 'profile_sync_service.dart';
 
 class WalletScreen extends StatefulWidget {
   final double currentBalance;
@@ -120,6 +121,18 @@ class _WalletScreenState extends State<WalletScreen> {
           SharedPreferences.getInstance().then((prefs) {
             prefs.setDouble('user_wallet_balance', _balance);
           });
+          // Update Firestore for real balance decrease (No Dummy UI)
+          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+          if (currentUserId != null) {
+            FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUserId)
+                .update({'walletBalance': _balance}).then((_) {
+              ProfileSyncService.profileRevision.value++;
+            }).catchError((e) {
+              debugPrint('Failed to update Firestore wallet balance: $e');
+            });
+          }
           // Refresh data after a delay
           Future.delayed(const Duration(seconds: 2), _fetchWalletData);
         },

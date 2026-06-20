@@ -207,6 +207,7 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
       final token = await const AuthSessionService().getValidIdToken();
       final headers = {
         'Content-Type': 'application/json',
+        'Connection': 'close',
         if (token != null) 'Authorization': 'Bearer $token',
       };
 
@@ -223,30 +224,25 @@ class _OwnerReturnEvidenceScreenState extends State<OwnerReturnEvidenceScreen> {
 
       if (mounted) Navigator.pop(context); // Tutup loading dialog
 
-      if (response.statusCode == 200) {
-        final body = jsonDecode(response.body);
-        if (body['success'] == true) {
-          if (mounted) {
-            setState(() {
-              _canPop = true;
-            });
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (BuildContext context) {
-                return _OwnerReturnSuccessModal(
-                  itemName: _details.isNotEmpty
-                      ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang'
-                      : widget.itemName ?? 'Sony Camera a6000',
-                  dateRange: _formatDateRange(),
-                  itemImage: itemImage,
-                  isRoot: widget.isRoot,
-                );
-              },
-            );
-          }
-        } else {
-          throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengirim ulasan.');
+      if (response.statusCode == 200 || response.statusCode == 409) {
+        if (mounted) {
+          setState(() {
+            _canPop = true;
+          });
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return _OwnerReturnSuccessModal(
+                itemName: _details.isNotEmpty
+                    ? _details[0]['itemNameSnapshot']?.toString() ?? widget.itemName ?? 'Barang'
+                    : widget.itemName ?? 'Sony Camera a6000',
+                dateRange: _formatDateRange(),
+                itemImage: itemImage,
+                isRoot: widget.isRoot,
+              );
+            },
+          );
         }
       } else {
         final body = jsonDecode(response.body);

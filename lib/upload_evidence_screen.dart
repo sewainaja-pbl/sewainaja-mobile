@@ -106,6 +106,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
       final idToken = await const AuthSessionService().getValidIdToken();
       final headers = {
         'Content-Type': 'application/json',
+        'Connection': 'close',
         if (idToken != null) 'Authorization': 'Bearer $idToken',
       };
 
@@ -119,57 +120,78 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
           storagePath: storagePath,
         );
 
-        final evidenceResp = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
-          headers: headers,
-          body: jsonEncode({
-            'type': 'before',
-            'mediaUrl': downloadUrl,
-            'mediaType': 'photo',
-          }),
-        );
+        http.Response? evidenceResp;
+        int retryCount = 0;
+        while (retryCount < 3) {
+          try {
+            evidenceResp = await http.post(
+              Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/evidences'),
+              headers: headers,
+              body: jsonEncode({
+                'type': 'before',
+                'mediaUrl': downloadUrl,
+                'mediaType': 'photo',
+              }),
+            );
+            break;
+          } catch (e) {
+            retryCount++;
+            if (retryCount >= 3) {
+              rethrow;
+            }
+            await Future.delayed(Duration(milliseconds: 500 * retryCount));
+          }
+        }
 
-        if (evidenceResp.statusCode != 200) {
-          final body = jsonDecode(evidenceResp.body);
+        if (evidenceResp == null || evidenceResp.statusCode != 200) {
+          final body = evidenceResp != null ? jsonDecode(evidenceResp.body) : {};
           throw Exception(body['message'] ?? 'Gagal mengunggah foto bukti ke API.');
         }
       }
 
       // 2. Kirim API checkin transaksi
-      final checkinResp = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/checkin'),
-        headers: headers,
-        body: jsonEncode({
-          'token': tokenVal,
-        }),
-      );
+      http.Response? checkinResp;
+      int retryCountCheckin = 0;
+      while (retryCountCheckin < 3) {
+        try {
+          checkinResp = await http.post(
+            Uri.parse('${ApiConfig.baseUrl}/transactions/$tId/checkin'),
+            headers: headers,
+            body: jsonEncode({
+              'token': tokenVal,
+            }),
+          );
+          break;
+        } catch (e) {
+          retryCountCheckin++;
+          if (retryCountCheckin >= 3) {
+            rethrow;
+          }
+          await Future.delayed(Duration(milliseconds: 500 * retryCountCheckin));
+        }
+      }
 
       // Tutup loading dialog
       if (mounted) Navigator.pop(context);
 
-      if (checkinResp.statusCode == 200) {
-        final checkinBody = jsonDecode(checkinResp.body);
-        if (checkinBody['success'] == true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Bukti berhasil diunggah! Masa sewa telah dimulai.'),
-                backgroundColor: Color(0xFF1B4332),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-             Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => RentalDeadlineScreen(transactionId: tId),
-              ),
-            );
-          }
-        } else {
-          throw Exception(checkinBody['error']?['message'] ?? checkinBody['message'] ?? 'Gagal melakukan check-in.');
+      if (checkinResp!.statusCode == 200 || checkinResp!.statusCode == 409) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bukti berhasil diunggah! Masa sewa telah dimulai.'),
+              backgroundColor: Color(0xFF1B4332),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+           Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => RentalDeadlineScreen(transactionId: tId),
+            ),
+          );
         }
       } else {
-        final checkinBody = jsonDecode(checkinResp.body);
+        final checkinBody = jsonDecode(checkinResp!.body);
         throw Exception(checkinBody['error']?['message'] ?? checkinBody['message'] ?? 'Gagal melakukan check-in.');
       }
     } catch (e) {
