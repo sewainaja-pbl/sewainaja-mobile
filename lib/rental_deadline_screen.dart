@@ -275,6 +275,13 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     final flexElapsed = (progress * 100).toInt();
     final flexRemaining = 100 - flexElapsed;
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final double blockWidth = screenWidth < 360 ? 52 : (screenWidth < 400 ? 60 : 70);
+    final double fontSizeVal = screenWidth < 360 ? 26 : (screenWidth < 400 ? 30 : 36);
+    final double labelFontSizeVal = screenWidth < 360 ? 11 : (screenWidth < 400 ? 13 : 15);
+    final double separatorFontSizeVal = screenWidth < 360 ? 24 : (screenWidth < 400 ? 28 : 32);
+    final double horizontalPadding = screenWidth < 360 ? 4 : (screenWidth < 400 ? 6 : 8);
+
     return Scaffold(
       backgroundColor: const Color(0xFFFDF9F4),
       appBar: CustomAppBar(
@@ -318,16 +325,16 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (days > 0) ...[
-                          _buildTimerBlock(daysStr, 'Hari'),
-                          _buildSeparator(),
+                          _buildTimerBlock(daysStr, 'Hari', blockWidth, fontSizeVal, labelFontSizeVal),
+                          _buildSeparator(separatorFontSizeVal, horizontalPadding),
                         ],
                         if (days > 0 || hours > 0) ...[
-                          _buildTimerBlock(hoursStr, 'Jam'),
-                          _buildSeparator(),
+                          _buildTimerBlock(hoursStr, 'Jam', blockWidth, fontSizeVal, labelFontSizeVal),
+                          _buildSeparator(separatorFontSizeVal, horizontalPadding),
                         ],
-                        _buildTimerBlock(minutesStr, 'Menit'),
-                        _buildSeparator(),
-                        _buildTimerBlock(secondsStr, 'Detik'),
+                        _buildTimerBlock(minutesStr, 'Menit', blockWidth, fontSizeVal, labelFontSizeVal),
+                        _buildSeparator(separatorFontSizeVal, horizontalPadding),
+                        _buildTimerBlock(secondsStr, 'Detik', blockWidth, fontSizeVal, labelFontSizeVal),
                       ],
                     ),
                   ),
@@ -531,12 +538,12 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     );
   }
 
-  Widget _buildTimerBlock(String value, String label) {
+  Widget _buildTimerBlock(String value, String label, double blockWidth, double fontSize, double labelFontSize) {
     final isOverdue = _transaction?.isOverdue == true;
     return Column(
       children: [
         Container(
-          width: 70,
+          width: blockWidth,
           padding: const EdgeInsets.symmetric(vertical: 8),
           alignment: Alignment.center,
           decoration: BoxDecoration(
@@ -545,11 +552,11 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
           ),
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 36,
+              fontSize: fontSize,
               fontWeight: FontWeight.w600,
-              color: Color(0xFFFFF8EF),
+              color: const Color(0xFFFFF8EF),
             ),
           ),
         ),
@@ -558,7 +565,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
           label,
           style: TextStyle(
             fontFamily: 'Poppins',
-            fontSize: 15,
+            fontSize: labelFontSize,
             fontWeight: FontWeight.w600,
             color: isOverdue ? const Color(0xFFFFFFFF) : const Color(0xFF012D1D),
           ),
@@ -567,15 +574,15 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
     );
   }
 
-  Widget _buildSeparator() {
+  Widget _buildSeparator(double fontSize, double padding) {
     final isOverdue = _transaction?.isOverdue == true;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 8),
       child: Text(
         ':',
         style: TextStyle(
           fontFamily: 'Poppins',
-          fontSize: 32,
+          fontSize: fontSize,
           fontWeight: FontWeight.w600,
           color: isOverdue ? const Color(0xFFFFFFFF) : const Color(0xFF012D1D),
         ),
@@ -818,6 +825,7 @@ class _RentalDeadlineScreenState extends State<RentalDeadlineScreen> {
               fontSize: 12,
               color: Color(0xFF414844),
             ),
+            softWrap: true,
           ),
         ),
       ],

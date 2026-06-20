@@ -158,6 +158,7 @@ class _ReportDialogContentState extends State<_ReportDialogContent> {
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 initialValue: _selectedType,
                 decoration: InputDecoration(
                   filled: true,
@@ -176,7 +177,10 @@ class _ReportDialogContentState extends State<_ReportDialogContent> {
                 items: _reportTypes.entries.map((entry) {
                   return DropdownMenuItem<String>(
                     value: entry.key,
-                    child: Text(entry.value),
+                    child: Text(
+                      entry.value,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   );
                 }).toList(),
                 onChanged: _isLoading

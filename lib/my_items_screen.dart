@@ -141,13 +141,19 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
   }
 
   Widget _buildBottomNavigationBar() {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double horizontalMargin = screenWidth < 360 ? 12.0 : 20.0;
+    final double horizontalPadding = screenWidth < 360 ? 8.0 : 10.0;
+    final double itemSize = screenWidth < 360 ? 46.0 : 55.0;
+    final double iconSize = screenWidth < 360 ? 20.0 : 24.0;
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: SafeArea(
         child: Container(
           height: 75,
-          margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          margin: EdgeInsets.only(left: horizontalMargin, right: horizontalMargin, bottom: 20),
+          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
           decoration: BoxDecoration(
             color: const Color(0xFF012D1D),
             borderRadius: BorderRadius.circular(40),
@@ -162,11 +168,11 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildNavItem(index: 0, activeIcon: Icons.home_rounded, inactiveIcon: Icons.home_outlined),
-              _buildNavItem(index: 1, activeIcon: Icons.grid_view_rounded, inactiveIcon: Icons.grid_view_outlined),
-              _buildNavItem(index: 2, activeIcon: Icons.add_box_rounded, inactiveIcon: Icons.add_box_outlined),
-              _buildNavItem(index: 3, activeIcon: Icons.chat_bubble_rounded, inactiveIcon: Icons.chat_bubble_outline_rounded),
-              _buildNavItem(index: 4, activeIcon: Icons.person_rounded, inactiveIcon: Icons.person_outline_rounded),
+              _buildNavItem(index: 0, activeIcon: Icons.home_rounded, inactiveIcon: Icons.home_outlined, itemSize: itemSize, iconSize: iconSize),
+              _buildNavItem(index: 1, activeIcon: Icons.grid_view_rounded, inactiveIcon: Icons.grid_view_outlined, itemSize: itemSize, iconSize: iconSize),
+              _buildNavItem(index: 2, activeIcon: Icons.add_box_rounded, inactiveIcon: Icons.add_box_outlined, itemSize: itemSize, iconSize: iconSize),
+              _buildNavItem(index: 3, activeIcon: Icons.chat_bubble_rounded, inactiveIcon: Icons.chat_bubble_outline_rounded, itemSize: itemSize, iconSize: iconSize),
+              _buildNavItem(index: 4, activeIcon: Icons.person_rounded, inactiveIcon: Icons.person_outline_rounded, itemSize: itemSize, iconSize: iconSize),
             ],
           ),
         ),
@@ -174,7 +180,13 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
     );
   }
 
-  Widget _buildNavItem({required int index, required IconData activeIcon, required IconData inactiveIcon}) {
+  Widget _buildNavItem({
+    required int index,
+    required IconData activeIcon,
+    required IconData inactiveIcon,
+    required double itemSize,
+    required double iconSize,
+  }) {
     final bool isActive = 4 == index; // Profile is always active in MyItemsScreen
 
     return GestureDetector(
@@ -194,8 +206,8 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,
-        width: 55,
-        height: 55,
+        width: itemSize,
+        height: itemSize,
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFFFFF8EF) : const Color(0xFF1B4332),
           shape: BoxShape.circle,
@@ -210,7 +222,7 @@ class _MyItemsScreenState extends State<MyItemsScreen> {
               isActive ? activeIcon : inactiveIcon,
               key: ValueKey<bool>(isActive),
               color: isActive ? const Color(0xFF012D1D) : const Color(0xFFFFF8EF),
-              size: 24,
+              size: iconSize,
             ),
           ),
         ),
