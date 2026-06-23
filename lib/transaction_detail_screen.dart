@@ -997,7 +997,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             if (status.toLowerCase() == 'disputed') ...[
               if (_dispute != null) ...[
                 _buildDisputeTracker(_dispute!, FirebaseAuth.instance.currentUser?.uid ?? ''),
-                _buildDisputeDetailsSection(_dispute!),
+                _buildDisputeDetailsSection(_dispute!, itemName),
                 _buildTransactionEvidencesSection(_dispute!.transactionEvidences),
               ] else if (_isLoadingDispute) ...[
                 const Center(
@@ -2278,7 +2278,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     );
   }
 
-  Widget _buildDisputeDetailsSection(DisputeModel dispute) {
+  Widget _buildDisputeDetailsSection(DisputeModel dispute, String itemName) {
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isRespondent = currentUserId != null && dispute.reportedBy != currentUserId;
+    final hasResponded = dispute.respondentId != null;
+    final isOverdue = dispute.isOverdue;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2340,7 +2345,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         ),
 
         // Terlapor Claim (Sanggahan)
-        if (dispute.respondentId != null) ...[
+        if (hasResponded) ...[
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -2392,6 +2397,117 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               ],
             ),
           ),
+        ] else if (isRespondent) ...[
+          if (!isOverdue) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF4DB),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFF5D3A1)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.gpp_maybe, color: Color(0xFF9A6700)),
+                      SizedBox(width: 10),
+                      Text(
+                        'Tanggapi Sengketa',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF7B5804),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Anda dilaporkan dalam sengketa ini. Harap berikan tanggapan atau sanggahan resmi beserta bukti foto untuk membela diri sebelum batas waktu habis.',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xFF6B4B02),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DisputeFormScreen(
+                              transactionId: widget.transactionId ?? '',
+                              category: dispute.category,
+                              itemName: itemName,
+                              disputeId: dispute.id,
+                            ),
+                          ),
+                        ).then((value) {
+                          if (value == true) {
+                            _fetchTransactionDetails();
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.reply_all_outlined, color: Colors.white, size: 18),
+                      label: const Text(
+                        'Berikan Sanggahan Sekarang',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7B5804),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDE8E8),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFFCD2D2)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Icon(Icons.error_outline, color: Colors.red),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Batas waktu 3x24 jam untuk memberikan sanggahan telah habis. Keputusan mediasi sepenuhnya diserahkan kepada kebijakan Admin.',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        color: Colors.red,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ],
     );
