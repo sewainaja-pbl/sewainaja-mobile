@@ -166,7 +166,8 @@ class _AdendumScreenState extends State<AdendumScreen> {
       final currentEnd = detail?.endDate ?? DateTime.now().add(const Duration(days: 1));
       final newEnd = _newEndDate ?? currentEnd.add(const Duration(days: 1));
       
-      await _repository.requestAdendum(widget.transactionId!, newEnd, extensionPrice, _selectedPaymentMethod);
+      final displayPaymentMethod = (extensionPrice > 0 && extensionPrice < 10000) ? 'cash' : _selectedPaymentMethod;
+      await _repository.requestAdendum(widget.transactionId!, newEnd, extensionPrice, displayPaymentMethod);
       
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
@@ -297,6 +298,7 @@ class _AdendumScreenState extends State<AdendumScreen> {
     int totalHours = newEnd.difference(currentEnd).inHours;
     if (totalHours < 0) totalHours = 0;
     final extensionPrice = totalHours * pricePerHour;
+    final displayPaymentMethod = (extensionPrice > 0 && extensionPrice < 10000) ? 'cash' : _selectedPaymentMethod;
 
     String durationText = "-";
     if (totalHours >= 24) {
@@ -684,18 +686,31 @@ class _AdendumScreenState extends State<AdendumScreen> {
               children: [
                 Expanded(
                   child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        _selectedPaymentMethod = 'midtrans';
-                      });
-                    },
+                    onTap: (extensionPrice > 0 && extensionPrice < 10000)
+                        ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Nominal di bawah Rp 10.000 wajib menggunakan Tunai (COD)."),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        : () {
+                            setState(() {
+                              _selectedPaymentMethod = 'midtrans';
+                            });
+                          },
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                       decoration: BoxDecoration(
-                        color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFFE9F5E9) : Colors.white,
+                        color: (extensionPrice > 0 && extensionPrice < 10000)
+                            ? const Color(0xFFF5F5F5)
+                            : (displayPaymentMethod == 'midtrans' ? const Color(0xFFE9F5E9) : Colors.white),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
+                          color: (extensionPrice > 0 && extensionPrice < 10000)
+                              ? Colors.grey.shade300
+                              : (displayPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2)),
                           width: 1.5,
                         ),
                       ),
@@ -703,7 +718,9 @@ class _AdendumScreenState extends State<AdendumScreen> {
                         children: [
                           Icon(
                             Icons.credit_card_outlined,
-                            color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                            color: (extensionPrice > 0 && extensionPrice < 10000)
+                                ? Colors.grey
+                                : (displayPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E)),
                             size: 20,
                           ),
                           const SizedBox(width: 6),
@@ -714,7 +731,9 @@ class _AdendumScreenState extends State<AdendumScreen> {
                                 fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: _selectedPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                                color: (extensionPrice > 0 && extensionPrice < 10000)
+                                    ? Colors.grey
+                                    : (displayPaymentMethod == 'midtrans' ? const Color(0xFF012D1D) : const Color(0xFF5C635E)),
                               ),
                             ),
                           ),
@@ -734,10 +753,10 @@ class _AdendumScreenState extends State<AdendumScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
                       decoration: BoxDecoration(
-                        color: _selectedPaymentMethod == 'cash' ? const Color(0xFFE9F5E9) : Colors.white,
+                        color: displayPaymentMethod == 'cash' ? const Color(0xFFE9F5E9) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
+                          color: displayPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFFC1C8C2),
                           width: 1.5,
                         ),
                       ),
@@ -745,7 +764,7 @@ class _AdendumScreenState extends State<AdendumScreen> {
                         children: [
                           Icon(
                             Icons.monetization_on_outlined,
-                            color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                            color: displayPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
                             size: 20,
                           ),
                           const SizedBox(width: 6),
@@ -756,7 +775,7 @@ class _AdendumScreenState extends State<AdendumScreen> {
                                 fontFamily: 'Poppins',
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
-                                color: _selectedPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
+                                color: displayPaymentMethod == 'cash' ? const Color(0xFF012D1D) : const Color(0xFF5C635E),
                               ),
                             ),
                           ),
@@ -767,6 +786,18 @@ class _AdendumScreenState extends State<AdendumScreen> {
                 ),
               ],
             ),
+            if (extensionPrice > 0 && extensionPrice < 10000) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Minimal transaksi cashless adalah Rp 10.000. Pengajuan otomatis dialihkan ke Tunai (COD).',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
             
             const SizedBox(height: 32),
  

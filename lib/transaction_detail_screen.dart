@@ -35,6 +35,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   String? _errorMessage;
   TransactionModel? _transaction;
   bool _isPaid = false;
+  bool _isCashPayment = false;
   DisputeModel? _dispute;
   bool _isLoadingDispute = false;
 
@@ -63,9 +64,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         if (body['success'] == true) {
           final payments = body['data'] as List<dynamic>;
           final hasPaid = payments.any((p) => p['status'] == 'paid');
+          final isCash = payments.any((p) => p['paymentMethod'] == 'cash');
           if (mounted) {
             setState(() {
               _isPaid = hasPaid;
+              _isCashPayment = isCash;
             });
           }
           return;
@@ -1202,69 +1205,97 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => PaymentScreen(
-                        transactionId: widget.transactionId ?? '',
-                        totalPrice: _transaction?.totalPrice ?? 0.0,
-                        itemName: itemName,
-                        itemPhoto: itemPhoto,
-                        ownerName: _transaction?.ownerName ?? 'Owner',
+                  if (_isCashPayment) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8EF),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2DCD3)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline, color: Color(0xFF7B5804)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Metode COD dipilih. Silakan lakukan pembayaran tunai ke pemilik barang saat serah terima. Tombol serah terima akan aktif setelah pemilik mengonfirmasi penerimaan uang.',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 12,
+                                color: Color(0xFF7B5804),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ).then((value) {
-                    if (value == true) {
-                      _fetchTransactionDetails();
-                    }
-                  });
-                },
-                icon: const Icon(Icons.payment, color: Colors.white),
-                label: const Text(
-                  'Bayar Sekarang',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  ] else ...[
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PaymentScreen(
+                              transactionId: widget.transactionId ?? '',
+                              totalPrice: _transaction?.totalPrice ?? 0.0,
+                              itemName: itemName,
+                              itemPhoto: itemPhoto,
+                              ownerName: _transaction?.ownerName ?? 'Owner',
+                            ),
+                          ),
+                        ).then((value) {
+                          if (value == true) {
+                            _fetchTransactionDetails();
+                          }
+                        });
+                      },
+                      icon: const Icon(Icons.payment, color: Colors.white),
+                      label: const Text(
+                        'Bayar Sekarang',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7B5804),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () => _showCancelDialog(isOwner: false),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFBA1A1A),
+                      side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                    ),
+                    child: const Text(
+                      'Batalkan Sewa',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7B5804),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9999),
-                  ),
-                  elevation: 0,
-                ),
+                ],
               ),
-              const SizedBox(height: 12),
-              OutlinedButton(
-                onPressed: () => _showCancelDialog(isOwner: false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFBA1A1A),
-                  side: const BorderSide(color: Color(0xFFBA1A1A), width: 1.5),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(9999),
-                  ),
-                ),
-                child: const Text(
-                  'Batalkan Sewa',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+            ),
+          );
+        }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
@@ -1361,7 +1392,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       ),
     );
   } else {
-        // Owner approved: show QR code and COD confirmation if unpaid
+        // Owner approved: show COD confirmation or payment status card if unpaid, show QR code if paid
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
@@ -1370,11 +1401,76 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (!_isPaid) ...[
+                  if (_isCashPayment) ...[
+                    ElevatedButton.icon(
+                      onPressed: _confirmManualPayment,
+                      icon: const Icon(Icons.monetization_on, color: Colors.white),
+                      label: const Text(
+                        'Konfirmasi Terima Uang (COD)',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF7B5804),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(9999),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ] else ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF8EF),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xFFE2DCD3)),
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(Icons.info_outline, color: Color(0xFF7B5804)),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Menunggu pembayaran dari penyewa (Cashless Midtrans).',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                color: Color(0xFF7B5804),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ] else ...[
                   ElevatedButton.icon(
-                    onPressed: _confirmManualPayment,
-                    icon: const Icon(Icons.monetization_on, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => HandoverShowQRScreen(
+                            itemData: {
+                              'title': itemName,
+                              'owner': 'Penyewa: ${_transaction?.renterName ?? 'Renter'}',
+                              'date': _formatDateRange(startDate, endDate),
+                              'image': itemPhoto,
+                            },
+                            transactionId: widget.transactionId,
+                          ),
+                        ),
+                      ).then((_) => _fetchTransactionDetails());
+                    },
+                    icon: const Icon(Icons.qr_code, color: Colors.white),
                     label: const Text(
-                      'Konfirmasi Terima Uang (COD)',
+                      'Tampilkan QR Serah Terima',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 16,
@@ -1383,7 +1479,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       ),
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF7B5804),
+                      backgroundColor: const Color(0xFF012D1D),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(9999),
@@ -1391,44 +1487,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                       elevation: 0,
                     ),
                   ),
-                  const SizedBox(height: 12),
                 ],
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => HandoverShowQRScreen(
-                          itemData: {
-                            'title': itemName,
-                            'owner': 'Penyewa: ${_transaction?.renterName ?? 'Renter'}',
-                            'date': _formatDateRange(startDate, endDate),
-                            'image': itemPhoto,
-                          },
-                          transactionId: widget.transactionId,
-                        ),
-                      ),
-                    ).then((_) => _fetchTransactionDetails());
-                  },
-                  icon: const Icon(Icons.qr_code, color: Colors.white),
-                  label: const Text(
-                    'Tampilkan QR Serah Terima',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF012D1D),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(9999),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
               ],
             ),
           ),
