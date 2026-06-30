@@ -117,13 +117,18 @@ class ChatRepository {
 
       String displayLastMessage = messageText;
       if (messageType == 'item_card') {
-        displayLastMessage = '📦 ${itemName ?? "Barang"}';
+        // Parse JSON untuk mendapat nama barang aktual dari isi pesan, bukan dari parameter widget
+        try {
+          final decoded = jsonDecode(messageText);
+          final nameFromJson = decoded['name'] as String? ?? itemName ?? 'Barang';
+          displayLastMessage = '📦 $nameFromJson';
+        } catch (_) {
+          displayLastMessage = '📦 ${itemName ?? "Barang"}';
+        }
       } else if (messageType == 'image') {
         displayLastMessage = '📷 Foto';
-      } else if (itemName != null && messageText.isNotEmpty) {
-        // Menambahkan nama produk di depan teks agar sesuai dengan permintaan user
-        displayLastMessage = '$itemName : $messageText';
       }
+      // Untuk tipe 'text': tampilkan messageText apa adanya (tanpa prepend itemName)
 
       if (roomId.isEmpty) {
         // Create new room
@@ -153,15 +158,33 @@ class ChatRepository {
           'participants': participants,
           if (itemName != null) 'itemName': itemName,
           if (itemPhotoUrl != null) 'itemPhotoUrl': itemPhotoUrl,
+          // Denormalisasi untuk filter 'Request' di chat screen
+          'hasItemCard': messageType == 'item_card',
+          if (messageType == 'item_card') 'lastItemCardSenderId': currentUserId,
+          // itemCardUnreadFor: daftar userId yang belum membaca item_card ini
+          'itemCardUnreadFor': messageType == 'item_card' ? [partnerId] : [],
         });
       } else {
         // Update existing room
         final roomRef = _chatRoomsRef.doc(roomId);
-        batch.update(roomRef, {
+        final Map<String, dynamic> roomUpdate = {
           'lastMessage': displayLastMessage,
           'lastMessageAt': now,
           'lastMessageSender': currentUserId,
-        });
+        };
+        // Update denormalized item_card tracking jika ini adalah item_card
+        if (messageType == 'item_card') {
+          roomUpdate['hasItemCard'] = true;
+          roomUpdate['lastItemCardSenderId'] = currentUserId;
+          // Tambahkan partnerId ke itemCardUnreadFor agar filter Request terpicu
+          // FieldValue.arrayUnion aman untuk re-embed berulang kali
+          roomUpdate['itemCardUnreadFor'] = FieldValue.arrayUnion([partnerId]);
+          
+          if (itemId != null) roomUpdate['itemId'] = itemId;
+          if (itemName != null) roomUpdate['itemName'] = itemName;
+          if (itemPhotoUrl != null) roomUpdate['itemPhotoUrl'] = itemPhotoUrl;
+        }
+        batch.update(roomRef, roomUpdate);
       }
 
       // Add message
@@ -220,6 +243,7 @@ class ChatRepository {
   }
 
   /// Update status isRead = true untuk pesan dari partner
+  /// Juga menghapus currentUserId dari itemCardUnreadFor agar filter Request ter-reset.
   Future<void> markMessagesAsRead(String roomId) async {
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
     if (currentUserId == null) return;
@@ -231,8 +255,6 @@ class ChatRepository {
           .where('isRead', isEqualTo: false)
           .get();
 
-      if (unreadMessages.docs.isEmpty) return;
-
       final batch = _db.batch();
       bool hasUpdates = false;
 
@@ -243,9 +265,13 @@ class ChatRepository {
         }
       }
 
-      if (hasUpdates) {
-        await batch.commit();
-      }
+      // Hapus currentUserId dari itemCardUnreadFor saat chat dibaca,
+      // agar room keluar dari filter 'Request' di chat list.
+      batch.update(_chatRoomsRef.doc(roomId), {
+        'itemCardUnreadFor': FieldValue.arrayRemove([currentUserId]),
+      });
+
+      await batch.commit();
     } catch (e) {
       print("Error marking messages as read: $e");
     }

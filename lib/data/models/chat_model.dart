@@ -37,6 +37,12 @@ class ChatRoomModel {
   final String? itemName;
   final String? itemPhotoUrl;
   final String? createdBy;
+  /// Apakah room ini pernah memiliki item_card yang dikirim (denormalisasi)
+  final bool hasItemCard;
+  /// Siapa yang terakhir mengirim item_card (denormalisasi untuk filter Request)
+  final String? lastItemCardSenderId;
+  /// Daftar userId yang belum membaca item_card terbaru — dipakai filter 'Permintaan'
+  final List<String> itemCardUnreadFor;
 
   const ChatRoomModel({
     required this.id,
@@ -51,6 +57,9 @@ class ChatRoomModel {
     this.itemName,
     this.itemPhotoUrl,
     this.createdBy,
+    this.hasItemCard = false,
+    this.lastItemCardSenderId,
+    this.itemCardUnreadFor = const [],
   });
 
   factory ChatRoomModel.fromFirestore(DocumentSnapshot doc) {
@@ -77,6 +86,9 @@ class ChatRoomModel {
       itemName: data['itemName'] as String?,
       itemPhotoUrl: data['itemPhotoUrl'] as String?,
       createdBy: data['createdBy'] as String?,
+      hasItemCard: data['hasItemCard'] as bool? ?? false,
+      lastItemCardSenderId: data['lastItemCardSenderId'] as String?,
+      itemCardUnreadFor: List<String>.from(data['itemCardUnreadFor'] as List? ?? []),
     );
   }
 
@@ -99,6 +111,9 @@ class ChatRoomModel {
       if (itemName != null) 'itemName': itemName,
       if (itemPhotoUrl != null) 'itemPhotoUrl': itemPhotoUrl,
       if (createdBy != null) 'createdBy': createdBy,
+      'hasItemCard': hasItemCard,
+      if (lastItemCardSenderId != null) 'lastItemCardSenderId': lastItemCardSenderId,
+      'itemCardUnreadFor': itemCardUnreadFor,
     };
   }
 }
