@@ -1,3 +1,5 @@
+rootProject.name = "sewainaja"
+
 pluginManagement {
     val flutterSdkPath =
         run {

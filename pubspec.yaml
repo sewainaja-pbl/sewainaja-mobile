@@ -1,5 +1,5 @@
 name: sewainaja
-description: "A new Flutter project."
+description: 'A new Flutter project.'
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,18 +11,100 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # ── UI & Animasi ──────────────────────────────────────────────────────────
+  # Icon default Material Design untuk iOS/Android
   cupertino_icons: ^1.0.8
-  firebase_core: ^4.7.0
-  firebase_auth: ^6.4.0
-  cloud_firestore: ^6.3.0
-  firebase_messaging: ^16.2.0
-  # Package untuk membuat Native Splash Screen
+  # Animasi pre-built (FadeIn, SlideIn, BounceIn, dll) untuk micro-interaction
+  animate_do: ^5.1.0
+  # Icon FontAwesome — ikon tambahan di luar Material Icons
+  font_awesome_flutter: ^11.0.0
+
+  # ── Splash Screen ─────────────────────────────────────────────────────────
+  # Generate native splash screen (Android/iOS) secara otomatis via flutter_native_splash
   flutter_native_splash: ^2.4.0
+
+  # ── Networking & Storage Lokal ────────────────────────────────────────────
+  # HTTP client untuk REST API call (digunakan di api_config.dart)
+  http: ^1.6.0
+  # Penyimpanan data sederhana key-value di device (login state, preferensi user)
+  shared_preferences: ^2.2.0
+  # Akses path direktori lokal (cache, dokumen) — dipakai image_upload_service
+  path_provider: ^2.1.5
+
+  # ── Maps & Lokasi ─────────────────────────────────────────────────────────
+  # Widget peta interaktif berbasis OpenStreetMap (dipakai di map_explore_screen)
+  flutter_map: ^8.2.2
+  # Tipe data LatLng untuk koordinat peta (dependency flutter_map)
+  latlong2: ^0.9.1
+  # Akses GPS dan lokasi perangkat untuk fitur "barang di sekitar kamu"
+  geolocator: ^14.0.2
+
+  # ── Firebase ──────────────────────────────────────────────────────────────
+  # Core Firebase SDK — wajib ada sebagai fondasi semua package Firebase lainnya
+  firebase_core: ^4.7.0
+  # Firebase Authentication — login email/password & Google Sign-In
+  firebase_auth: ^6.5.1
+  # Firebase Cloud Messaging — push notification untuk rental & chat
+  firebase_messaging: ^16.0.4
+  # Firebase Storage — upload & akses foto barang dan bukti serah terima
+  firebase_storage: ^13.3.0
+  # Cloud Firestore — database utama: items, users, transaksi, chat
+  cloud_firestore: ^6.4.1
+  # Firebase Realtime Database — untuk tracker live GPS yang lebih cepat dibanding Firestore
+  firebase_database: ^12.4.1
+
+  # ── Push Notifications (Lokal) ────────────────────────────────────────────
+  # Notifikasi push lokal untuk peringatan ban GPS saat app di-minimize
+  flutter_local_notifications: ^17.2.1
+
+  # ── Upload & Kompresi Gambar ──────────────────────────────────────────────
+  # Ambil foto dari galeri atau kamera (dipakai di add_product & edit_profile)
+  image_picker: ^1.2.2
+  # Kompresi gambar sebelum upload ke Firebase Storage untuk hemat bandwidth
+  flutter_image_compress: ^2.4.0
+
+  # ── Autentikasi Sosial ────────────────────────────────────────────────────
+  # Google Sign-In — login dengan akun Google (terintegrasi dengan firebase_auth)
+  google_sign_in: ^6.2.1
+
+  # ── State Management ─────────────────────────────────────────────────────
+  # Provider — state management ringan untuk auth session & data global
+  provider: ^6.1.2
+
+  # ── QR Code ───────────────────────────────────────────────────────────────
+  # Scanner QR Code via kamera (dipakai di scan_qr & handover screens)
+  mobile_scanner: ^5.2.3
+  # Generate widget QR Code untuk serah terima barang
+  qr_flutter: ^4.1.0
+
+  # ── Search & Filtering ────────────────────────────────────────────────────
+  # Fuzzy search client-side — pure Dart, tanpa backend.
+  # Digunakan di search_screen.dart untuk 3 mode pencarian:
+  #   1. Fuzzy   → cocok meski ada typo (threshold: 0.4)
+  #   2. Mirip   → name.contains(query)
+  #   3. Exact   → name == query
+  fuzzy: ^0.5.0
+  cached_network_image: ^3.4.1
+  intl: ^0.20.2
+  url_launcher: ^6.3.2
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+# ==========================================
+# KONFIGURASI FLUTTER LAUNCHER ICONS
+# ==========================================
+flutter_launcher_icons:
+  android: 'launcher_icon'
+  ios: true
+  image_path: 'assets/images/logo-white.png'
+  adaptive_icon_background: '#FFFFFF'
+  adaptive_icon_foreground: 'assets/images/logo.png'
+  min_sdk_android: 21
 
 # ==========================================
 # KONFIGURASI FLUTTER NATIVE SPLASH
@@ -30,10 +112,10 @@ dev_dependencies:
 flutter_native_splash:
   # Background color: menggunakan warna gelap dari radial gradient (#012D1D)
   # agar transisi dari native splash ke animated splash tidak patah/flicker
-  color: "#012D1D"
+  color: '#012D1D'
   image: assets/images/logo.png
   android_12:
-    color: "#012D1D"
+    color: '#012D1D'
     image: assets/images/logo.png
   ios: true
 
@@ -61,6 +143,85 @@ flutter:
           weight: 600
         - asset: assets/fonts/Poppins-Bold.ttf
           weight: 700
+# =============================================================
+# ##  SEWAINAJA - CUSTOM BOTTOM NAVBAR (UPDATED)
+# =============================================================
+# Name: SewaIn Aja - Custom Floating Navbar
+# Description: Navbar melayang berbentuk pill dengan 5 menu utama dan indikator aktif berbentuk lingkaran terang.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Komponen ini membutuhkan varian icon outline (inactive) dan solid/bold (active).
+# 1. Home: solar:home-2-bold / solar:home-2-linear
+# 2. Category: tabler:category
+# 3. Add Listing: basil:add-outline
+# 4. Chat: lets-icons:chat-alt-3-fill / lets-icons:chat-alt-3
+# 5. Profile: material-symbols:person-rounded
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [MAIN NAVBAR CONTAINER]
+# ID: '201:2650' -> Container Utama
+# Layout: Fixed Width (~348px) / Responsif merenggang dengan margin horizontal, Height: 75px
+# Background: #012D1D (Deep Forest Green)
+# Shape: Pill (BorderRadius: 40px)
+# Position: Mengambang di bawah layar menggunakan Align(bottomCenter) + SafeArea Padding.
+
+# ### [MENU ITEMS (ROW LAYOUT)]
+# Deskripsi: Berisi 5 item dengan jarak seimbang (MainAxisAlignment.spaceEvenly).
+# Ukuran Lingkaran per Item (Ellipse): Width 65px, Height 65px (Menyesuaikan padding container)
+
+# --- 1. ITEM: HOME SCREEN ---
+# Active State (ID '217:2152'):
+# - Circle Background: #FFF8EF | Icon: solar:home-2-bold (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: solar:home-2-linear (Color: #FFF8EF)
+
+# --- 2. ITEM: CATEGORIES ---
+# Active State (ID '217:2154'):
+# - Circle Background: #FFF8EF | Icon: tabler:category (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: tabler:category (Color: #FFF8EF)
+
+# --- 3. ITEM: TAMBAH BARANG (ADD LISTING) ---
+# Active State (ID '217:2180'):
+# - Circle Background: #FFF8EF | Icon: basil:add-outline (Color: #012D1D, StrokeWeight: 2px)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: basil:add-outline (Color: #FFF8EF)
+
+# --- 4. ITEM: CHAT ---
+# Active State (ID '217:2258'):
+# - Circle Background: #FFF8EF | Icon: lets-icons:chat-alt-3-fill (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: lets-icons:chat-alt-3 (Color: #FFF8EF)
+
+# --- 5. ITEM: PROFILE ---
+# Active State (ID '217:2284'):
+# - Circle Background: #FFF8EF | Icon: material-symbols:person-rounded (Color: #012D1D)
+# Inactive State:
+# - Circle Background: #1B4332 | Icon: material-symbols:person-rounded (Color: #FFF8EF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Navbar_Bg: "#012D1D" (Deep Forest Green)
+# Color_Active_Bg: "#FFF8EF" (Cream White)
+# Color_Inactive_Bg: "#1B4332" (Medium Forest Green)
+# Color_Active_Icon: "#012D1D" (Deep Forest Green)
+# Color_Inactive_Icon: "#FFF8EF" (Cream White)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES & STATE MANAGEMENT (CRITICAL)
+# -------------------------------------------------------------
+# 1. State Management: Gunakan variabel `selectedIndex` untuk melacak tab aktif (0 hingga 4).
+# 2. Main Wrapper: Gunakan `IndexedStack` di dalam `Scaffold` utama untuk menampung kelima layar (Home, Category, Add, Chat, Profile) agar state tiap layar tidak ter-reset.
+# 3. Floating Behavior: Set `extendBody: true` pada Scaffold utama agar konten bisa memanjang ke belakang navbar.
+# 4. CONTENT WHITESPACE (PENTING): Karena navbar melayang, WAJIB tambahkan `padding: EdgeInsets.only(bottom: 110)` atau `SizedBox(height: 110)` di bagian paling bawah pada list/konten di SETIAP screen yang ada di dalam IndexedStack. Ini agar konten terakhir dapat di-scroll hingga melewati batas navbar dan tidak tertutup.
+# 5. Animation: Gunakan `AnimatedContainer` untuk setiap latar lingkaran item menu agar transisi warna saat berpindah tab terlihat halus (Duration: ~200ms).
 
 # ==========================================
 # AI PROMPT SPEC: SEWAINAJA ANIMATED SPLASH (V4 - Final Final)
@@ -69,7 +230,7 @@ flutter:
 # screen_info:
 #   name: "AnimatedSplashScreen"
 #   background_color: "Black Screen initially, then fades into Radial Gradient (#1B4332 to #012D1D)"
-# 
+#
 # components:
 #   logo_group:
 #     type: "Column"
@@ -79,11 +240,11 @@ flutter:
 #       scale: 0.8
 #     layout:
 #       text_translation_y: -15.0 # Teks ditarik ke atas mendekati logo
-#   
+#
 #   logo_image:
 #     asset: "assets/images/logo.png"
 #     size: 250 # Ukuran akhir yang disepakati
-# 
+#
 #   text_title:
 #     font_family: "BebasNeue"
 #     font_size: 47 # Ukuran akhir yang disepakati
@@ -94,30 +255,30 @@ flutter:
 #         color: "#FFF8EF"
 #       - text: "AJA"
 #         color: "#D5BF87"
-# 
+#
 # animation_sequence:
 #   step_0_black_screen_delay:
 #     description: "Layar hitam murni selama 1 detik (pembukaan eksklusif bioskop)"
 #     trigger: "on_load"
 #     duration: "1000ms"
-# 
+#
 #   step_0_bg_fade_in:
 #     description: "Warna radial gradient memudar muncul"
 #     trigger: "after_step_0 (delay: 1000ms)"
 #     duration: "500ms"
 #     easing: "Curves.easeIn"
-# 
+#
 #   step_1_rise_and_fade:
 #     description: "Logo & Teks muncul dari bawah dan fade in ke tengah"
 #     trigger: "after_bg_fade_in (delay: 100ms)"
 #     duration: "800ms"
 #     easing: "Curves.easeOutBack"
 #     animations:
-#       logo_group: 
+#       logo_group:
 #         opacity: "0.0 -> 1.0 (clamped to 1.0 to prevent overshoot errors)"
 #         offset_y: "100.0 -> 0.0"
 #         scale: "0.8 -> 1.0"
-# 
+#
 #   step_2_text_tighten:
 #     description: "Merapatkan spasi antar huruf sesuai video Figma"
 #     trigger: "after_step_1 (delay: 200ms)"
@@ -125,7 +286,7 @@ flutter:
 #     easing: "Curves.easeInOut"
 #     animations:
 #       text_title: {letter_spacing: "25.0 -> 0.0"} # Sesuai Figma spec
-# 
+#
 #   step_3_navigate:
 #     trigger: "after_step_2 (delay: 1000ms)"
 #     action: "Navigator.pushReplacement to OnboardingScreen"
@@ -136,12 +297,12 @@ flutter:
 # screen_info:
 #   name: "OnboardingScreen"
 #   layout: "Stack with Background Image"
-# 
+#
 # components:
 #   background_image:
 #     asset: "assets/images/onboarding1.jpg" # Sesuai file yang baru kamu taro
 #     fit: "BoxFit.cover"
-# 
+#
 #   gradient_overlay:
 #     type: "Container"
 #     description: "Layer rectangle fade out warna hitam ke transparan"
@@ -150,12 +311,12 @@ flutter:
 #       end: "Alignment.topCenter"
 #       colors: ["#000000", "transparent"]
 #       stops: [0.0, 0.6]
-# 
+#
 #   content:
 #     font_color: "#FFF8EF"
 #     head_1: "Limitless Potential at a Fraction of the Cost."
 #     sub_head: "Nikmati teknologi premium dengan syaratmu sendiri. Sewa apa yang kamu butuhkan, hanya saat kamu membutuhkannya."
-# 
+#
 #   ui_elements:
 #     tracker:
 #       active_step: 1
@@ -172,7 +333,7 @@ flutter:
 # ==========================================
 # screen_info:
 #   asset_image: "assets/images/onboarding2.jpg" # Foto perkakas sesuai instruksi
-# 
+#
 # nodes:
 #   - id: '511:2147'
 #     name: "iPhone 16 - 56"
@@ -217,7 +378,7 @@ flutter:
 # ==========================================
 # screen_info:
 #   asset_image: "assets/images/onboarding3.jpg" # Foto fashion sesuai instruksi
-# 
+#
 # nodes:
 #   - id: '532:2382'
 #     name: "iPhone 16 - 60"
@@ -256,67 +417,67 @@ flutter:
 #       - id: '559:1611' # Indicator 3 (Active)
 #         strokes: "stroke_1B4332"
 
-  # ==========================================
-  # AI PROMPT SPEC: SEWAINAJA LOGIN SCREEN (Final)
-  # (Final design spec based on lib/login_screen.dart)
-  # ==========================================
-  # screen_info:
-  #   name: "LoginScreen"
-  #   background_color: "#012D1D"
-  #   sheet_color: "#FFF8EF"
-  #   sheet_border_radius: 24.0
-  #   padding: { horizontal: 32, top: 24, bottom: 40 }
-  # 
-  # components:
-  #   header:
-  #     title: "Hello"
-  #     title_style: { family: "Poppins", size: 60, weight: 600, color: "#012D1D" }
-  #     subtitle: "Masuk ke akun Anda untuk melanjutkan penjelajahan."
-  #     subtitle_style: { family: "Poppins", size: 14, weight: 400, color: "#414844" }
-  #     register_link: "Daftar akun"
-  #     register_style: { family: "Poppins", size: 14, weight: 600, color: "#2F6743" }
-  # 
-  #   inputs:
-  #     label_style: { family: "Poppins", size: 14, weight: 700, color: "#012D1D" }
-  #     hint_style: { family: "Poppins", size: 12, weight: 300, color: "#717973", opacity: 0.25 }
-  #     text_style: { family: "Poppins", size: 16, color: "#012D1D" }
-  #     border_radius: 12.0
-  #     fill_color: "#FFFFFF"
-  #     spacing_between: 24.0
-  # 
-  #   buttons:
-  #     primary_signin:
-  #       text: "Sign In"
-  #       background_color: "#7B5804"
-  #       text_color: "#FFFFFF"
-  #       style: { family: "Poppins", size: 16, weight: 700 }
-  #       border_radius: 9999.0
-  #       padding_vertical: 16
-  #     google_social:
-  #       text: "Google"
-  #       background_color: "#FFFFFF"
-  #       border_color: "#C1C8C2"
-  #       text_color: "#012D1D"
-  #       style: { family: "Poppins", size: 14, weight: 700 }
-  #       logo_asset: "assets/images/google.png"
-  #       logo_size: 14
-  #       border_radius: 12
-  #       padding_vertical: 14
-  # 
-  #   divider:
-  #     text: "ATAU LANJUT DENGAN"
-  #     style: { family: "Poppins", size: 12, weight: 700, color: "#717973" }
-  #     color: "#717973"
-  # 
-  # design_tokens:
-  #   colors:
-  #     primary_dark: "#012D1D"
-  #     accent_brown: "#7B5804"
-  #     success_green: "#2F6743"
-  #     off_white: "#FFF8EF"
-  #     neutral_gray: "#717973"
-  #     border_gray: "#C1C8C2"
-  #     text_main: "#414844"
+# ==========================================
+# AI PROMPT SPEC: SEWAINAJA LOGIN SCREEN (Final)
+# (Final design spec based on lib/login_screen.dart)
+# ==========================================
+# screen_info:
+#   name: "LoginScreen"
+#   background_color: "#012D1D"
+#   sheet_color: "#FFF8EF"
+#   sheet_border_radius: 24.0
+#   padding: { horizontal: 32, top: 24, bottom: 40 }
+#
+# components:
+#   header:
+#     title: "Hello"
+#     title_style: { family: "Poppins", size: 60, weight: 600, color: "#012D1D" }
+#     subtitle: "Masuk ke akun Anda untuk melanjutkan penjelajahan."
+#     subtitle_style: { family: "Poppins", size: 14, weight: 400, color: "#414844" }
+#     register_link: "Daftar akun"
+#     register_style: { family: "Poppins", size: 14, weight: 600, color: "#2F6743" }
+#
+#   inputs:
+#     label_style: { family: "Poppins", size: 14, weight: 700, color: "#012D1D" }
+#     hint_style: { family: "Poppins", size: 12, weight: 300, color: "#717973", opacity: 0.25 }
+#     text_style: { family: "Poppins", size: 16, color: "#012D1D" }
+#     border_radius: 12.0
+#     fill_color: "#FFFFFF"
+#     spacing_between: 24.0
+#
+#   buttons:
+#     primary_signin:
+#       text: "Sign In"
+#       background_color: "#7B5804"
+#       text_color: "#FFFFFF"
+#       style: { family: "Poppins", size: 16, weight: 700 }
+#       border_radius: 9999.0
+#       padding_vertical: 16
+#     google_social:
+#       text: "Google"
+#       background_color: "#FFFFFF"
+#       border_color: "#C1C8C2"
+#       text_color: "#012D1D"
+#       style: { family: "Poppins", size: 14, weight: 700 }
+#       logo_asset: "assets/images/google.png"
+#       logo_size: 14
+#       border_radius: 9999.0
+#       padding_vertical: 14
+#
+#   divider:
+#     text: "ATAU LANJUT DENGAN"
+#     style: { family: "Poppins", size: 12, weight: 700, color: "#717973" }
+#     color: "#717973"
+#
+# design_tokens:
+#   colors:
+#     primary_dark: "#012D1D"
+#     accent_brown: "#7B5804"
+#     success_green: "#2F6743"
+#     off_white: "#FFF8EF"
+#     neutral_gray: "#717973"
+#     border_gray: "#C1C8C2"
+#     text_main: "#414844"
 
 # ==========================================
 # FULL FIGMA EXPORT DATA: SIGN UP SCREEN
@@ -376,7 +537,7 @@ flutter:
 #                     name: Hint Nama
 #                     text: "Nama Lengkap"
 #                     textStyle: style_HINT_SPEC
-#               
+#
 #               # Nomor Telepom (Typo sesuai desain)
 #               - id: '82:1719'
 #                 name: Phone Input
@@ -426,6 +587,7 @@ flutter:
 #             type: FRAME
 #             fills: "#7B5804"
 #             borderRadius: 9999px
+#             action: "Navigator.push to OtpVerificationScreen" # Diperbarui
 #             children:
 #               - id: '82:1758'
 #                 name: Sign Up Text
@@ -444,11 +606,12 @@ flutter:
 #             layout: layout_FULL_WIDTH
 #             fills: "#FFFFFF"
 #             strokes: "#C1C8C2"
-#             borderRadius: 12px
+#             borderRadius: 9999.0
+#             action: "Navigator.push to OtpVerificationScreen" # Diperbarui
 #             children:
 #               - name: Google Logo
 #                 type: IMAGE
-#                 asset: "assets/images/logo_google.jpg"
+#                 asset: "assets/images/google.png"
 #                 dimensions: { width: 14, height: 14 }
 #               - id: '82:1779'
 #                 name: Google Text
@@ -468,7 +631,7 @@ flutter:
 #     style_S5V2UE: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
 #     style_UBAT7L: { fontFamily: Poppins, fontWeight: 700, fontSize: 12, textAlignHorizontal: CENTER }
 #     style_HSH76Q: { fontFamily: Poppins, fontWeight: 700, fontSize: 14, textAlignHorizontal: CENTER }
-#     
+#
 #     # Typography - Sign Up Poppins
 #     style_VZYKL5: { fontFamily: Poppins, fontWeight: 600, fontSize: 48, textAlignHorizontal: CENTER }
 #     style_8N3E5E: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, textAlignHorizontal: CENTER }
@@ -480,7 +643,7 @@ flutter:
 #     style_B9SCF8: { fontFamily: Poppins, fontWeight: 700, fontSize: 16 }
 #     style_WNB82T: { fontFamily: Poppins, fontWeight: 700, fontSize: 14 }
 #     style_9WXNCL: { fontFamily: Poppins, fontWeight: 700, fontSize: 12 }
-#     
+#
 #     # Input Hint Spec (Matches Login Screen)
 #     style_HINT_SPEC: { fontFamily: Poppins, fontWeight: 400, fontSize: 16, color: "#717973", opacity: 0.25 }
 #
@@ -496,7 +659,7 @@ flutter:
 #     color_414844: ['#414844']
 #     color_FFF8EF: ['#FFF8EF']
 #     stroke_C1C8C2: ['#C1C8C2']
-# 
+#
 # ############################################################
 # # METADATA APLIKASI - SewaIn Aja
 # ############################################################
@@ -559,71 +722,75 @@ flutter:
 # # SKEMA WARNA UTAMA
 # ############################################################
 # palette:
-#   primary_brown: "#7B5804"   # Digunakan pada tombol 'Konfirmasi OTP'
-#   dark_green: "#012D1D"      # Digunakan pada Heading 'Verifikasi OTP'
-#   soft_white: "#FFFFFF"      # Latar belakang slot input kode
-#   bg_surface: "#FFF8EF"     # Latar belakang frame slide up
-#   nature_accent: "#C1ECD4"   # Elemen dekoratif daun/alam
-#   text_muted: "#414844"      # Teks instruksi & timer
+#   primary_brown: "#7B5804"
+#   dark_green: "#012D1D"
+#   soft_white: "#FFFFFF"
+#   bg_surface: "#FFF8EF"
+#   text_muted: "#414844"
 #
 # ############################################################
 # # STRUKTUR KOMPONEN: LAYAR VERIFIKASI OTP
 # ############################################################
 # screen_otp:
 #   id: "61:1413"
-#   layout_type: "FRAME"
+#   layout_type: "COLUMN"
+#   main_alignment: "CENTER"
 #
-#   #--- ELEMEN VISUAL ---
-#   illustration:
-#     name: "mobilephone-action-otp-message"
-#     style: "streamline-freehand"
-#     container_size: "200x200"
+#   #--- GRUP HIERARKI UTAMA (ICON + HEADER) ---
+#   header_group:
+#     spacing: "16px" # Jarak diperapat agar icon tidak terasa terpisah dari judul
+#     items:
+#       - illustration:
+#           name: "mobilephone-action-otp-message"
+#           size: "responsive (height: screenHeight * 0.28)" # Responsif & aman dari overflow
+#       - header:
+#           text: "Verifikasi OTP"
+#           font_family: "Poppins"
+#           font_weight: 700 # Dibuat lebih tebal sesuai hierarki visual
+#           font_size: 40
+#           color: "dark_green"
 #
-#   #--- BAGIAN TEKS ---
-#   header:
-#     text: "Verfikasi OTP"
-#     font_family: "Poppins"
-#     font_weight: 600
-#     font_size: 40
-#
-#   instruction:
-#     text: "Masukan 6 digit kode dari aplikasi authenticator..."
-#     font_family: "Inter"
-#     font_size: 15
+#   #--- BAGIAN INSTRUKSI ---
+#   content_group:
+#     top_margin: "8px"
+#     instruction:
+#       text: "Masukan 6 digit kode dari aplikasi authenticator..."
+#       font_family: "Poppins" # Konsisten dengan brand
+#       font_size: 15
+#       text_align: "CENTER"
 #
 #   #--- INPUT FIELD KODE ---
 #   otp_input_group:
+#     margin_vertical: "32px"
 #     total_slots: 6
 #     box_style:
+#       width: "48px"
+#       height: "56px"
 #       border_radius: "10px"
-#       border_color: "#7B5804"
-#       background: "#FFFFFF"
+#       border_color: "primary_brown"
+#       background: "soft_white"
 #
 #   #--- TIMER & RESEND ---
-#   timer:
-#     current_value: "2:53"
-#     text_style: "Poppins, 16px"
-#
-#   action_resend:
-#     label: "Kirim ulang OTP? RESEND"
-#     style: "PingFang SC, 16px"
+#   footer_actions:
+#     spacing: "12px"
+#     timer:
+#       current_value: "2:53"
+#       style: { family: "Poppins", size: 16, weight: 600 }
+#     action_resend:
+#       label: "Kirim ulang OTP? RESEND"
+#       style_rich:
+#         prefix: { text: "Kirim ulang OTP? ", color: "text_muted" }
+#         action: { text: "RESEND", color: "primary_brown" }
+#       style: { family: "Poppins", size: 14, weight: 700 }
 #
 #   #--- TOMBOL KONFIRMASI ---
 #   submit_button:
 #     id: "73:64"
 #     label: "Konfirmasi OTP"
-#     background: "#7B5804"
+#     background: "primary_brown"
 #     text_color: "#FFFFFF"
-#     border_radius: "9999px" # Pill shape style
-#
-# ############################################################
-# # ELEMEN STATUS BAR (IPHONE STANDARD)
-# ############################################################
-# status_bar:
-#   time: "9:41"
-#   elements: ["Cellular Connection", "Wifi", "Battery Capacity"]
-# ############################################################
-#
+#     border_radius: "9999px"
+#     width: "full"
 # ############################################################
 # # METADATA DESAIN FIGMA - SewaIn Aja (Profile Setup)
 # ############################################################
@@ -689,3 +856,3242 @@ flutter:
 #   time_display: "9:41"
 #   indicators: ["Cellular", "Wifi", "Battery"]
 # ############################################################
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - ITEM DETAIL SCREEN (FULL)
+# =============================================================
+# Name: SewaIn Aja - Detail Barang
+# Description: Halaman detail produk lengkap dengan deskripsi, peta, katalog toko, rekomendasi (grid), dan action bar melayang.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Secondary Font: Inter (Untuk teks deskripsi panjang)
+# Icons: HugeIcons, FontAwesome, & Solar Icons
+# Animation: Animate_do (FadeInUp untuk transisi masuk konten)
+# Layout: Scaffold -> Stack (Layer 1: Fixed Content, Layer 2: CustomScrollView/DraggableScrollableSheet, Layer 3: Fixed Bottom Bar)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: PRODUCT IMAGE & TOP FLOATING ACTIONS (FIXED BACKGROUND)]
+# Deskripsi: Gambar menempel di belakang layar bagian atas.
+# ID: '259:1970' -> Main Image Asset: "assets/images/iklan.jpg" (BoxFit.cover, Height: ~45% layar)
+# ID: '259:2015' -> Top Left Action: Back Button (Circle Background: #012D1D, Icon: arrow-back, Color: #FDF9F4)
+# ID: '259:2017' -> Top Right Actions (Group):
+#    - Share Button (Circle Background: #012D1D, Icon: share, Color: #FDF9F4)
+#    - More Options Button (Circle Background: #012D1D, Icon: dots-three-vertical, Color: #FDF9F4)
+
+# ### [SECTION 2: SCROLLABLE PRODUCT INFO SHEET]
+# Deskripsi: Container putih utama yang bisa di-scroll ke atas (DraggableScrollableSheet atau CustomScrollView overlap).
+# ID: '259:1971' -> Sheet Background (Color: #FDF9F4, BorderRadius: 30px top-left & top-right)
+
+# --- 2A. MAIN INFO ---
+# ID: '259:1979' -> Title: "Sony Camera a6000" (Font: Poppins Bold, Size: 24, Color: #012D1D, maxLines: 2)
+# ID: '259:1980' -> Price: "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 24, Color: #7B5804)
+# ID: '259:1983' -> Action: Heart/Like Icon (Outline Color: #E33629)
+# ID: '259:2049' -> Badge: "Like New" (Background: #22C23A, Text Color: #000000, Radius: 13px)
+# ID: '259:1985' -> Info: Clock Icon + "2 hari lalu" (Size: 14, Color: #414844)
+
+# --- 2B. SELLER PROFILE CARD ---
+# ID: '259:1991' -> Card Container (Border: 1px Solid rgba(0,0,0,0.1), Background: #FFFFFF, Radius: 14px, Padding: 12px)
+# - Avatar Image: Foto profil (Circle)
+# - Name: "Han Soo Hee" (Font: Poppins Regular, Size: 12, Color: #012D1D)
+# - Rating: Star Icon (#F8BD00) + "4.9" (Size: 10, Color: #414844)
+# - Location: "| Tembalang, Banyumanik" (Size: 10, Color: #414844)
+# - Action: Chat Icon Button (Color: #012D1D) -> onTap: Push ke Room Chat
+
+# --- 2C. LOCATION RADIUS MAP ---
+# ID: '259:1972' -> Title: "Lokasi Barang" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# ID: '259:1977' -> Map Image Component (BorderRadius: 25px, Border: 0.5px solid #012D1D)
+
+# --- 2D. DESCRIPTION SECTION ---
+# ID: '270:1322' -> Title: "Description" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# ID: '270:1324' -> Toggle: "See more" + Arrow Drop Down Icon (Size: 14, Color: #012D1D)
+# ID: '270:1327' -> Text Content: "Sony a6000 adalah kamera mirrorless APS-C 24,3 MP yang andal, populer untuk pemula dan traveling karena ukurannya ringkas, autofokus cepat (11 fps), dan harga terjangkau..."
+# (Teks menggunakan font Inter, Size 12, Light/300, Color: #414844)
+
+# --- 2E. LAINNYA DI TOKO INI (OWNER'S CATALOG) ---
+# Deskripsi: Menampilkan barang lain dari pemilik yang sama dengan scroll horizontal.
+# Layout: Column, margin horizontal 20px, top 24px
+# - Header Row (spaceBetween):
+#     - Left: Text "Lainnya di toko ini" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+#     - Right: Text "Lihat Semua" (Font: Poppins Medium, Size: 12, Color: #012D1D) -> onTap: Push ke OwnerProfile
+# - Scroll Area: SizedBox height 230 -> ListView horizontal (BouncingScrollPhysics)
+# - [REUSED COMPONENT: OWNER PROFILE CARD]:
+#     - Gunakan komponen item card dari halaman Owner Profile.
+#     - Konfigurasi: width 160, margin right 16px, maxLines title 1 (ellipsis).
+
+# --- 2F. REKOMENDASI (VERTICAL SCROLL GRID) ---
+# Deskripsi: Rekomendasi barang serupa (cross-selling) disusun menggunakan SliverGrid agar menyatu dengan scroll halaman.
+# Header (SliverToBoxAdapter):
+#   - Margin top 32px, bottom 16px, padding horizontal 20px
+#   - Text: "Rekomendasi" (Font: Poppins SemiBold, Size: 20, Color: #012D1D)
+# Grid Setup (SliverPadding -> SliverGrid):
+#   - Padding: horizontal 20px, bottom 120px (PADDING EKSTRA BESAR agar aman dari Bottom Action Bar).
+#   - GridDelegate: crossAxisCount 2, mainAxisSpacing 16, crossAxisSpacing 16, childAspectRatio 0.65
+# - [REUSED COMPONENT: MAIN PRODUCT CARD]:
+#     - Gunakan komponen card produk utama dari Homepage/Search Result (dilengkapi badge overlay di atas gambar).
+
+# ### [SECTION 3: BOTTOM ACTION BAR (FIXED)]
+# Deskripsi: Bar navigasi statis melayang di bagian paling bawah layar (menimpa scrollable sheet).
+# Backgorund: Transparan atau gradient putih tipis ke transparan di bagian atasnya agar membaur.
+# Padding: horizontal 20px, bottom SafeArea
+# Row (gap 16px):
+#   - ID '259:2031' -> Secondary Action (Left): Chat Button
+#      - Container: Circle 54x54, border 1.5px solid #012D1D, bg #FFFFFF
+#      - Icon: chat_bubble (#012D1D)
+#   - ID '259:2029' -> Primary Action (Right): "Sewa Sekarang" Button
+#      - Expanded
+#      - Background: #012D1D
+#      - Shape: Pill (BorderRadius: 9999px)
+#      - Padding: vertical 16px
+#      - Text: "Sewa Sekarang" (Font: Poppins Bold, Size: 16, Color: #FDF9F4, Center)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary_Dark: "#012D1D" (Deep Forest Green - for headers, primary buttons)
+# Color_Accent_Brown: "#7B5804" (Gold/Brown - for price)
+# Color_Background_Sheet: "#FDF9F4" (Off-White/Cream)
+# Color_Badge_Green: "#22C23A" (Bright Green - for conditions)
+# Color_Danger_Red: "#E33629" (Red - for heart/like)
+# Color_Star: "#F8BD00" (Yellow/Gold)
+# Color_Text_Sub: "#414844" (Dark Gray)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES
+# -------------------------------------------------------------
+# 1. Page Structure: Gunakan widget "Stack".
+#    - Layer 1 (Dasar): Image 'iklan.jpg' (Top) & Action Buttons.
+#    - Layer 2 (Tengah): CustomScrollView atau DraggableScrollableSheet overlap. Wajib tambahkan padding bottom yang besar di akhir Sliver agar grid rekomendasi bisa di-scroll sampai mentok tanpa terhalang bottom bar.
+#    - Layer 3 (Atas): Bottom Action Bar diletakkan dengan Positioned(bottom: 0, left: 0, right: 0).
+# 2. Reused Components: AI generator wajib me-reuse komponen `Owner Profile Card` untuk section 2E dan `Main Product Card` untuk section 2F agar ukuran bundle aplikasi efisien dan desain konsisten.
+# 3. Padding: Pastikan konten teks dan header di dalam sheet memiliki padding horizontal konsisten minimal 20px.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - AJUKAN SEWA SCREEN (REVISED)
+# =============================================================
+# Name: SewaIn Aja - Ajukan Sewa
+# Description: Halaman formulir pengajuan sewa dengan peta lokasi, durasi, rincian harga, dan checkout.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Secondary Font: Plus Jakarta Sans & Manrope
+# Icons: BoxIcons (boxicons:location), HugeIcons, FontAwesome
+# Component: Map Preview, Form Dropdowns, Textarea
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: APPBAR / HEADER]
+# ID: '300:1159' -> Background Utama Layar (Color: #FDF9F4)
+# ID: '300:1237' -> Back Button (Circle Background: #012D1D, Icon Color: #FDF9F4)
+# ID: '300:1236' -> Title: "Ajukan" (Font: Poppins SemiBold, Size: 30, Color: #012D1D)
+
+# ### [SECTION 2: ITEM SUMMARY CARD]
+# Deskripsi: Kartu ringkasan barang yang akan disewa.
+# ID: '311:1481' -> Card Container (Background: #FFFFFF, BorderRadius: 40px, Padding: 24px)
+# ID: '311:1501' -> Item Image: "assets/images/iklan.jpg" (BorderRadius: 15px)
+# ID: '311:1486' -> Category: "Camera" (Font: Manrope Bold, Size: 11, Color: #7B5804)
+# ID: '311:1488' -> Title: "Sony a6000 Body Only" (Font: Poppins Bold, Size: 24, Color: #012D1D)
+# ID: '311:1503' -> Price: "Rp. 15,000,00/jam" (Font: Poppins Medium, Size: 16, Color: #7B5804)
+
+# ### [SECTION 3: TENTUKAN DURASI SEWA (FORM GRID)]
+# Deskripsi: Area input grid untuk tanggal dan waktu.
+# ID: '311:1542' -> Section Title: "Tentukan Durasi Sewa" + Calendar Icon
+# Format Input Container: Background #FFFFFF, BorderRadius 20px
+# - ID '300:1230' -> Input Mulai ("15 April 2026")
+# - ID '311:1637' -> Input Selesai ("17 April 2026")
+# - ID '511:1603' -> Input Jam ambil ("19:00")
+# - ID '511:1609' -> Input Jam kembali ("19:00")
+# Teks Label (Color: #585D59, Size: 14), Teks Value (Color: #012D1D, Size: 14)
+
+# ### [SECTION 4: TOTAL DURASI INDICATOR]
+# Deskripsi: Banner penunjuk total waktu penyewaan.
+# ID: '311:1643' -> Container (Background: #C1ECD4, BorderRadius: 24px)
+# ID: '311:1645' -> Number Circle: "3" (Background: #012D1D, Text: #FFFFFF)
+# ID: '311:1648' -> Label: "Total Durasi Sewa" (Font: Plus Jakarta Sans Medium, Size: 14)
+# ID: '311:1650' -> Value: "3 Hari" (Font: Plus Jakarta Sans Bold, Size: 16)
+
+# ### [SECTION 5: PETA LOKASI BARANG]
+# Deskripsi: Komponen peta lokasi yang diambil langsung dari raw YAML (Group 57).
+# ID: '300:1161' -> Title: "Lokasi Barang" (Font: Poppins SemiBold, Size: 16, Color: #012D1D)
+# ID: '311:1722' -> Icon: Location Pin (boxicons:location, Color: #012D1D)
+# ID: '300:1163' -> Map Container (BorderRadius: 30px, Fills: #FFFFFF, Outline: #1B4332 0.5px)
+# ID: '300:1166' -> Map Image Component (Instance ID: '172:1842', BorderRadius: 25px)
+
+# ### [SECTION 6: RINCIAN HARGA (PRICE BREAKDOWN)]
+# Deskripsi: Kartu struk kalkulasi biaya.
+# ID: '311:1686' -> Card Container (Background: #FFFFFF, BorderRadius: 40px)
+# ID: '311:1688' -> Title: "Rincian Harga" (Font: Manrope Bold, Size: 18)
+# - Detail (ID '311:1692'): "Biaya Sewa (3 days)" (Color: #414844) | "Rp. 1.080.000"
+# - Divider (ID '311:1705'): Garis pemisah tipis (#F1EDE8)
+# - Total (ID '311:1707'): "Total Harga" (Font: Manrope ExtraBold) | "Rp. 1.080.000" (Plus Jakarta Sans SemiBold)
+
+# ### [SECTION 7: CATATAN TAMBAHAN (TEXTAREA)]
+# Deskripsi: Input text area opsional sebelum checkout.
+# ID: '311:1726' -> Title: "Catatan Tambahan (Opsional)" (Font: Poppins Bold, Size: 14)
+# ID: '311:1727' -> Textarea Box (Background: #F7F3EE, BorderRadius: 24px, Height: 96px)
+# ID: '311:1729' -> Hint Text: "Contoh: 'Tolong tambahkan charger baterai'" (Color: #717973)
+
+# ### [SECTION 8: BOTTOM ACTION BAR (FIXED CHECKOUT)]
+# Deskripsi: Bar transaksi yang menempel di bawah (BottomNavigationBar replacement).
+# ID: '317:1731' -> Bar Container (Background: #FDF9F4, Padding: 16px 24px 32px 24px)
+# - ID '317:1735' -> Text "TOTAL" (Size 10, Color: #414844, Bold)
+# - ID '317:1737' -> Text "Rp. 1.080.000" (Size 20, Color: #012D1D, Bold)
+# - ID '317:1738' -> Button Background (#012D1D, BorderRadius: 9999px)
+# - ID '317:1739' -> Button Text "Kirim Request" + Icon (Color: #FFFFFF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Accent: "#7B5804" (Gold/Brown)
+# Color_Background: "#FDF9F4" (Cream Canvas)
+# Color_Surface: "#FFFFFF" (Pure White Cards)
+# Color_Surface_Variant: "#F7F3EE" (Input Box Background)
+# Color_Highlight: "#C1ECD4" (Pale Mint Indicator)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES
+# -------------------------------------------------------------
+# 1. Scroll Behavior: Gunakan SingleChildScrollView untuk Section 1 sampai 7.
+# 2. Map Priority: Section 2 (Lokasi Barang) diletakkan di atas Item Summary Card atau sesuai hirarki jika dikelompokkan berdampingan.
+# 3. Floating Bottom Bar: Section 8 WAJIB diposisikan sebagai fixed bottom (bisa menggunakan parameter bottomNavigationBar pada Scaffold atau Positioned di dalam Stack).
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - CHAT SCREEN (WITH TABS)
+# =============================================================
+# Name: SewaIn Aja - Chat List
+# Description: Halaman daftar pesan dengan 3 filter tab (All, Unread, Request) dan Card detail produk.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins (Google Fonts)
+# Icons: Tabler Icons (mail-exclamation), Material Symbols (search)
+# State Management: Dibutuhkan untuk toggle 3 Tabs (All, Unread, Request)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: APPBAR / HEADER]
+# Deskripsi: Header atas halaman.
+# ID: '217:2058' -> Background Layar (Color: #FDF9F4)
+# ID: '635:1593' -> Back Button (Left Align, Icon Color: #012D1D)
+# ID: '217:2059' -> Title: "Chat" (Font: Poppins SemiBold, Size: 30, Color: #012D1D, Alignment: Center)
+
+# ### [SECTION 2: SEARCH BAR]
+# Deskripsi: Kotak pencarian di bawah judul.
+# ID: '217:2060' -> Container (Background: #FFFFFF, Outline/Stroke: #919191 1px, BorderRadius: 12px, Height: 50)
+# ID: '217:2062' -> Leading Icon: Search (Color: #000000)
+# ID: '217:2063' -> Placeholder: "Search . . . " (Font: Poppins Light/300, Size: 12, Color: #000000)
+
+# ### [SECTION 3: TAB FILTER BAR]
+# Deskripsi: Baris yang berisi 3 tombol filter (Row layout, space evenly / gap 10px).
+# --- STYLE LOGIC ---
+# Active State: Background #012D1D, Text Color #FFFFFF, Border #919191 1px
+# Inactive State: Background #FFFFFF, Text Color #414844, Border #919191 1px
+# -------------------
+# - Tab 1 (ID '151:396'): "All" (Font: Poppins Regular, Size: 12, BorderRadius: 12px)
+# - Tab 2 (ID '151:397'): "Unread" (Font: Poppins Regular, Size: 12, BorderRadius: 12px)
+# - Tab 3 (ID '151:399'): "Request" (Font: Poppins Regular, Size: 12, BorderRadius: 12px)
+
+# ### [SECTION 4: CHAT LIST VIEW]
+# Deskripsi: Daftar pesan. Dibungkus dalam ListView.builder / SingleChildScrollView.
+# ID: '217:2070' -> Chat Card Container
+# Container Style: Background #FFFFFF, Border/Stroke #919191 1px, BorderRadius 12px
+#
+# --- UPPER CARD (USER INFO) ---
+# - Avatar (ID '217:2077'): Rounded Rectangle (Radius 5px)
+# - User Name (ID '217:2071'): "JoyKowi" (Font: Poppins SemiBold, Size: 13, Color: #000000)
+# - Message Preview (ID '217:2072'): "Apakah ini masih ada?" (Font: Poppins Light, Size: 12, Color: #000000)
+# - Trailing Icon [CONDITIONAL]: Ikon amplop merah (tabler:mail-exclamation, Color: #FF0000, Size: 24). Tampilkan hanya jika tab "Request" aktif atau data isRequest == true.
+#
+# --- DIVIDER ---
+# - ID '217:2073' -> Horizontal Line (Stroke: #919191 1px)
+#
+# --- LOWER CARD (PRODUCT INFO) ---
+# - Product Thumbnail (ID '217:2075'): Gambar kotak kecil.
+# - Product Name (ID '217:2076'): "Sony A6000" (Font: Poppins Light, Size: 10, Color: #000000)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Background: "#FDF9F4" (Cream Canvas)
+# Color_Surface: "#FFFFFF" (Pure White Cards)
+# Color_Border: "#919191" (Medium Gray for outlines)
+# Color_Alert: "#FF0000" (Red for exclamation mail icon)
+# Color_Text_Primary: "#000000" (Black)
+# Color_Text_Inactive: "#414844" (Dark Gray)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. State Management (Tabs): Buat variabel `selectedTab` (String atau int) untuk mengubah style tab (Active/Inactive) saat ditekan, dan untuk memfilter list chat di bawahnya.
+# 2. Scroll Behavior: Gunakan `ListView.builder` dengan `shrinkWrap: true` dan `physics: BouncingScrollPhysics()` untuk area list chat.
+# 3. CONTENT WHITESPACE (NAVBAR FIX): WAJIB berikan `padding: EdgeInsets.only(bottom: 110)` pada area paling bawah dari ListView. Karena halaman ini dirender di belakang Custom Floating Navbar, padding ini memastikan chat paling bawah tidak tertutup oleh pill navbar hijau.
+# 4. Conditional UI: Ikon amplop merah hanya muncul pada mode tab "Request" (Sesuai gambar referensi kiri).
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - ROOM CHAT SCREEN (MULTI-ITEM)
+# =============================================================
+# Name: SewaIn Aja - Room Chat Screen
+# Description: Halaman obrolan tunggal per Owner yang mendukung diskusi 
+#              multi-barang. Dilengkapi bubble chat khusus untuk Item Card, 
+#              Rating, Quick Replies, dan Item Context Preview di area input.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & Plus Jakarta Sans
+# Icons: Material Icons (arrow_back, more_vert, close, add_circle_outline, sentiment_satisfied, send, star)
+# Layout: Scaffold -> Column (AppBar, Expanded ListView, Input Area)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+
+# --- 1A. TOP APP BAR ---
+# Widget: AppBar (elevation: 0, bg: #FFF8EF)
+# Leading: IconButton arrow_back (#012D1D)
+# Title (Row):
+#   - Avatar (Circle 40x40)
+#   - Column: Text "Accor Heavy Tools" (Poppins Bold 16, #012D1D) + Text "Online" (Plus Jakarta Sans 12, #10B981)
+# Actions: IconButton more_vert (#012D1D)
+
+# --- 1B. CHAT MESSAGES AREA (LISTVIEW) ---
+# Widget: Expanded -> ListView (padding horizontal 16px)
+# 
+#   # Komponen 1: Security Warning Banner (Paling Atas)
+#   - Text: "Hati-hati penipuan! Mohon tidak bertransaksi di luar aplikasi SewaIn Aja dan tidak memberikan data pribadi..." (Plus Jakarta Sans Medium 11, #414844, textAlign center, margin 16px)
+#   - Text Link: "Baca Panduan Keamanan" (bold, warna #012D1D)
+#
+#   # Komponen 2: Date Separator
+#   - Center Text: "24 March, 2026" (Plus Jakarta Sans Medium 12, #414844 60% opacity, margin vertical 16px)
+#
+#   # Komponen 3: ITEM CARD BUBBLE (Dikirim ke dalam chat)
+#   - Layout: Container max lebar 80%, margin bottom 8px, align Center Right (jika kita yg share)
+#   - Styling: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 12px
+#   - Item Info Row (Top):
+#       - Image: 64x64, radius 8px, dengan overlay label "Tersedia" (bg hitam transparan)
+#       - Column: 
+#           - Title: "Bor Listrik Bosch..." (Plus Jakarta Sans SemiBold 14, #012D1D, maxLines 2)
+#           - Price: "Rp45.000/hari" (Manrope Bold 14, #012D1D)
+#   - Action Row (Bottom, marginTop 12px): 
+#       - Button "Sewa Sekarang" (Expanded, bg #012D1D, text #FFFFFF, radius 8px, padding 8px)
+#
+#   # Komponen 4: Rating Info Bubble (Sistem)
+#   - Layout: Container width full, margin vertical 16px
+#   - Styling: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (Center):
+#       - Row: Text "Kamu kasih nilai " + 5 Icon star (#F8BD00)
+#       - Text: "Sangat puas" (Plus Jakarta Sans Medium 14, #10B981)
+#
+#   # Komponen 5: Standard Text Bubble (Sender/Kanan)
+#   - Container: bg #C1ECD4 (Light Mint), borderRadius topLeft 16, topRight 4, bottomLeft 16, bottomRight 16
+#   - Text: "Hai, barang ini ready?" (#012D1D) + Time "03:31" (align Right)
+
+# --- 1C. BOTTOM INPUT AREA (COMPLEX) ---
+# Widget: SafeArea -> Column (fixed at bottom)
+# Styling: bg #FFFFFF, border top 1px solid rgba(1, 45, 29, 0.1)
+#
+#   # Bagian 1: ITEM CONTEXT PREVIEW (Nempel di atas input)
+#   - Layout: Container padding 8px 16px, borderBottom tipis
+#   - Row:
+#       - Image: 32x32, radius 4px (Thumbnail produk)
+#       - Column (Expanded): Text "Kabel Type C to C..." (12px) + Text "Rp220.000" (Bold 12px)
+#       - IconButton close (size 16) -> Untuk batal nanya soal item ini.
+#
+#   # Bagian 2: QUICK REPLIES CHIPS (Scrollable Horizontal)
+#   - Layout: ListView horizontal, height 40, padding 8x16
+#   - Chip Item: bg #F3F4F6, radius 16px, padding 8x12
+#   - Text: "Hai, barang ini ready?", "Bisa dikirim hari ini?" (#414844)
+#
+#   # Bagian 3: MAIN TEXT INPUT ROW
+#   - Layout: Row (padding 12px 16px, gap 12px)
+#   - Add Icon: IconButton add_circle_outline (#414844)
+#   - Input Field (Expanded): 
+#       - Container bg #F3F4F6, radius 24px, row -> TextField (hint: "Tulis pesan...") + Icon sentiment_satisfied
+#   - Send Button: Icon send (#012D1D)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF"
+# Color_Chat_Bg: "#FFFFFF"
+# Color_Bubble_Sender: "#C1ECD4" (Berubah jadi hijau muda agar teks tetap bisa gelap/terbaca jelas)
+# Color_Bubble_Receiver: "#F3F4F6"
+# Color_Primary: "#012D1D"
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Modular Context Preview: Bagian "Item Context Preview" di area input harus bersifat kondisional (hanya muncul jika user me-navigasi ke chat langsung dari halaman detail sebuah produk). Jika di-close ('X'), preview hilang.
+# 2. Bubble Chat Types: Terdapat berbagai tipe bubble (Text biasa, Item Card, Rating System). AI harus memisahkan komponen ini menjadi custom widget terpisah agar rapi.
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - EDIT PROFILE SCREEN
+# =============================================================
+# Name: SewaIn Aja - Edit Profile
+# Description: Halaman pengaturan profil pengguna dengan avatar, form data diri, dan peta alamat.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & Plus Jakarta Sans
+# Icons: Iconify/Vector (Back, Edit icon)
+# Component: Map Component (Instance '172:1842')
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [SECTION 1: APPBAR / HEADER]
+# ID: '536:1610' -> Background Layar (Color: #FDF9F4)
+# ID: '536:1764' -> Back Button (Left Align, Icon Color: #012D1D)
+# ID: '536:1766' -> Title: "Edit Profile" (Font: Poppins SemiBold, Size: 30, Color: #1B4332, Align: Center)
+# ID: '536:1767' -> Horizontal Divider Line di bawah header (Stroke: 1px)
+
+# ### [SECTION 2: AVATAR EDIT SECTION]
+# Deskripsi: Foto profil bulat dengan tombol edit melayang di kanan bawah.
+# Posisi: Center alignment di bawah header.
+# ID: '536:1925' -> Avatar Image (BorderRadius: 102px / Circular)
+# ID: '536:1932' -> Edit Badge Overlay (Gunakan widget Stack):
+#    - ID '536:1931' -> Background Kotak (Color: #FFFFFF, BorderRadius: 6px)
+#    - ID '536:1929' -> Edit Icon (Color: #012D1D)
+
+# ### [SECTION 3: PROFILE FORM CARD]
+# Deskripsi: Kartu putih besar yang membungkus semua form data diri pengguna.
+# ID: '536:1933' -> Card Container (Background: #FFFFFF, BorderRadius: 22px, Padding: 20px)
+
+# --- 3A. BARIS DATA: NAMA ---
+# ID: '536:1936' -> Row Background (Warna visual Krem Lembut/Soft Beige, Radius: 11px)
+# ID: '536:1945' -> Label: "Nama" (Font: Plus Jakarta Sans SemiBold, Size: 16, Color: #1B4332)
+# ID: '536:2158' -> Value: "Han Soo Hee" (Font: Poppins Regular, Size: 14, Color: #000000, Align: Right)
+
+# --- 3B. BARIS DATA: EMAIL ---
+# ID: '536:1937' -> Row Background (Warna visual Krem Lembut/Soft Beige, Radius: 11px)
+# ID: '536:1946' -> Label: "Email" (Font: Plus Jakarta Sans SemiBold, Size: 16, Color: #1B4332)
+# ID: '536:2159' -> Value: "hansoohee@gmail.com" (Font: Poppins Regular, Size: 14, Color: #000000, Align: Right)
+
+# --- 3C. BARIS DATA: NO. TELPON ---
+# ID: '536:1939' -> Row Background (Warna visual Krem Lembut/Soft Beige, Radius: 11px)
+# ID: '536:1948' -> Label: "No. Telpon" (Font: Plus Jakarta Sans SemiBold, Size: 16, Color: #1B4332)
+# ID: '536:2161' -> Value: "+62081234567890" (Font: Poppins Regular, Size: 14, Color: #000000, Align: Right)
+
+# --- 3D. BARIS DATA: ALAMAT & MAP ---
+# Deskripsi: Baris ini lebih tinggi karena memuat label teks dan gambar peta di bawahnya.
+# ID: '536:1941' -> Row Background (Warna visual Krem Lembut/Soft Beige, Radius: 11px)
+# ID: '536:1950' -> Label: "Alamat" (Font: Plus Jakarta Sans SemiBold, Size: 16, Color: #1B4332)
+# ID: '536:2186' -> Value: "Jl. Gondang Rayam..." (Font: Poppins Regular, Size: 14, Color: #000000, Align: Right)
+# ID: '536:2196' -> Map Image Component (Instance '172:1842', BorderRadius: 10px, Outline: #012D1D 0.5px). Posisi di bawah teks alamat.
+
+# ### [SECTION 4: BOTTOM ACTION BAR (FIXED)]
+# Deskripsi: Tombol konfirmasi perubahan.
+# ID: '536:2157' -> Group Tombol (Posisikan melayang di paling bawah layar / bottomNavigationBar)
+# ID: '536:2119' -> Button Background (Color: #1B4332, BorderRadius: 25px / Pill Shape)
+# ID: '536:2156' -> Button Text: "Konfirmasi" (Font: Plus Jakarta Sans SemiBold, Size: 16, Color: #FFFFFF)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Primary: "#1B4332" (Medium Forest Green - for Buttons & Titles)
+# Color_Primary_Dark: "#012D1D" (Deep Forest Green - for Icons)
+# Color_Background: "#FDF9F4" (Cream Canvas)
+# Color_Surface: "#FFFFFF" (Pure White Card)
+# Color_Row_Bg: "#F0ECE1" (Soft Beige - gunakan warna visual pengganti #7B5804 yang transparan di figma)
+# Color_Text_Main: "#000000" (Black)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Page Layout: Gunakan Scaffold dengan background #FDF9F4.
+# 2. Scroll Behavior: Gunakan SingleChildScrollView. Konten di dalamnya (Avatar & Form Card) harus diberi margin bawah (sekitar 100px) agar tidak tertutup oleh tombol Konfirmasi.
+# 3. Avatar Badge: Gunakan widget `Stack` untuk menumpuk gambar profil bundar dengan container putih kecil (badge edit) di `Positioned(bottom: 0, right: 0)`.
+# 4. Form Rows Layout: Setiap baris input di dalam Card putih adalah `Container` dengan padding. Gunakan `Row` dengan `MainAxisAlignment.spaceBetween` untuk menyejajarkan Label (kiri) dan Value (kanan).
+# 5. Fixed Button: Letakkan Section 4 di parameter `bottomNavigationBar` Scaffold, beri SafeArea agar tidak tertutup navigasi OS.
+
+# ==========================================
+# FINAL AI PROMPT SPEC: SEWAINAJA NOTIFICATIONS
+# (Combined: Recent Activity & Unread Tabs)
+# ==========================================
+# screen_info:
+#   name: "NotificationScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     title: "Notifications"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#012D1D" }
+#
+# components:
+#   tabs:
+#     type: "TabBar"
+#     indicator_color: "#012D1D"
+#     indicator_weight: 2.0
+#     items:
+#       - label: "Recent activity"
+#       - label: "Unread"
+#
+#   tab_views:
+#     # ----------------------------------------
+#     # TAB 1: RECENT ACTIVITY
+#     # ----------------------------------------
+#     recent_activity:
+#       type: "SectionedListView"
+#       section_header_style: { family: "Poppins", size: 14, weight: 400, color: "#000000" } # "Today", "Yesterdaty"
+#       item_background: "#FFFFFF"
+#       item_padding: { horizontal: 16, vertical: 16 }
+#       text_primary: "RichText (Bold name, regular action)"
+#       text_time: { family: "Poppins", size: 12, color: "#717973" }
+#
+#     # ----------------------------------------
+#     # TAB 2: UNREAD
+#     # ----------------------------------------
+#     unread:
+#       type: "SectionedListView"
+#       section_header_style: { family: "Poppins", size: 14, weight: 400, color: "#000000" }
+#       item_style:
+#         background_color: "#F6F7F9"
+#         border_color: "#ECEDF2"
+#         border_width: 1.0
+#         padding: { horizontal: 24, vertical: 12 }
+#         margin_bottom: 12 # Jarak antar card
+#       content_layout: "Row"
+#       elements:
+#         - avatar:
+#             size: 40
+#             shape: "circle"
+#             background_color: "#282A37"
+#             text_style: { family: "Poppins", size: 14, weight: 700, color: "#FFFFFF" }
+#         - text_column:
+#             spacing: 4
+#             title: { family: "Poppins", size: 14, weight: 700, color: "#282A37" } # cth: "Aminah"
+#             subtitle: { family: "Poppins", size: 12, weight: 300, color: "#282A37" } # cth: "Permintaan sewa"
+#             time: { family: "Poppins", size: 13, weight: 400, color: "#515978" } # cth: "3 hours ago"
+#         - trailing_indicator:
+#             type: "circle"
+#             size: 10
+#             color: "#012D1D" # Titik hijau notifikasi belum dibaca
+#
+# design_tokens:
+#   colors:
+#     primary_dark: "#012D1D"
+#     bg_surface: "#FDF9F4"
+#     card_bg: "#F6F7F9"
+#     card_border: "#ECEDF2"
+#     text_dark: "#282A37"
+#     text_time: "#515978"
+#     black: "#000000"
+
+# ==========================================
+# FINAL AI PROMPT SPEC: SEWAINAJA SETTINGS / PROFILE
+# (Based exactly on image_dcc60e.png)
+# ==========================================
+# screen_info:
+#   name: "ProfileSettingsScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     title: "Settings"
+#     title_style: { family: "Poppins", size: 24, weight: 600, color: "#012D1D" }
+#     center_title: true
+#
+# components:
+#   # ----------------------------------------
+#   # 1. PROFILE CARD
+#   # ----------------------------------------
+#   profile_card:
+#     background_color: "#FFFFFF"
+#     border_radius: 16.0
+#     padding: 16.0
+#     margin: { horizontal: 20, top: 16, bottom: 24 }
+#     header:
+#       layout: "Row"
+#       avatar:
+#         size: 60
+#         shape: "circle"
+#         badge: { icon: "verified", color: "#FFFFFF", background: "#012D1D", position: "bottom_right" }
+#       user_info:
+#         name: "Han Soo Hee"
+#         name_style: { family: "Poppins", size: 20, weight: 600, color: "#1B4332" }
+#         rating_row:
+#           stars: 5 # Warna bintang #F8BD00
+#           text: "4.9 (123)"
+#           text_style: { family: "Poppins", size: 12, weight: 500, color: "#000000" }
+#     stats_box:
+#       background_color: "#F1EDE8"
+#       border_radius: 10.0
+#       margin_top: 16.0
+#       padding: 12.0
+#       layout: "Row with Vertical Dividers"
+#       divider_color: "#D5BF87"
+#       columns:
+#         - title: "TOTAL SEWA", value: "45"
+#         - title: "LISTING", value: "20"
+#         - title: "RATING", value: "4.9"
+#       styles:
+#         title: { family: "Poppins", size: 10, weight: 500, color: "#414844" }
+#         value: { family: "Poppins", size: 16, weight: 700, color: "#000000" }
+#
+#   # ----------------------------------------
+#   # 2. ACTIVE RENTAL SECTION
+#   # ----------------------------------------
+#   active_rental:
+#     margin: { horizontal: 20, bottom: 24 }
+#     header:
+#       layout: "Row Space Between"
+#       title: "Sedang Berlangsung"
+#       title_style: { family: "Plus Jakarta Sans", size: 14, weight: 600, color: "#000000" }
+#       action: "More"
+#       action_style: { family: "Plus Jakarta Sans", size: 14, weight: 600, color: "#000000" }
+#     card:
+#       margin_top: 12.0
+#       background_color: "#FFFFFF"
+#       border_radius: 16.0
+#       padding: 12.0
+#       layout: "Row"
+#       image: { size: 60, border_radius: 12.0 }
+#       details:
+#         title: "Sony Camera a6000"
+#         title_style: { family: "Poppins", size: 14, weight: 600, color: "#414844" }
+#         subtitle: "Pemilik: Han so Hee"
+#         subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#         date: "8 Jan - 10 Jan 2025"
+#         date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       status_badge:
+#         text: "Aktif"
+#         text_style: { family: "Poppins", size: 10, weight: 600, color: "#000000" }
+#         background_color: "#F87400"
+#         border_radius: 8.0
+#
+#   # ----------------------------------------
+#   # 3. MENU LIST SECTION
+#   # ----------------------------------------
+#   menu_list:
+#     background_color: "#F7F3EE"
+#     border_radius: 16.0
+#     margin: { horizontal: 20, bottom: 100 } # Bottom margin besar agar tidak tertutup floating navbar
+#     items:
+#       - title: "Edit Profil", icon: "edit"
+#       - title: "Barang Saya", icon: "inventory_2"
+#       - title: "Favorit Saya", icon: "favorite_border"
+#       - title: "Riwayat", icon: "history"
+#       - title: "Pengaturan", icon: "settings"
+#     item_styles:
+#       padding: { horizontal: 16, vertical: 12 }
+#       icon_box_bg: "#FFFFFF"
+#       icon_box_radius: 8.0
+#       icon_color: "#012D1D"
+#       title_style: { family: "Plus Jakarta Sans", size: 14, weight: 600, color: "#1C1C19" }
+#       trailing_icon_color: "#C1C8C2"
+#
+# design_tokens:
+#   colors:
+#     primary_dark: "#012D1D"
+#     bg_main: "#FDF9F4"
+#     menu_bg: "#F7F3EE"
+#     stats_bg: "#F1EDE8"
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - HOME SCREEN (FULL)
+# =============================================================
+# Name: SewaIn Aja - Home Screen
+# Description: Halaman utama dengan header profil, search bar, dan DraggableScrollableSheet
+#              berisi promo banner, peta lokasi, new arrivals slider, dan grid produk terdekat.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & BebasNeue
+# Icons: Material Icons (notifications, search, location_on)
+# Animation: animate_do (FadeInUp untuk product cards)
+# Map: flutter_map + latlong2 (ReusableMapCard)
+# State: SharedPreferences (lokasi default user)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: FIXED GREEN BACKGROUND HEADER]
+# ID: Background -> Scaffold backgroundColor: #012D1D
+# Posisi: Positioned(top: 0, left: 0, right: 0) + SafeArea
+
+# --- 1A. PROFILE ROW ---
+# Layout: Row, padding horizontal 24px
+# - Avatar (ID: profile_avatar): Circle 45x45, border putih 2px, asset: profile_user.png
+# - Name (ID: profile_name): "Han Soo Hee" (Poppins SemiBold 14, #FDF9F4)
+# - Location Row: Icon location_on 12px + Text lokasi dinamis dari SharedPreferences
+#   (Poppins 11, #FDF9F4, maxLines: 1, ellipsis)
+# - Notification Button: Circle container (white 15% opacity), icon notifications_none_rounded
+#   onTap: Navigator.push ke NotificationScreen
+
+# --- 1B. SEARCH BAR ---
+# Layout: Container, margin horizontal 24px, borderRadius 12px
+# Background: #FFFFFF, boxShadow: black 10% blur 10
+# TextField: hint "Search....", prefixIcon search (#012D1D), Poppins 14
+
+# ### [LAYER 2: DRAGGABLE SCROLLABLE SHEET]
+# Widget: DraggableScrollableSheet
+# initialChildSize: 0.76 | minChildSize: 0.76 | maxChildSize: 1.0 | snap: true
+# Background: #FFF8EF, borderRadius top 30px
+
+# --- DRAG HANDLE ---
+# Center Container: width 40, height 5, color #D6C7A1 50%, radius 10, margin vertical 12
+
+# --- 2A. PROMO BANNER ---
+# Container: padding 24, borderRadius 20, DecorationImage: Iklan.jpg (cover + darken overlay)
+# - Title: "SEWAINAJA" (BebasNeue 28, letterSpacing 1, #FFF8EF)
+# - Subtitle: "If you can rent it? Why\nwould you buy it?" (Poppins SemiBold 14, white)
+# - Button: "EXPLORE MORE" (ElevatedButton, bg #FDF9F4, fg #012D1D, radius 10)
+#   onTap: Navigator.push ke ItemDetailScreen
+
+# --- 2B. LOCATION PREVIEW (ELEGANT LIGHT MAP) ---
+# Title: "Your Current Location" (Poppins Bold 20, #414844) -> Diletakkan di luar peta (di atasnya)
+# Layout: Container, height 180, margin horizontal 24px, borderRadius 24px, clipBehavior: antiAlias
+# Border: 1px solid rgba(1, 45, 29, 0.2) # Border hijau tua tipis
+# Map Background: FlutterMap / GoogleMap (Standar/Light Theme)
+# Overlays (Menggunakan Stack di atas Map):
+#   - Top Left Badge (Positioned top: 12, left: 12):
+#       - Container: bg #FFFFFF 85% opacity (berikan efek BackdropFilter blur), borderRadius 20, padding 8x12
+#       - Text: "20:10 WIB" (waktu dinamis) (Poppins SemiBold 12, #012D1D)
+#   - Top Right Action (Positioned top: 12, right: 12):
+#       - Container: bentuk Circle, bg #FFFFFF 85% opacity (dengan blur), padding 8
+#       - Icon: open_in_full atau zoom_out_map (#012D1D, size 16)
+#   - Bottom Info Bar (Positioned bottom: 12, left: 12, right: 12):
+#       - Container: bg #012D1D (Solid Deep Forest Green), borderRadius 16, padding 12x16, boxShadow tipis
+#       - Layout: Row (spaceBetween, crossAxisAlignment: center)
+#           - Left (Row): 
+#               - Icon: location_on (#FDF9F4, size 16)
+#               - Margin: SizedBox width 8
+#               - Text: "Semarang, Indonesia" (lokasi dinamis) (Poppins Medium 14, #FDF9F4)
+#           - Right: 
+#               - Text: "5 km" (jarak dinamis) (Poppins Regular 12, rgba(253, 249, 244, 0.7))
+# onTap: Navigator.push ke MapExploreScreen
+
+# --- 2C. NEW ARRIVALS SECTION ---
+# Header: "New Arrivals" + "See More..." link -> Navigator.push ke NewArrivalsScreen
+# Slider: SizedBox height 210, ListView horizontal, padding 24, BouncingScrollPhysics
+# Products (3 items):
+#   - Sony W830 | Rp.120,000 | 4.8 | assets/images/sony_camera.png
+#   - Sony Dual-Sense PS5 | Rp.45,000 | 4.8 | assets/images/ps5_controller.png
+#   - Apple Airpods Max 2 | Rp.45,000 | 4.8 | assets/images/airpods_max.png
+# Animation: FadeInUp per item (delay 100ms)
+# onTap: Navigator.push ke ItemDetailScreen
+
+# --- 2D. MOST TRUSTED NEARBY SECTION ---
+# Header: "Most Trusted Nearby" (showSeeMore: false)
+# Category Filter: Horizontal pill chips (All, Tech, Power Tools, Outfit, Camp Tools, Sports, Cook)
+#   Active: gradient #012D1D -> #0D5C3A, text white, Poppins SemiBold 13
+#   Inactive: border #012D1D 45% opacity, text #012D1D, Poppins Medium 13
+# Grid: SliverGrid, crossAxisCount 2, spacing 16, childAspectRatio 0.65
+# Animation: FadeInUp per item (delay 50ms * index % 4)
+# onTap: Navigator.push ke ItemDetailScreen(itemName, pricePerHour)
+
+# =============================================================
+# ## PRODUCT DATA PER KATEGORI
+# =============================================================
+# Tech (6): Vivo Y15s, Realme C55, EOS 5D Mark IV, Sony FX30, Asus Zenfone 12 Ultra, Nikon Coolpix B500
+# Power Tools (6): Bor Listrik, Mesin Gerinda, Gergaji Circular, Obeng Listrik, Mesin Serut, Mesin Amplas
+# Outfit (6): Kemeja Panjang Krem, Kemeja Coklat, Jas Hitam, Jas Abu-Abu, Celana Jeans, Celana Corduroy
+# Camp Tools (6): Tenda Dome, Tas Carrier, Sleeping Bag, Kompor Camping, Lentera LED, Matras Angin
+# Cook (4): Panci Camping Set, Kompor Portable, Set Pisau Dapur, Grill Pan BBQ
+# Sports (4): Sepeda Gunung MTB, Treadmill Elektrik, Raket Tenis Wilson, Set Stik Golf
+# All: Gabungan semua kategori di atas
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Header_Bg: "#012D1D" (Deep Forest Green - fixed background)
+# Color_Sheet_Bg: "#FFF8EF" (Cream - draggable sheet)
+# Color_Text_Light: "#FDF9F4" (Off-White - teks di header)
+# Color_Text_Dark: "#414844" (Dark Gray - teks di sheet)
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Gradient_End: "#0D5C3A" (Vibrant Emerald - category chip active)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Stack Structure: Layer 1 (fixed header) + Layer 2 (DraggableScrollableSheet) dalam Stack.
+# 2. Scaffold backgroundColor: #012D1D agar header tidak ada gap putih saat sheet ditarik.
+# 3. Location: Dimuat dari SharedPreferences saat initState, lalu di-sync dari API (AddressService).
+# 4. Category Filter State: selectedCategory (String) di-setState saat chip ditekan,
+#    _getFilteredProducts() mengembalikan list sesuai kategori aktif.
+# 5. Grid Bottom Padding: SliverPadding(bottom: 40) di akhir CustomScrollView.
+# 6. FadeInUp Key: Gunakan ValueKey("${selectedCategory}_${product.name}_$index")
+#    agar animasi re-trigger saat kategori berganti.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SEARCH SCREEN
+# =============================================================
+# Name: SewaIn Aja - Search Screen
+# Description: Halaman pencarian yang muncul saat search bar di Home Page ditekan.
+#              Kontainer putih menyesuaikan diri menjadi panel pencarian penuh
+#              dengan riwayat, kategori populer, dan rekomendasi barang.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins
+# Icons: Material Icons (search, history, close, arrow_back, trending_up)
+# Animation: animate_do (FadeInUp untuk hasil pencarian)
+# State: SharedPreferences (untuk menyimpan riwayat/recent searches)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: FIXED GREEN BACKGROUND HEADER]
+# ID: Background -> Scaffold backgroundColor: #012D1D
+# Posisi: SafeArea (Menjaga ilusi seolah ini adalah Header Home Page)
+
+# --- 1A. ACTIVE SEARCH BAR ROW ---
+# Layout: Row, padding horizontal 24px, padding top 16px, padding bottom 16px
+# - Back Button: Icon arrow_back (#FDF9F4), onTap: Navigator.pop (Kembali ke Home)
+# - Search Input: Expanded Container, margin left 16px, borderRadius 12px
+#   Background: #FFFFFF, boxShadow: none (bersih)
+#   TextField:
+#     - autoFocus: true (Keyboard langsung muncul)
+#     - hintText: "Cari barang sewaan..." (Poppins 14, #717973)
+#     - prefixIcon: search (#012D1D)
+#     - suffixIcon: IconButton close/clear (#717973) -> muncul jika teks tidak kosong
+#   Font Input: Poppins 14, warna #012D1D
+
+# ### [LAYER 2: SEARCH CONTENT SHEET (WHITE CONTAINER)]
+# Widget: Expanded -> Container (mengisi seluruh sisa layar di bawah search bar)
+# Background: #FFF8EF, borderRadius: top-left 30px, top-right 30px
+# Layout: SingleChildScrollView dengan padding 24px
+# Efek Transisi: Hero animation / FadeIn agar mulus dari Home Page
+
+# --- 2A. RECENT SEARCHES (RIWAYAT PENCARIAN) ---
+# Header Row:
+#   - Title: "Riwayat Pencarian" (Poppins SemiBold 16, #414844)
+#   - Action: "Hapus Semua" (Poppins Medium 12, #717973) -> onTap: clear history
+# List (Wrap):
+#   - spacing: 8, runSpacing: 8, margin top 12px
+#   - Item (Chip/Pill):
+#     - Icon history 14px (#717973) + text "Kamera Sony", "Tenda Dome"
+#     - Background: #FDF9F4, Border: 1px solid #E6E2DD, borderRadius: 20px
+#     - Font: Poppins Medium 13, #414844
+
+# --- 2B. POPULAR CATEGORIES (KATEGORI POPULER) ---
+# Header: "Kategori Populer" (Poppins SemiBold 16, #414844), margin top 28px
+# List (Wrap):
+#   - spacing: 10, runSpacing: 10, margin top 12px
+#   - Item (Chip/Pill):
+#     - Text: "Tech", "Camp Tools", "Outfit"
+#     - Background: #012D1D dengan opacity 10%, borderRadius: 8px
+#     - Font: Poppins SemiBold 13, #012D1D
+
+# --- 2C. RECOMMENDED FOR YOU (MUNGKIN ANDA SUKA) ---
+# Header Row:
+#   - Icon trending_up (#7B5804) + Title: "Rekomendasi Sewa" (Poppins SemiBold 16, #414844)
+#   - margin top: 28px
+# List: ListView.builder (shrinkWrap: true, physics: NeverScrollableScrollPhysics)
+# Items (Data sinkron dengan Home):
+#   - Container: padding vertical 12px, border bottom 0.5px solid #E6E2DD
+#   - Layout: Row
+#   - Image: 50x50, borderRadius 8px, object fit cover (assets/images/...)
+#   - Text Column (Expanded, margin left 12px):
+#       - Title: "Sony Dual-Sense PS5" (Poppins SemiBold 14, #012D1D, maxLines 1)
+#       - Subtitle: "Tech • Rp.45,000/hari" (Poppins Regular 12, #717973)
+#   - Trailing: Icon call_made / arrow_forward_ios (14px, #C1C8C2)
+# Animation: FadeInUp per item (delay 50ms * index)
+# onTap: Navigator.push ke ItemDetailScreen
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Header_Bg: "#012D1D" (Deep Forest Green)
+# Color_Sheet_Bg: "#FFF8EF" (Cream)
+# Color_Text_Light: "#FDF9F4" (Off-White)
+# Color_Text_Dark: "#414844" (Dark Gray)
+# Color_Text_Muted: "#717973" (Gray)
+# Color_Border: "#E6E2DD" (Soft Cream Border)
+# Color_Accent: "#7B5804" (Earthy Brown)
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - CATEGORIES SCREEN
+# =============================================================
+# Name: SewaIn Aja - Categories
+# Description: Halaman grid 2 kolom berisi 6 kategori utama dengan gambar latar dan gradient overlay berwarna.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+#
+# screen_info:
+#   background_color: "#FDF9F4"
+#   app_bar: { title: "Categories", font: Poppins SemiBold 28, color: #012D1D }
+#   back_button: { icon: arrow_back_rounded, color: #012D1D }
+#
+# grid:
+#   crossAxisCount: 2
+#   mainAxisSpacing: 16
+#   crossAxisSpacing: 16
+#   childAspectRatio: 0.85
+#   padding: { horizontal: 24, vertical: 16 }
+#
+# category_cards:
+#   - title: "Tech"      | image: tech_category.jpg      | gradient: #00FFE1 (bottom->top)
+#   - title: "Outfit"    | image: outfit_category.jpg    | gradient: #E6D399 (bottom->top)
+#   - title: "Power Tools"| image: power_tools_category.jpg| gradient: #8A38F5 (bottom->top)
+#   - title: "Camp Tools"| image: camp_tools_category.jpg | gradient: #22C23A (bottom->top)
+#   - title: "Sports"    | image: sports_category.jpg    | gradient: #F59D38 (bottom->top)
+#   - title: "Cook"      | image: cook_category.jpg      | gradient: #F53838 (bottom->top)
+#
+# card_style:
+#   borderRadius: 10px
+#   title_font: BebasNeue 40, color: #FFFFFF, align: bottomLeft, padding: 16px
+#   gradient_stops: [0.0 (100%), 0.2 (50%), 1.0 (0%)]
+#   onTap: Navigator.push ke masing-masing CategoriesXxxScreen
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - NEW ARRIVALS SCREEN
+# =============================================================
+# Name: SewaIn Aja - New Arrivals
+# Description: Halaman grid 2 kolom produk terbaru dengan AppBar glassmorphism blur.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+#
+# screen_info:
+#   background_color: "#FDF9F4"
+#   extendBodyBehindAppBar: true
+#
+# app_bar:
+#   background: "#FDF9F4" 60% opacity + BackdropFilter blur(12)
+#   title: "New Arrivals" (Poppins SemiBold 26, #012D1D)
+#   back_button: arrow_back_rounded, color: #012D1D
+#   bottom_divider: gradient #012D1D 0->28%->0
+#
+# grid:
+#   crossAxisCount: 2
+#   crossAxisSpacing: 16
+#   mainAxisSpacing: 16
+#   childAspectRatio: 0.65
+#   padding: top = SafeArea + 80 + 16, others: 16
+#   itemCount: 12 (generated dari 3 base products x 4)
+#
+# base_products:
+#   - Sony W830 Camera | Rp.120,000 | 4.8(292) | sony_camera.png
+#   - Sony Dual-Sense PS5 | Rp.45,000 | 4.8(180) | ps5_controller.png
+#   - Apple Airpods Max 2 | Rp.45,000 | 4.9(340) | airpods_max.png
+#
+# onTap: Navigator.push ke ItemDetailScreen
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - ADD PRODUCT SCREEN
+# =============================================================
+# Name: SewaIn Aja - Add Product
+# Description: Halaman form tambah barang ke marketplace dengan upload foto, form info, dan peta lokasi.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+#
+# screen_info:
+#   background_color: "#FDF9F4"
+#   app_bar: { title: "Add Product", font: Poppins Bold 28, color: #012D1D }
+#   back_button: { circle_bg: #012D1D, icon: arrow_back_rounded, icon_color: #FDF9F4 }
+#
+# bootstrap:
+#   - Fetch /categories dan /addresses dari API (Bearer token dari SharedPreferences)
+#   - Loading state: CircularProgressIndicator saat bootstrap
+#
+# section_2_foto_barang:
+#   header: "Foto Barang" (Poppins SemiBold 16, #012D1D) + "Maks 5 Foto" (#7B5804)
+#   row_1: 2 slot besar (height 180, radius 40, bg white, icon camera_enhance_outlined)
+#   row_2: 3 slot kecil (height 55, radius 40, bg white, icon add)
+#   slot_text: "Unggah Foto" (Plus Jakarta Sans Bold 13) + "JPG, PNG (Max 5MB)" (size 9)
+#
+# section_3_form_card:
+#   container: bg white, radius 40, padding 24
+#   fields:
+#     - Nama Barang: TextField, bg #D9D9D9, radius 12
+#     - Deskripsi Barang: TextField maxLines 3, bg #D9D9D9, radius 12
+#     - Kategori (Dropdown API) + Kondisi (Baru/Sangat Baik/Baik/Cukup): Row 2 kolom
+#     - Harga Sewa (prefix "Rp.") + Jam/Hari (Jam/Hari/Minggu): Row 2 kolom
+#   label_style: Poppins SemiBold 14, #012D1D
+#   input_bg: #D9D9D9, hint_color: #717973
+#
+# section_4_lokasi:
+#   toggle: "Alamat Tersimpan" | "Titik Baru" (pill button, active: #012D1D)
+#   if saved: Dropdown alamat dari API
+#   map: ReusableMapCard(interactive: !_useSavedAddress, showCenterPin: true)
+#   container: bg white, radius 30, border #1B4332 0.5px
+#
+# section_5_button:
+#   "Tambah ke Marketplace" (Poppins Bold 16, white, bg #012D1D, radius 180, height 56)
+#   onTap: POST /items ke API dengan token
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - MAP EXPLORE SCREEN
+# =============================================================
+# Name: SewaIn Aja - Map Explore
+# Description: Halaman peta interaktif untuk menjelajahi barang terdekat dengan filter kategori dan radius.
+# Theme: Full-screen map dengan overlay UI
+#
+# map:
+#   widget: FlutterMap + TileLayer (OpenStreetMap)
+#   initial_center: GPS user / fallback Semarang (-6.966667, 110.416664)
+#   initial_zoom: 13
+#   center_pin: Icon place_rounded, #012D1D, size 40 (fixed center)
+#   radius_circle: CircleLayer, color #2F6743 15%, border #012D1D 2px
+#
+# top_overlay (SafeArea):
+#   - Back button: _ActionBtn (white, radius 16, icon arrow_back_ios_new)
+#   - Search bar: TextField (Poppins 13, hint "Cari lokasi...", onSubmitted: Nominatim search)
+#   - Category chips: horizontal ListView, active: #012D1D, inactive: #FDF9F4 + border #D9D9D9
+#   - Filter badge: "N filter aktif" (bg #012D1D, white text) jika ada filter aktif
+#
+# right_overlay (Positioned bottom 238):
+#   - my_location_rounded: GPS ke lokasi saat ini
+#   - add_rounded / remove_rounded: zoom in/out
+#
+# bottom_panel (Align bottomCenter):
+#   container: bg #FFF8EF, radius 18, padding 14
+#   - Address label + resolving indicator
+#   - Radius slider: 1-20 km, divisions 19, onChangeEnd: _fetchItems
+#   - States: loading skeleton | error + retry | selected item card | empty result | item count
+#
+# markers:
+#   _PhotoMarker: foto produk + harga, selected state lebih besar
+#   compact mode: aktif jika items >= 8 atau zoom <= 12.8
+#   onTap: setState _selected = item
+#
+# data_flow:
+#   - _fetchItems: GET /items/nearby?lat&lng&radius&categoryId (MapItemsService)
+#   - fallback: 2 demo items jika API kosong
+#   - debounce 550ms saat map digeser
+#   - reverse geocode: Nominatim /reverse saat center berubah
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - DEFAULT ADDRESS SETUP SCREEN
+# =============================================================
+# Name: SewaIn Aja - Set Alamat Utama
+# Description: Halaman setup alamat default setelah login/register, sebelum masuk ke MainNavigation.
+# Theme: Premium Clean & Minimalist
+#
+# screen_info:
+#   background_color: "#FFF8EF"
+#   app_bar: { title: "Set Alamat Utama", Poppins Bold, color: #012D1D }
+#
+# body:
+#   - Subtitle: "Pilih alamat default untuk pencarian barang terdekat." (Poppins 13, #414844)
+#   - Map preview: ReusableMapCard(interactive: false, height: 210, showCenterPin: true)
+#     container: bg white, radius 22, border #012D1D 18%
+#   - LinearProgressIndicator saat _isLoadingLocation
+#   - Address label text (Poppins SemiBold 13, #012D1D)
+#
+# buttons:
+#   - "Gunakan Lokasi Saat Ini": OutlinedButton, color #2F6743, radius 999
+#     onTap: Geolocator.getCurrentPosition + reverse geocode Nominatim
+#   - "Simpan & Lanjut": ElevatedButton, bg #7B5804, radius 999
+#     onTap: save ke SharedPreferences + upsert ke API (AddressService) + Navigator ke MainNavigation
+#   - "Lewati Dulu": TextButton, color #717973
+#     onTap: Navigator ke MainNavigation (tanpa save)
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - MAIN.DART (APP ENTRY POINT)
+# =============================================================
+# Name: SewaIn Aja - App Entry
+# Description: Entry point aplikasi, inisialisasi Firebase, dan setup MaterialApp.
+#
+# main():
+#   - WidgetsFlutterBinding.ensureInitialized()
+#   - Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)
+#   - runApp(MyApp())
+#
+# MyApp:
+#   MaterialApp:
+#     title: "SewainAja"
+#     debugShowCheckedModeBanner: false
+#     theme: scaffoldBg #1B4332, seedColor #1B4332, useMaterial3: true
+#     home: AnimatedSplashScreen()
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SHARED COMPONENTS & SERVICES
+# =============================================================
+
+# --- map_common_widgets.dart ---
+# ReusableMapCard (StatelessWidget):
+#   params: center, zoom, radiusKm?, markers[], showCenterPin, interactive,
+#           onCenterChanged?, overlayLabel?, height, borderRadius?
+#   - FlutterMap + TileLayer (OpenStreetMap)
+#   - CircleLayer jika radiusKm != null (color #2F6743 18%, border #012D1D)
+#   - MarkerLayer: icon location_on_rounded, highlighted: #012D1D, normal: #7B5804
+#   - Center pin: Icon place_rounded size 36, #012D1D (jika showCenterPin)
+#   - Overlay label: pill container bg #CC012D1D, Poppins SemiBold 11 white (bottom)
+#   - interactive: false -> InteractiveFlag.none
+#
+# MapMarkerData: { point: LatLng, highlighted: bool }
+
+# --- models/product.dart ---
+# ProductData: { name: String, price: String, rating: dynamic, image: String }
+
+# --- widgets/product_card.dart ---
+# ProductCard (StatelessWidget):
+#   params: product: ProductData, isHorizontal: bool (default false)
+#
+#   Vertical (grid/slider):
+#     container: bg white, radius 15, border #2F6743 0.5px, width 160
+#     - Image area (Expanded): bg #D9D9D9, radius 10, BoxFit.cover
+#     - Rating badge (Positioned bottom-left): bg #000000, star #F8BD00, text #FFF8EF size 10
+#     - Product name: Poppins Medium 12, #414844, maxLines 2
+#     - More icon: Icons.more_horiz, #414844
+#     - Price: Poppins Bold 14, #414844 (append "/Day" jika tidak ada "/")
+#
+#   Horizontal (list):
+#     container: height 100, bg white, radius 15, border #2F6743 0.5px
+#     - Image: 100x100, radius left 15, BoxFit.contain
+#     - Name: Poppins SemiBold 14, #414844, maxLines 1
+#     - Rating: star #F8BD00 + text Poppins Medium 12
+#     - Price: Poppins Bold 14, #012D1D
+#     - Trailing: arrow_forward_ios_rounded size 14, #012D1D
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Success Rental Modal)
+############################################################
+# component_info:
+#   name: "Soft Bento Modal Container"
+#   id: "534:2193"
+#   type: "FRAME"
+#   dimensions: "358x551"
+#   border_radius: "32px"
+#   background_color: "#FFFFFF"
+#   border_color: "#C1C8C2"     # Stroke tipis 1px
+#
+############################################################
+# KONTROL & HEADER SUKSES
+############################################################
+# header_section:
+#   close_button:
+#     id: "534:2194"
+#     position: "Top Right"
+#     style: "Pill/Circle Shape (9999px)"
+#     icon_color: "#414844"
+#
+#   success_badge:
+#     id: "534:2200"
+#     background_color: "#C1ECD4" # Hijau Muda Sukses
+#     border_radius: "9999px"   # Lingkaran sempurna
+#     icon_color: "#012D1D"      # Hijau Gelap
+#
+#   text_content:
+#     title:
+#       id: "534:2205"
+#       text: "Permintaan Terkirim!"
+#       font: "Poppins, 24px, Bold"
+#       color: "#012D1D"
+#     subtitle:
+#       id: "534:2207"
+#       text: "Pemilik barang akan meninjau permintaanmu. Kamu bisa memantau statusnya di menu Requests."
+#       font: "Poppins, 14px, Regular"
+#       color: "#414844"
+#
+############################################################
+# KARTU RINGKASAN ITEM (RENTAL SUMMARY CARD)
+############################################################
+# rental_summary_card:
+#   id: "534:2307"
+#   type: "FRAME"
+#   background_color: "#F7F3EE"   # Abu-abu Krem Hangat
+#   border_radius: "40px"
+#
+#   details:
+#     section_tag:
+#       id: "534:2310"
+#       text: "Rincian Sewa"
+#       font: "Manrope, 11px, Bold"
+#       color: "#7B5804"          # Coklat Identitas Aplikasi
+#
+#     product_name:
+#       id: "534:2312"
+#       text: "Sony ɑ6000 Body Only"
+#       font: "Poppins, 24px, Semibold"
+#       color: "#012D1D"
+#
+#     rental_date:
+#       id: "534:2320"
+#       text: "12 Oct - 15 Oct"
+#       font: "Plus Jakarta Sans, 14px, Regular"
+#       color: "#414844"
+#       icon: "Calendar Vector (414844)"
+#
+#     product_image:
+#       id: "534:2314"
+#       type: "RECTANGLE"
+#       name: "image 4"
+#       border_radius: "15px"
+#
+############################################################
+# GRUP AKSI (ACTION BUTTON)
+############################################################
+# action_group:
+#   id: "534:2227"
+#
+#   primary_button:
+#     id: "534:2233"
+#     label: "Kembali ke Beranda"
+#     font: "Plus Jakarta Sans, 16px, Bold"
+#     text_color: "#012D1D"       # Hijau Gelap
+#     border_radius: "9999px"     # Pill Shape Button
+#     border_color: "#717973"     # Outline Stroke 1px
+#     background: "Transparent"   # Menggunakan border stroke
+############################################################
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - TENGGAT (DEADLINE) SCREEN
+# =============================================================
+# Name: SewaIn Aja - Tenggat Screen
+# Description: Halaman detail tenggat waktu penyewaan barang yang sedang aktif.
+#              Diakses dari halaman Settings > Section "Sedang Berlangsung".
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+
+# -------------------------------------------------------------
+# ## UI STRUCTURE NODES
+# -------------------------------------------------------------
+# screen_info:
+#   name: "RentalDeadlineScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Tenggat"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#012D1D" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+
+# components:
+#   # --- 1. COUNTDOWN TIMER SECTION ---
+#   countdown_timer:
+#     margin_top: 24.0
+#     title: "Sisa Waktu"
+#     title_style: { family: "Poppins", size: 20, weight: 600, color: "#FFFFFF" }
+#     background_container:
+#       color: "#2F6743"
+#       border_radius: 20.0
+#       padding: { vertical: 20, horizontal: 16 }
+#     timer_blocks:
+#       layout: "Row"
+#       block_style:
+#         background: "#012D1D"
+#         border_radius: 10.0
+#         text_color: "#FFF8EF"
+#         text_size: 36
+#         text_weight: 600
+#       separators: ":" (color #012D1D, size 32)
+#       labels: ["Hari", "Jam", "Menit"] (color #012D1D, size 15, weight 600)
+
+#   # --- 2. TIME DETAILS SECTION ---
+#   time_details:
+#     margin_top: 16.0
+#     layout: "Row Space Between"
+#     start_time: "8 Jan (Mulai)" (Poppins 12, #414844)
+#     status_badge: "Status" (Poppins 14, weight 600, #414844)
+#     end_time: "10 Jan 2025 (Selesai)" (Poppins 12, #414844)
+#     warning_text:
+#       text: "H-24: Sewa berakhir besok pukul 10:00"
+#       style: { family: "Poppins", size: 12, color: "#414844" }
+#       alignment: "center"
+#       margin_top: 8.0
+
+#   # --- 3. TIMELINE STATUS SECTION ---
+#   timeline_status:
+#     margin_top: 24.0
+#     items:
+#       - text: "Serah Terima Berhasil Konfirmasi"
+#         style: { family: "Poppins", size: 12, color: "#414844" }
+#         icon_color: "#F8BD00" # Yellow dot
+#       - text: "Request sewa disetujui pemilik"
+#         style: { family: "Poppins", size: 12, color: "#414844" }
+#         icon_color: "#2F6743" # Green dot
+
+#   # --- 4. ITEM CARD SECTION ---
+#   item_card:
+#     margin_top: 24.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/..." }
+#     details:
+#       title: "Sony Camera a6000" (Poppins 16, weight 600, #414844)
+#       subtitle: "Pemilik: Han so Hee" (Poppins 12, #414844)
+#       date: "8 Jan - 10 Jan 2025" (Poppins 12, #414844)
+
+#   # --- 5. LOCATION MAP SECTION ---
+#   location_map:
+#     margin_top: 24.0
+#     title_overlay:
+#       text: "Lokasi Barang"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" }
+#       background: "#1B4332"
+#       border_radius: 15.0
+#     map_container:
+#       height: 150
+#       border_radius: 15.0
+#       image_asset: "assets/images/map_placeholder.png" # Atau gunakan widget map
+
+#   # --- 6. ACTION BUTTONS (BOTTOM) ---
+#   bottom_actions:
+#     layout: "Column"
+#     margin: { top: 32, bottom: 40, horizontal: 20 }
+#     button_1_return:
+#       text: "Kembalikan"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#1B4332" }
+#       background: "#FFFFFF"
+#       border: "0.5px solid #012D1D"
+#       border_radius: 30.0
+#     button_2_extend:
+#       text: "Request Perpanjangan"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#1B4332" }
+#       background: "#FFFFFF"
+#       border: "0.5px solid #012D1D"
+#       border_radius: 30.0
+#       margin_top: 12.0
+
+# -------------------------------------------------------------
+# ## DESIGN TOKENS
+# -------------------------------------------------------------
+# colors:
+#   primary_dark: "#012D1D"
+#   primary_green: "#2F6743"
+#   accent_green: "#1B4332"
+#   bg_surface: "#FDF9F4"
+#   text_dark: "#414844"
+#   text_light: "#FFFFFF"
+#   timer_text: "#FFF8EF"
+#   warning_yellow: "#F8BD00"
+#
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Add Item Success Card)
+############################################################
+# component_info:
+#   name: "Confirmation Card"
+#   id: "534:2579"
+#   type: "FRAME"
+#   dimensions: "342x312"
+#   border_radius: "40px"
+#   background_color: "#FFFFFF"
+#   parent_frame: "Tambah (534:2578)"
+#   parent_bg: "#1B4332"        # Hijau Tua
+#
+############################################################
+# INDIKATOR VISUAL SUKSES (BADGE)
+############################################################
+# success_badge:
+#   id: "534:2598"
+#   type: "FRAME"
+#   background_color: "#C1ECD4"   # Hijau Muda Sukses
+#   border_radius: "9999px"       # Lingkaran Sempurna
+#   dimensions: "64x64"
+#   icon:
+#     id: "534:2600"
+#     type: "VECTOR"
+#     color: "#012D1D"            # Hijau Gelap
+#
+############################################################
+# BLOK KONTEN TEKS
+############################################################
+# text_content:
+#   id: "534:2580"
+#   type: "FRAME"
+#
+#   title:
+#     id: "534:2583"
+#     text: "Berhasil Ditambahkan"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 20
+#     color: "#012D1D"            # Hijau Gelap
+#
+#   subtitle:
+#     id: "534:2585"
+#     text: "Barang anda berhasil ditambahkan ke marketplace"
+#     font_family: "Poppins"
+#     font_weight: 400
+#     font_size: 12
+#     color: "#414844"            # Abu-abu Gelap
+#
+############################################################
+# TOMBOL AKSI (ACTION BUTTON)
+############################################################
+# action_navigation:
+#   id: "534:2586"
+#   type: "FRAME"
+#   dimensions: "278x38"
+#
+#   back_home_button:
+#     id: "534:2593"
+#     type: "FRAME"
+#     layout_mode: "Row"
+#     label: "Kembali ke Beranda"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     color: "#414844"            # Abu-abu Gelap
+#     trailing_icon:
+#       id: "534:2597"
+#       type: "VECTOR"
+#       color: "#414844"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (My Items Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Barang Saya"
+#   canvas_dimensions: "393x888"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & KONTROL NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "532:2995"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "532:2997"
+#     text: "Barang Saya"        # Judul Halaman Utama Inventory
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#1B4332"          # Hijau Medium
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "532:2998"
+#     stroke_weight: "1px"
+#     color: "Transparent/System"
+#
+############################################################
+# GRID LISTING BARANG MILIK USER (INVENTORY)
+############################################################
+# user_items_listing:
+#   layout_style: "Grid View / Vertical Scroll"
+#
+#   # Spesifikasi Visual Kartu Produk:
+#   card_template:
+#     background: "#FFFFFF"
+#     border_radius: "15px"
+#     stroke_color: "#2F6743"   # Outline Hijau SewaInAja (0.5px)
+#
+#   # Komponen Detail di Dalam Kartu:
+#   card_elements:
+#     image_area:
+#       id: "Rectangle 42/51"
+#       border_radius: "10px"
+#     rating_badge:
+#       background: "#000000"   # Kotak Hitam Overlay Gambar
+#       icon_star: "#F8BD00"    # Warna Kuning Bintang
+#       text_rating: "#FFF8EF"  # Putih Krem (e.g., 4.8)
+#     name_label:
+#       font: "Poppins, 12px, Medium"
+#       color: "#414844"       # Abu-abu Gelap
+#     price_label:
+#       font: "Poppins, 14px, Bold"
+#       color: "#414844"
+#     context_menu:
+#       icon: "solar:menu-dots-bold" # Tombol Opsi (Edit / Hapus barang milik user)
+#       color: "#414844"
+#
+############################################################
+# DATA OBJEK FIGMA TERDETEKSI (MAPPING)
+############################################################
+# content_mapping:
+#   - item_group: "532:3038"
+#     name: "Sony W830 with 8x Optical Zoom"
+#     price: "Rp.120,000/Day"
+#     rating: "4.8(292)"
+#
+#   - item_group: "532:3048"
+#     name: "Sony Dual-Sense PS5"
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_options: "true"
+#
+#   - item_group: "532:3058"
+#     name: "Sony Dual-Sense PS5 (Baris Baru)"
+#     price: "Rp.45,000/Day"
+#     rating: "4.8(292)"
+#     more_options: "true"
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_ui:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Favorites Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Favorite Saya"
+#   canvas_dimensions: "393x888"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & KONTROL NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "532:2927"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "532:2929"
+#     text: "Favorite"          # Judul Layar Menu Favorit
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#1B4332"          # Hijau Medium
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "532:2930"
+#     stroke_weight: "1px"
+#     color: "Transparent/System"
+#
+############################################################
+# LISTING ITEM FAVORIT (VERTICAL LIST CARD)
+############################################################
+# favorites_list:
+#   layout_style: "Vertical List View / Scrollable"
+#
+#   # Spesifikasi Visual Kartu List Favorit:
+#   card_template:
+#     id: "Rectangle 97"
+#     background: "#FFFFFF"
+#     border_radius: "20px"
+#
+#   # Elemen Detail di Dalam Setiap Kartu:
+#   card_elements:
+#     image_thumbnail:
+#       id: "image 4"
+#       border_radius: "15px"
+#     product_title:
+#       font: "Poppins, 16px, Semibold"
+#       color: "#414844"       # Abu-abu Gelap
+#     owner_info:
+#       font: "Poppins, 12px, Regular"
+#       color: "#414844"       # Format: Pemilik: [Nama]
+#     available_date:
+#       font: "Poppins, 12px, Regular"
+#       color: "#414844"       # Rentang tanggal sewa
+#
+############################################################
+# DATA OBJEK ITEM FAVORIT TERDETEKSI (MAPPING)
+############################################################
+# content_mapping:
+#   - item_group: "532:2898"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Apr - 10 Apr 2025"
+#
+#   - item_group: "532:2904"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Mar - 10 Mar 2025"
+#
+#   - item_group: "532:2910"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Jan - 10 Jan 2025"
+#
+#   - item_group: "532:2916"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Jan - 10 Jan 2025"
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_ui:
+#   status_bar_id: "532:2932"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Transaction History)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Riwayat Transaksi"
+#   canvas_dimensions: "393x888"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & KONTROL NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "514:1595"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#FDF9F4"
+#     icon_color: "#012D1D"     # Hijau Gelap
+#
+#   title_section:
+#     id: "514:1597"
+#     text: "History"           # Judul Halaman Riwayat Transaksi
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#1B4332"          # Hijau Medium
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "514:1598"
+#     stroke_weight: "1px"
+#     color: "Transparent/System"
+#
+############################################################
+# KONTROL FILTER / TAB SEGMENTED
+############################################################
+# status_filter_tabs:
+#   layout: "Horizontal Row"
+#   font_family: "Poppins"
+#   font_size: 15
+#   font_weight: 600
+#
+#   # Daftar Pilihan Status Transaksi:
+#   tabs:
+#     - id: "514:1590"
+#       text: "Semua"
+#       color: "#1B4332"        # Tab Aktif (Hijau Medium)
+#       indicator:
+#         id: "514:1594"
+#         type: "LINE"
+#         stroke_weight: "2px"
+#         color: "#1B4332"      # Garis bawah penanda aktif
+#     - id: "514:1591"
+#       text: "Aktif"
+#       color: "#000000"
+#     - id: "514:1592"
+#       text: "Selesai"
+#       color: "#000000"
+#     - id: "514:1593"
+#       text: "Dibatalkan"
+#       color: "#000000"
+#
+############################################################
+# LISTING HISTORI TRANSAKSI (VERTICAL LIST CARD)
+############################################################
+# transaction_history_list:
+#   layout_style: "Vertical List View / Scrollable"
+#
+#   # Spesifikasi Visual Kartu Transaksi:
+#   card_template:
+#     id: "Rectangle 97"
+#     background: "#FFFFFF"
+#     border_radius: "20px"
+#
+#   # Elemen Detail di Dalam Setiap Kartu:
+#   card_elements:
+#     image_thumbnail:
+#       id: "image 4"
+#       border_radius: "15px"
+#     product_title:
+#       font: "Poppins, 16px, Semibold"
+#       color: "#414844"       # Abu-abu Gelap
+#     owner_info:
+#       font: "Poppins, 12px, Regular"
+#       color: "#414844"       # Format: Pemilik: [Nama]
+#     rental_date_range:
+#       font: "Poppins, 12px, Regular"
+#       color: "#414844"       # Rentang durasi peminjaman
+#
+############################################################
+# DATA KONTEN KARTU TRANSAKSI (MAPPING)
+############################################################
+# content_mapping:
+#   - item_group: "514:1566"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Apr - 10 Apr 2025"
+#
+#   - item_group: "514:1572"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Mar - 10 Mar 2025"
+#
+#   - item_group: "514:1578"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Jan - 10 Jan 2025"
+#
+#   - item_group: "514:1584"
+#     name: "Sony Camera a6000"
+#     owner: "Han so Hee"
+#     date_range: "8 Jan - 10 Jan 2025"
+#
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_ui:
+#   status_bar_id: "514:1600"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SCAN QR (PENYEWA)
+# =============================================================
+# Name: SewaIn Aja - Serah Terima Scan QR Screen
+# Description: Halaman penyewa untuk memindai QR Code pemilik barang.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "HandoverScanScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Scan QR pemilik barang untuk mengkonfirmasi serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. CAMERA SCANNER VIEWPORT ---
+#   scanner_viewport:
+#     margin_top: 32.0
+#     margin_horizontal: 24.0
+#     height: 350.0
+#     border: "1px solid #1B4332"
+#     border_radius: 23.0
+#     background_color: "#000000" # Background gelap saat kamera loading
+#     overlay_elements:
+#       - text: "Scan QR"
+#         style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" } # Dibuat putih agar kontras dengan kamera
+#         alignment: "center"
+#       - flip_camera_btn:
+#           icon: "change_circle_outlined"
+#           icon_color: "#FDF9F4"
+#           alignment: "bottom_right"
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Memindai QR berarti masa sewa Anda resmi dimulai. Pastikan Anda telah mengecek kondisi barang bersama Pemilik dan mengambil foto bukti kondisi awal sebelum memindai."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.5 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - UPLOAD BUKTI KONDISI SEBELUM PEMINJAMAN
+# =============================================================
+# Name: SewaIn Aja - Upload Bukti Kondisi SEBELUM PEMINJAMAN Screen
+# Description: Halaman penyewa untuk mengunggah foto kondisi barang sebelum memulai sewa.
+#              Mendukung multiple upload (max 20 foto) dengan tampilan Grid/Wrap.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "UploadEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. RENTAL ITEM CARD ---
+#   item_card:
+#     margin: { top: 24.0, horizontal: 20.0 }
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 2. UPLOAD GALLERY SECTION ---
+#   upload_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Upload Foto"
+#       style: { family: "Poppins", size: 18, weight: 700, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 20.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       logic:
+#         max_items: 20
+#         elements:
+#           - photo_item:
+#               size: "70x70" # Ukuran disesuaikan agar pas 4 kolom di layar
+#               border_radius: 12.0
+#               background_color: "#C1ECD4" # Hijau mint pudar sesuai gambar
+#               image_fit: "cover"
+#               action: "Tampilkan ikon [X] merah kecil di pojok kanan atas untuk menghapus foto"
+#           - add_button:
+#               visibility: "Tampil HANYA JIKA jumlah foto < 20"
+#               size: "70x70"
+#               border: "1.5px solid #012D1D"
+#               border_radius: 12.0
+#               background_color: "#FFFFFF"
+#               icon: { name: "add", size: 28, color: "#012D1D" }
+#
+#   # --- 3. INSTRUCTION & WARNING BANNER ---
+#   instruction_text:
+#     margin: { top: 16.0, horizontal: 24.0 }
+#     text: "Kirimkan bukti kondisi barang sebelum peminjaman"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   warning_banner:
+#     margin: { top: 24.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6"
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Foto wajib diunggah sebelum transaksi dimulai. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa"
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SHOW QR (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Serah Terima Show QR Screen (Owner)
+# Description: Halaman pemilik barang untuk menampilkan QR Code kepada penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "HandoverShowQRScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Tunjukkan kode QR ini ke penyewa sebagai tanda serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. QR CODE DISPLAY AREA ---
+#   qr_display_box:
+#     margin_top: 32.0
+#     margin_horizontal: 40.0
+#     alignment: "center"
+#     layout: "Column"
+#     elements:
+#       - qr_image:
+#           size: "200x200"
+#           widget: "QrImageView (Gunakan package qr_flutter atau placeholder Container)"
+#       - label_text:
+#           margin_top: 16.0
+#           text: "QR Serah Terima"
+#           style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Menggunakan merah pudar agar teks hitam kontras
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Pemindaian QR ini adalah bukti sah bahwa barang telah diserahkan. Setelah di-scan, waktu sewa akan resmi berjalan. Jangan serahkan barang sebelum QR ini berhasil dipindai."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - VERIFIKASI FOTO (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Verify Evidence Screen
+# Description: Halaman bagi pemilik barang untuk memverifikasi foto bukti
+#              kondisi awal yang telah diunggah oleh penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+#
+# screen_info:
+#   name: "OwnerVerifyEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION TEXT ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Foto bukti kondisi barang sebelum peminjaman yang dikirimkan oleh penyewa"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. PHOTO EVIDENCE GALLERY (READ-ONLY) ---
+#   evidence_gallery_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Bukti Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       elements:
+#         - photo_item:
+#             size: "70x70" # Ukuran disesuaikan agar pas di layar
+#             border_radius: 11.0
+#             background_color: "#C1ECD4" # Hijau mint pudar sebagai placeholder gambar
+#             image_fit: "cover"
+#             logic: "Tampilkan list foto yang diunggah penyewa secara READ-ONLY (Tanpa tombol hapus/tambah)."
+#
+#   # --- 4. ACTION BUTTON ---
+#   action_button:
+#     margin: { top: 40.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SCAN QR (KEMBALIKAN BARANG)
+# =============================================================
+# Name: SewaIn Aja - Return Item Scan QR Screen (Renter)
+# Description: Halaman penyewa untuk memindai QR Code pemilik barang
+#              saat MENGEMBALIKAN barang (menghentikan waktu sewa).
+#              Diakses dari tombol "Kembalikan" di RentalDeadlineScreen.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "ReturnItemScanScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Scan QR pemilik barang untuk mengkonfirmasi serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. CAMERA SCANNER VIEWPORT ---
+#   scanner_viewport:
+#     margin_top: 32.0
+#     margin_horizontal: 24.0
+#     height: 350.0
+#     border: "1px solid #1B4332"
+#     border_radius: 23.0
+#     background_color: "#000000"
+#     overlay_elements:
+#       - text: "Scan QR"
+#         style: { family: "Poppins", size: 16, weight: 600, color: "#FFFFFF" }
+#         alignment: "center"
+#       - flip_camera_btn:
+#           icon: "change_circle_outlined"
+#           icon_color: "#FDF9F4"
+#           alignment: "bottom_right"
+#
+#   # --- 4. RETURN WARNING BANNER (CRITICAL) ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Scan QR ini berfungsi untuk menghentikan waktu sewa dan menonaktifkan pelacakan GPS. Jika terlewat, transaksi akan terus berjalan dan tagihan penyewa dapat membengkak."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.5 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - PENGEMBALIAN BUKTI & RATING
+# =============================================================
+# Name: SewaIn Aja - Return Evidence & Rating Screen (Renter)
+# Description: Halaman penyewa untuk mengunggah bukti foto kondisi barang
+#              SETELAH masa sewa, sekaligus memberikan rating kepada pemilik.
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "ReturnEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. RENTAL ITEM CARD ---
+#   item_card:
+#     margin: { top: 24.0, horizontal: 20.0 }
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Pemilik: Han so Hee"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 2. UPLOAD GALLERY SECTION (MAX 10) ---
+#   upload_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     instruction_text:
+#       text: "Kirimkan bukti kondisi barang setelah peminjaman"
+#       style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#       margin_bottom: 16.0
+#     header:
+#       text: "Upload Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       logic:
+#         max_items: 10
+#         elements:
+#           - photo_item:
+#               size: "70x70"
+#               border_radius: 11.0
+#               background_color: "#C1ECD4"
+#               image_fit: "cover"
+#               action: "Tampilkan ikon [X] merah untuk menghapus foto"
+#           - add_button:
+#               visibility: "Tampil HANYA JIKA jumlah foto < 10"
+#               size: "70x70"
+#               border: "1px solid #1B4332"
+#               border_radius: 11.0
+#               background_color: "#FFFFFF"
+#               icon: { name: "add", size: 28, color: "#012D1D" }
+#
+#   # --- 3. RATING SECTION ---
+#   rating_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Rating Pemilik"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     stars:
+#       layout: "Row"
+#       count: 5
+#       icon: "star_rounded"
+#       active_color: "#F8BD00"
+#       inactive_color: "#EFEFEF"
+#     review_input:
+#       margin_top: 16.0
+#       background_color: "#EFEFEF"
+#       border_radius: 11.0
+#       padding: { horizontal: 16.0, vertical: 12.0 }
+#       hint_text: "Berikan ulasan anda disini..."
+#       hint_style: { family: "Poppins", size: 13, weight: 400, color: "#717973" }
+#       min_lines: 3
+#
+#   # --- 4. WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 24.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6"
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       content: "Foto wajib diunggah setelah transaksi selesai. Foto ini akan menjadi bukti sah jika terdapat klaim kerusakan di akhir masa sewa"
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+#
+#   # --- 5. SUBMIT BUTTON ---
+#   action_button:
+#     margin: { top: 16.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - SHOW QR PENGEMBALIAN (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Return Show QR Screen
+# Description: Halaman pemilik barang untuk menampilkan QR Code kepada penyewa
+#              saat proses PENGEMBALIAN barang (menghentikan waktu sewa).
+# Theme: Premium Clean (Off-White Background with Forest Green & Red Accents)
+#
+# screen_info:
+#   name: "OwnerReturnShowQRScreen"
+#   background_color: "#FDF9F4"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Tunjukkan kode QR ini ke penyewa sebagai tanda serah terima"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. RENTAL ITEM CARD ---
+#   item_card:
+#     margin_top: 24.0
+#     margin_horizontal: 20.0
+#     background_color: "#FFFFFF"
+#     border_radius: 20.0
+#     padding: 12.0
+#     layout: "Row"
+#     image: { size: 60, border_radius: 15.0, asset: "assets/images/placeholder.png" }
+#     details:
+#       title: "Sony Camera a6000"
+#       title_style: { family: "Poppins", size: 16, weight: 600, color: "#414844" }
+#       subtitle: "Penyewa: Andini Larasati"
+#       subtitle_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#       date: "8 Jan - 10 Jan 2025"
+#       date_style: { family: "Poppins", size: 12, weight: 400, color: "#414844" }
+#
+#   # --- 3. QR CODE DISPLAY AREA ---
+#   qr_display_box:
+#     margin_top: 32.0
+#     margin_horizontal: 40.0
+#     alignment: "center"
+#     layout: "Column"
+#     elements:
+#       - qr_image:
+#           size: "200x200"
+#           widget: "QrImageView (Gunakan package qr_flutter atau placeholder Container)"
+#       - label_text:
+#           margin_top: 16.0
+#           text: "QR Serah Terima"
+#           style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#
+#   # --- 4. RETURN WARNING BANNER ---
+#   warning_banner:
+#     margin: { top: 32.0, bottom: 40.0, horizontal: 20.0 }
+#     background_color: "#FFDAD6" # Merah sangat pudar agar teks hitam terbaca jelas
+#     border: "1px solid #FF0000"
+#     border_radius: 20.0
+#     padding: 16.0
+#     layout: "Row"
+#     icon: { name: "warning_amber_rounded", color: "#FF0000", size: 24 }
+#     text:
+#       # Catatan: Teks ini disesuaikan agar logis untuk konteks pengembalian barang.
+#       content: "Pemindaian QR ini adalah bukti sah bahwa barang telah dikembalikan. Setelah di-scan, waktu sewa akan resmi dihentikan. Jangan terima barang sebelum QR ini berhasil dipindai oleh penyewa."
+#       style: { family: "Poppins", size: 12, weight: 300, color: "#000000", height: 1.83 }
+
+# =============================================================
+# ## FINAL AI PROMPT SPEC: SEWAINAJA - VERIFIKASI PENGEMBALIAN (PEMILIK)
+# =============================================================
+# Name: SewaIn Aja - Owner Return Evidence & Rating Screen
+# Description: Halaman pemilik untuk melihat foto kondisi akhir barang yang
+#              dikirim penyewa, SEKALIGUS memberikan rating untuk penyewa.
+# Theme: Premium Clean (Off-White Background with Forest Green Accents)
+#
+# screen_info:
+#   name: "OwnerReturnEvidenceScreen"
+#   background_color: "#FDF9F4"
+#   layout_type: "Scaffold with SingleChildScrollView"
+#   app_bar:
+#     elevation: 0
+#     background_color: "#FDF9F4"
+#     title: "Serah Terima"
+#     title_style: { family: "Poppins", size: 30, weight: 600, color: "#1B4332" }
+#     center_title: true
+#     back_button: { icon: "arrow_back", color: "#012D1D" }
+#     bottom_divider: { color: "#C1C8C2", thickness: 1.0 }
+#
+# components:
+#   # --- 1. INSTRUCTION TEXT ---
+#   instruction_text:
+#     margin: { top: 24.0, horizontal: 24.0 }
+#     text: "Foto bukti kondisi barang setelah peminjaman yang dikirimkan oleh penyewa"
+#     style: { family: "Poppins", size: 13, weight: 400, color: "#000000" }
+#     alignment: "center"
+#
+#   # --- 2. EVIDENCE GALLERY (READ-ONLY) ---
+#   evidence_gallery_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Bukti Foto"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 16.0
+#     gallery_container:
+#       background_color: "#FFFFFF"
+#       border_radius: 26.0
+#       padding: 16.0
+#       layout: "Wrap"
+#       spacing: 12.0
+#       run_spacing: 12.0
+#       elements:
+#         - photo_item:
+#             size: "70x70"
+#             border_radius: 11.0
+#             background_color: "#C1ECD4" # Hijau mint pudar sebagai placeholder gambar
+#             image_fit: "cover"
+#             logic: "Tampilkan list foto pengembalian secara READ-ONLY (Tanpa tombol hapus/tambah)."
+#
+#   # --- 3. RATING RENTER SECTION (INTERACTIVE) ---
+#   rating_section:
+#     margin: { top: 32.0, horizontal: 20.0 }
+#     header:
+#       text: "Rating Penyewa"
+#       style: { family: "Poppins", size: 16, weight: 600, color: "#000000" }
+#       margin_bottom: 12.0
+#     stars:
+#       layout: "Row"
+#       count: 5
+#       icon: "star_rounded"
+#       active_color: "#F8BD00"
+#       inactive_color: "#EFEFEF"
+#     review_input:
+#       margin_top: 16.0
+#       background_color: "#EFEFEF"
+#       border_radius: 11.0
+#       padding: { horizontal: 16.0, vertical: 12.0 }
+#       hint_text: "Berikan ulasan anda disini..."
+#       hint_style: { family: "Poppins", size: 13, weight: 400, color: "#717973" }
+#       min_lines: 3
+#
+#   # --- 4. ACTION BUTTON ---
+#   action_button:
+#     margin: { top: 40.0, bottom: 40.0, horizontal: 20.0 }
+#     layout: "Container"
+#     background_color: "#012D1D"
+#     border_radius: 999.0 # Bentuk Pill penuh
+#     padding: { vertical: 16.0 }
+#     alignment: "center"
+#     text: "Konfirmasi"
+#     text_style: { family: "Poppins", size: 16, weight: 700, color: "#FDF9F4" }
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Rental Request Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Permintaan Sewa"
+#   canvas_dimensions: "393x965"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "375:1760"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#012D1D"     # Hijau Gelap Kontras
+#     icon_color: "#FDF9F4"     # Krem Terang
+#
+#   title_section:
+#     id: "375:1759"
+#     text: "Permintaan"        # Judul Halaman Detail Permintaan
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#012D1D"          # Hijau Gelap
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "417:1851"
+#     stroke_weight: "1px"
+#     color: "Transparent/System"
+#
+############################################################
+# KARTU RINGKASAN PERMINTAAN (ITEM SUMMARY CARD)
+############################################################
+# item_summary_card:
+#   id: "375:1708"
+#   type: "FRAME"
+#   background_color: "#FFFFFF"
+#   border_radius: "40px"
+#   dimensions: "342x700"
+#
+#   #--- DATA PENYEWA (RENTER INFO) ---
+#   renter_profile:
+#     id: "375:1846"
+#     avatar_placeholder_id: "375:1825"  # Radius 5px
+#     name: "Aminah"
+#     font_family: "Poppins"
+#     font_size: 16
+#     rating: "4.9"
+#     rating_font: "Plus Jakarta Sans, 14px"
+#     rating_icon_color: "#414844"
+#
+#   section_divider_label:
+#     text: "PRODUK DIPESAN"
+#     font: "Poppins, 10px, Bold"
+#     color: "#717973"
+#
+#   #--- DETAIL PRODUK YANG DIMINTA ---
+#   product_details:
+#     id: "375:1813"
+#     name: "Sony ɑ6000 Body Only"
+#     font: "Poppins, 16px, Bold"
+#     color: "#012D1D"
+#     price_rate: "Rp. 15,000,00/jam"
+#     price_color: "#7B5804"   # Coklat Identitas
+#     image_thumbnail:
+#       id: "375:1715"
+#       type: "RECTANGLE"
+#       border_radius: "15px"
+#
+#   #--- DURASI & TOTAL BIAYA ---
+#   rental_calculation:
+#     id: "375:1847"
+#     duration_label: "DURASI"
+#     duration_value: "3 Hari"  # Font: Poppins, 16px, Semibold
+#     cost_label: "TOTAL BIAYA"
+#     cost_value: "Rp 1.080.000" # Font: Poppins, 16px, Bold
+#     cost_color: "#012D1D"
+#
+#   #--- JADWAL SEWA DETAIL (TIMELINE) ---
+#   rental_schedule_box:
+#     id: "375:1859"
+#     background_color: "#F7F3EE" # Abu-abu Krem Hangat
+#     border_radius: "16px"
+#     label: "JADWAL SEWA"
+#
+#     start_date_box:
+#       label: "MULAI"
+#       value: "15 April"
+#       border_radius: "12px"
+#       background: "#FFFFFF"
+#
+#     end_date_box:
+#       label: "KEMBALI"
+#       value: "17 April"
+#       border_radius: "12px"
+#       background: "#FFFFFF"
+#
+#     time_pickup_box:
+#       label: "Ambil"
+#       value: "19:00"
+#       border_radius: "12px"
+#
+#     time_return_box:
+#       label: "KEMBALI"
+#       value: "19:00"
+#       border_radius: "12px"
+#
+############################################################
+# GRUP TOMBOL AKSI (ACTION BUTTONS)
+############################################################
+# action_controls:
+#   #--- AKSI UTAMA PERMINTAAN ---
+#   request_actions:
+#     id: "375:1876"
+#
+#     reject_button:
+#       id: "375:1877"
+#       label: "Tolak"
+#       font: "Poppins, 16px, Bold"
+#       color: "#BA1A1A"        # Merah Peringatan
+#       border_radius: "9999px" # Pill Shape
+#       border_weight: "2px"
+#
+#     approve_button:
+#       id: "375:1879"
+#       label: "Setujui Permintaan"
+#       font: "Poppins, 16px, Bold"
+#       color: "#FFFFFF"
+#       background: "#012D1D"   # Hijau Gelap
+#       border_radius: "9999px" # Pill Shape
+#
+#   #--- HUBUNGI shortcut ---
+#   contact_shortcut:
+#     id: "375:1883"
+#     label: "Hubungi Penyewa"
+#     font: "Plus Jakarta Sans, 16px, Bold"
+#     color: "#FFFFFF"
+#     background: "#A78D52"     # Emas/Khaki Aksen
+#     border_radius: "9999px"
+#     icon: "Chat Vector (FFFFFF)"
+############################################################
+# UI SISTEM (STATUS BAR)
+############################################################
+# system_overlay:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Transaction Detail Screen)
+############################################################
+# screen_info:
+#   project_name: "SewaIn Aja"
+#   screen_name: "Detail Transaksi"
+#   canvas_dimensions: "393x1177"
+#   background_color: "#FDF9F4"  # Krem Terang khas SewaIn Aja
+#
+############################################################
+# HEADER & NAVIGASI ATAS
+############################################################
+# top_navigation:
+#   back_button:
+#     id: "534:1994"
+#     type: "FRAME"
+#     border_radius: "20px"
+#     background: "#012D1D"     # Hijau Gelap Kontras
+#     icon_color: "#FDF9F4"     # Krem Terang
+#
+#   title_section:
+#     id: "534:1993"
+#     text: "Detail"            # Judul Layar Detail Alur Transaksi
+#     font_family: "Poppins"
+#     font_size: 30
+#     font_weight: 600
+#     color: "#012D1D"
+#     alignment: "CENTER"
+#
+#   divider_line:
+#     id: "534:1992"
+#     stroke_weight: "1px"
+#
+############################################################
+# KARTU STATUS TRANSAKSI UTAMA (TRANSACTION STATUS HEAD)
+############################################################
+# transaction_status_card:
+#   id: "534:2051"
+#   type: "FRAME"
+#   background_color: "#2F6743"   # Hijau Terang Status (SewaIn Aja Secondary)
+#   border_radius: "20px"
+#   dimensions: "350x165"
+#
+#   status_badge_icon:
+#     id: "534:2044"
+#     background: "#012D1D"     # Bulatan Hijau Gelap
+#     icon_color: "#FFFFFF"
+#     shape: "Circle (9999px)"
+#
+#   status_text:
+#     id: "534:2049"
+#     text: "Menunggu Serah Terima" # Status Saat Ini
+#     font_family: "Poppins"
+#     font_size: 20
+#     font_weight: 700
+#     color: "#FFFFFF"
+#
+############################################################
+# RINGKASAN ITEM YANG DISEWA (ITEM SUMMARY CARD)
+############################################################
+# item_summary_card:
+#   id: "534:2052"
+#   type: "FRAME"
+#   background_color: "#FFFFFF"
+#   border_radius: "40px"
+#   dimensions: "342x180"
+#
+#   details:
+#     category_tag:
+#       id: "534:2055"
+#       text: "Camera"
+#       font: "Manrope, 11px, Bold"
+#       color: "#7B5804"        # Coklat Identitas
+#
+#     product_name:
+#       id: "534:2057"
+#       text: "Sony ɑ6000 Body Only"
+#       font: "Poppins, 24px, Bold"
+#       color: "#012D1D"
+#
+#     price_rate:
+#       id: "534:2058"
+#       text: "Rp. 15,000,00/jam"
+#       font: "Poppins, 16px, Medium"
+#       color: "#7B5804"
+#
+#     product_image:
+#       id: "534:2059"
+#       type: "RECTANGLE"
+#       name: "image 4"
+#       border_radius: "15px"
+#
+############################################################
+# TIMELINE ALUR JALANNYA TRANSAKSI
+############################################################
+# transaction_timeline_box:
+#   id: "534:2070"
+#   type: "FRAME"
+#   background_color: "#F7F3EE"   # Abu-abu Krem Hangat
+#   border_radius: "32px"
+#
+#   header:
+#     icon: "Vector (012D1D)"
+#     title: "Timeline Transaksi" # Font: Manrope, 18px, Bold
+#
+#   axis_line:
+#     id: "534:2076"
+#     color: "#C1C8C2"            # Garis Vertikal Penghubung Step Timeline
+#
+#   steps:
+#     - step_1: "Completed"
+#       id: "534:2077"
+#       badge_color: "#C1ECD4"    # Hijau Indikator Selesai
+#       title: "Requested"
+#       time: "14 Apr, 2025 • 09:12 AM"
+#       note: '"Saya akan menyewa untuk keperluan fotografi."'
+#
+#     - step_2: "Completed"
+#       id: "534:2090"
+#       badge_color: "#C1ECD4"
+#       title: "Approved"
+#       time: "Oct 24, 2023 • 02:45 PM"
+#       note: "Disetujui Pemilik."
+#
+#     - step_3: "Active (Current Step)"
+#       id: "534:2103"
+#       badge_color: "#012D1D"    # Hijau Gelap (Menandakan Step Aktif Saat Ini)
+#       title: "Menunggu Serah Terima"
+#       badge_label: "ACTIVE STEP" # Teks indikator internal figma
+#
+#     - step_4: "Upcoming"
+#       id: "534:2125"
+#       badge_color: "#C1C8C2"    # Abu-abu (Belum Terjadi)
+#       title: "Sewa berlangsung"
+#       time_expectation: "Expected Oct 26, 2023"
+#
+############################################################
+# TOMBOL AKSI UTAMA (BOTTOM ACTION BUTTON)
+############################################################
+# bottom_action:
+#   primary_button:
+#     id: "534:2135"
+#     label: "Mulai Serah Terima"  # Tombol Interaksi Utama
+#     font_family: "Plus Jakarta Sans"
+#     font_size: 18
+#     font_weight: 700
+#     text_color: "#FFFFFF"
+#     background_color: "#7B5804" # Coklat Utama SewaIn Aja
+#     border_radius: "9999px"     # Pill Shape Button
+#     icon: "Vector (FFFFFF)"
+############################################################
+# UI SISTEM Overlay
+############################################################
+# system_overlay:
+#   status_bar_id: "29:6"
+#   time: "9:41"
+#   style: "iPhone Standard Dark Icons"
+############################################################
+#
+############################################################
+# METADATA DESAIN FIGMA - SewaIn Aja (Approve Request Modal)
+############################################################
+# component_info:
+#   name: "Confirmation Card"
+#   id: "519:1664"
+#   type: "FRAME"
+#   dimensions: "342x538"
+#   border_radius: "40px"
+#   background_color: "#FFFFFF"
+#   parent_frame: "APPROVE (534:2333)"
+#   parent_bg: "#1B4332"        # Hijau Tua
+#
+############################################################
+# INDIKATOR VISUAL SUKSES (BADGE ELEMEN)
+############################################################
+# success_badge:
+#   id: "534:2303"
+#   type: "FRAME"
+#   background_color: "#C1ECD4"   # Hijau Muda Transparan
+#   border_radius: "9999px"       # Lingkaran Sempurna
+#   dimensions: "64x64"
+#   icon:
+#     id: "534:2305"
+#     type: "VECTOR"
+#     color: "#012D1D"            # Hijau Gelap
+#
+############################################################
+# KONTEN TEKS MODAL
+############################################################
+# text_content:
+#   id: "519:1665"
+#   type: "FRAME"
+#
+#   title:
+#     id: "519:1668"
+#     text: "Permintaan Disetujui!"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 20
+#     color: "#012D1D"            # Hijau Gelap
+#
+#   subtitle:
+#     id: "519:1670"
+#     text: "Kini Anda bisa mulai berkomunikasi dengan penyewa untuk mengatur serah terima barang."
+#     font_family: "Poppins"
+#     font_weight: 400
+#     font_size: 12
+#     color: "#414844"            # Abu-abu Gelap
+#
+############################################################
+# TOMBOL AKSI UTAMA & NAVIGASI
+############################################################
+# action_buttons_group:
+#   id: "519:1671"
+#   type: "FRAME"
+#   dimensions: "278xHug"
+#
+#   #--- TOMBOL UTAMA: CHAT ---
+#   primary_action:
+#     id: "519:1672"
+#     type: "FRAME"
+#     label: "Chat Penyewa"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     text_color: "#FFFFFF"
+#     background_color: "#7B5804" # Coklat Utama Aplikasi
+#     border_radius: "9999px"     # Pill Shape Button
+#     leading_icon: "Vector (FFFFFF)"
+#
+#   #--- TOMBOL KEDUA: LIHAT DETAIL ---
+#   secondary_action:
+#     id: "519:1676"
+#     type: "FRAME"
+#     label: "Lihat Detail Transaksi"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     text_color: "#012D1D"       # Hijau Gelap
+#     background_color: "#F1EDE8" # Abu-abu Krem Terang
+#     border_radius: "9999px"     # Pill Shape Button
+#
+#   #--- LINK BAWAH: KEMBALI ---
+#   tertiary_link:
+#     id: "519:1678"
+#     type: "FRAME"
+#     label: "Kembali ke Beranda"
+#     font_family: "Poppins"
+#     font_weight: 700
+#     font_size: 14
+#     color: "#414844"            # Abu-abu Gelap Text Link
+#     trailing_icon: "Vector (414844)"
+############################################################
+
+# ================================================================================
+# ## FINAL AI AGENT PROMPT SPEC:SEWAINAJA - SISTEM REKOMENDASI MACHINE LEARNING
+# ================================================================================
+#
+# ## 1. ARSITEKTUR INTI & INTEGRASI
+# - Tipe Arsitektur: Opsi B (Integrasi dinamis real-time menggunakan Firebase Admin SDK)
+# - Framework Backend: FastAPI (Python 3.10+)
+# - Sumber Database: Firebase Firestore
+# - Kredensial Database: ml_backend/firebase-credentials.json (DIABAIKAN di .gitignore)
+# - Paket Python Utama: fastapi, uvicorn, scikit-surprise, scikit-learn, pandas, firebase-admin
+#
+# ## 2. ENDPOINT & SKENARIO REKOMENDASI
+#
+# ### A. Rekomendasi Halaman Beranda / Home Screen (/recommend)
+# - Endpoint: POST `/recommend`
+# - Payload: { "userId": "String (opsional)" }
+# - Logika ML:
+#   - Pengguna Aktif (User lama): Jika riwayat transaksi/rating ada, lakukan Collaborative Filtering SVD.
+#   - Pengguna Baru (Cold Start Fallback): Tampilkan rekomendasi berdasarkan kepopuleran
+#     atau rating rata-rata dari barang yang aktif (tersedia), diprioritaskan dari kategori yang paling sering disewa.
+#
+# ### B. Rekomendasi Detail Barang & Pencarian (/search-recommend)
+# - Endpoint: POST `/search-recommend`
+# - Payload: { "itemId": "String" }
+# - Logika ML:
+#   - Menggunakan Content-Based Filtering dengan membaca TF-IDF Matrix & Cosine Similarity yang sudah di-prekomputasi (cached).
+#   - Menganalisis kemiripan teks pada kolom "name", "description", dan "categoryName" dari koleksi Firestore "items".
+#   - Hanya menampilkan barang-barang dengan status "available".
+#
+# ### C. Operasional Training & Tuning (/train) - DIJALANKAN TERPISAH
+# - Endpoint: POST `/train` (Dikhususkan untuk Admin / Cron Job berkala)
+# - Logika ML:
+#   - Menarik data terbaru dari Firestore.
+#   - Melakukan pre-komputasi (caching) TF-IDF Matrix untuk mempercepat `/search-recommend`.
+#   - Mengeksekusi proses Hypertuning (Random Search) SVD dan Pengecekan Overfit/Underfit (Tolak model jika selisih Test vs Train RMSE > 0.15).
+#   - Menyimpan parameter terbaik ke dalam model (.pkl atau memori).
+# - Tujuan: Memastikan endpoint prediksi (/recommend) sangat cepat (milidetik) karena terbebas dari beban komputasi training.
+#
+# ## 3. HYPERPARAMETER TUNING & SPESIFIKASI FITTING
+# - Algoritma Model: SVD (Singular Value Decomposition) dari `scikit-surprise`
+# - Strategi Tuning: Random Search (RandomizedSearchCV)
+# - Kisi Hyperparameter (Grid):
+#   - `n_factors` (jumlah faktor laten): [10, 50, 100]
+#   - `lr_all` (learning rate): [0.002, 0.005, 0.01]
+#   - `reg_all` (regularization / penalti): [0.02, 0.05, 0.1, 0.2] (Diperluas untuk mencegah overfit)
+# - Metrik Evaluasi: Root Mean Squared Error (RMSE) & Mean Absolute Error (MAE)
+# - Protokol Validasi: Pembagian Train-Test 80/20 atau Cross Validation 5-Fold
+# - Diagnosis Fitting Model:
+#   - Good Fit: RMSE Latih (Train) Rendah & RMSE Uji (Test) Rendah (selisih < 0.05)
+#   - Overfitting: RMSE Latih sangat rendah & RMSE Uji tinggi -> Tindakan: Kurangi n_factors atau naikkan reg_all.
+#   - Underfitting: RMSE Latih tinggi & RMSE Uji tinggi -> Tindakan: Naikkan n_factors atau latih dengan epoch lebih banyak.
+#
+# ## 4. ASUMPSI SKEMA DATABASE (FIRESTORE)
+# - Koleksi `items`:
+#   - Kolom: { "id", "name", "description", "categoryName", "status" ("available"), "ownerRating", "photos" }
+# - Koleksi `user_interactions` / `ratings`:
+#   - Kolom: { "userId", "itemId", "rating" (1 sampai 5) }
+#   - Pemetaan Interaksi Implisit (Jika rating tidak diisi langsung oleh user):
+#     - Melihat Barang (View) = 1
+#     - Menambahkan Favorit = 3
+#     - Transaksi Sewa (Rent) = 5
+#     - PENTING (Pre-processing): Jika user memiliki beberapa aksi ke barang yang sama, gunakan nilai maksimum (group by max).
+# ================================================================================
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - OWNER PROFILE SCREEN
+# =============================================================
+# Name: SewaIn Aja - Owner Profile
+# Description: Halaman profil pemilik barang (Owner) dengan struktur Stack
+#              dan DraggableScrollableSheet agar konsisten dan transisinya 
+#              serasi dengan Homepage.
+# Theme: Premium Clean & Minimalist (Green Forest Palette)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & BebasNeue
+# Icons: Material Icons (arrow_back, share, star, chat_bubble_outline, person_add_alt_1, search)
+# Animation: animate_do (FadeInUp untuk product cards & reviews)
+# Grid: SliverGrid (Bawaan Flutter)
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: FIXED GREEN BACKGROUND PROFILE HEADER]
+# ID: Background -> Scaffold backgroundColor: #012D1D
+# Posisi: Positioned(top: 0, left: 0, right: 0) + SafeArea
+
+# --- 1A. TOP APP BAR ACTION ---
+# Layout: Row, padding horizontal 24px, spaceBetween
+# - Back Button: Circle container (white 15% opacity), icon arrow_back (#FDF9F4)
+#   onTap: Navigator.pop
+# - Share Button: Circle container (white 15% opacity), icon share (#FDF9F4)
+
+# --- 1B. OWNER MAIN INFO ---
+# Layout: Row, padding horizontal 24px, gap 16px
+# - Avatar Box: Stack
+#   - Avatar (Circle 75x75, border putih 2px, asset: profile_owner.png)
+#   - Rating Badge (Positioned bottom): Container kuning (#F8BD00), icon star + "4.3" (#012D1D, Poppins Bold 11)
+# - Info Column:
+#   - Name Row: "Mas Tahes" (Poppins Bold 18, #FDF9F4) + Icon verified (#F8BD00)
+#   - Join Date: "Member since 2010" (Poppins Regular 12, #FDF9F4 70% opacity)
+#   - Stats Row: "103 Followers" & "20+ Active Listings" (Poppins Medium 12, #FDF9F4)
+
+# --- 1C. ACTION BUTTONS ---
+# Layout: Row, padding horizontal 24px, padding top 16px, gap 12px
+# - Follow Button: ElevatedButton, bg #F8BD00, text "Follow" (#012D1D, Poppins SemiBold 14), radius 12
+# - Message Button: OutlinedButton, border #FDF9F4, text "Message" (#FDF9F4, Poppins SemiBold 14), radius 12
+
+# ### [LAYER 2: DRAGGABLE SCROLLABLE SHEET (BODY CONTENT)]
+# Widget: DraggableScrollableSheet
+# initialChildSize: 0.65 | minChildSize: 0.65 | maxChildSize: 1.0 | snap: true
+# Background: #FFF8EF (Cream), borderRadius top 30px
+# Layout Base: ListView atau CustomScrollView dengan padding horizontal 24px
+
+# --- DRAG HANDLE ---
+# Center Container: width 40, height 5, color #D6C7A1 50%, radius 10, margin vertical 12
+
+# --- 2A. ABOUT ME SECTION ---
+# Header: "ABOUT ME" (Poppins Bold 14, #414844)
+# Description: "Passionate gadget & tools enthusiast. I specialize in premium and well-maintained items..." 
+# (Poppins Regular 13, #414844, lineHeight 1.5)
+
+# --- 2B. STRENGTHS BADGE SECTION ---
+# Layout: Wrap, gap 8px, margin top 12px
+# Chips: Container bg #012D1D 10% opacity, radius 20, padding 6x14
+# - Chip 1: "Fast Communication (3)" (Poppins Medium 12, #012D1D)
+# - Chip 2: "Fair Pricing (2)" (Poppins Medium 12, #012D1D)
+
+# --- DIVIDER ---
+# Container: height 0.5, color #414844 20% opacity, margin vertical 16px
+
+# --- 2C. REVIEWS PREVIEW SECTION ---
+# Header Row: "User Reviews" (Poppins Bold 16, #414844) + "See All" (Poppins SemiBold 13, #012D1D)
+# Review Card: Container bg #FFFFFF, radius 12, padding 14px, margin top 12px
+# - Reviewer Row: Avatar (30x30) + Name "Ceazar" (Poppins SemiBold 13, #414844) + Date "Dec 30, 2025" (right align)
+# - Rating Stars: 5 Icon star ukuran kecil (#F8BD00)
+# - Comment: "Barang ori, kondisinya mulus banget pas disewa..." (Poppins Regular 12, #414844)
+
+# --- DIVIDER ---
+# Container: height 0.5, color #414844 20% opacity, margin vertical 16px
+
+# --- 2D. OWNER LISTINGS (CATALOG) ---
+# Header: "Mas's Listings" (Poppins Bold 16, #414844)
+# Search Bar Mini: Container bg #FFFFFF, radius 12, padding 10x16, icon search (#012D1D) + "Search listings..."
+# Grid (SliverGrid): crossAxisCount 2, spacing 16, childAspectRatio 0.65
+# Products Card Style (SYNC WITH HOMEPAGE):
+#   - Container: bg #FFFFFF, radius 12, padding 12px
+#   - Image: height 120, radius 10, asset gambar produk
+#   - Title: "Sony W830 #1" (Poppins Medium 14, #414844)
+#   - Price: "Rp.120,000/Day" (Poppins Bold 14, #012D1D)
+# Animation: FadeInUp per item (delay 50ms)
+# onTap: Navigator.push ke ItemDetailScreen
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Header_Bg: "#012D1D" (Deep Forest Green)
+# Color_Sheet_Bg: "#FFF8EF" (Cream - draggable sheet)
+# Color_Text_Light: "#FDF9F4" (Off-White - teks di header)
+# Color_Text_Dark: "#414844" (Dark Gray - teks di sheet)
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Accent: "#F8BD00" (Premium Yellow Gold)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Stack Structure: Layer 1 (fixed header profil) + Layer 2 (DraggableScrollableSheet) dalam Stack.
+# 2. Scaffold backgroundColor: #012D1D wajib agar saat sheet di-scroll ke bawah, latar belakang profil tetap seamless.
+# 3. Grid Bottom Padding: Tambahkan padding bottom 40px di akhir area Listings Grid agar tidak terpotong saat di-scroll.
+# 4. Avatar Overlap: Pastikan posisi Rating Badge (bintang kuning) menumpuk (overlap) tepat di tengah bawah foto avatar menggunakan Positioned dalam Stack.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SEE ALL REVIEWS SCREEN
+# =============================================================
+# Name: SewaIn Aja - See All Reviews
+# Description: Halaman daftar ulasan lengkap untuk seorang Owner atau Produk,
+#              mencakup ringkasan rating dan list komentar pengguna.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Poppins & BebasNeue
+# Icons: Material Icons (arrow_back, star, star_half, thumb_up_alt, thumb_up_off_alt)
+# Layout: Scaffold -> CustomScrollView -> SliverList
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+# Agar menyatu dengan tema konten utama SewaIn Aja
+
+# --- 1A. TOP APP BAR ---
+# Widget: SliverAppBar (pinned: true, floating: true)
+# Background: #FFF8EF, elevation: 0
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "Reviews for Mas Tahes" (Poppins Bold 18, #012D1D)
+# CenterTitle: false
+
+# --- 1B. OVERALL RATING SECTION ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 24px, top 16px, bottom 24px
+# Styling: background #FDF9F4, borderRadius 24px, padding 32px
+# Children (Row, crossAxisAlignment: start):
+#   - Left Column (Score Info):
+#     - Text "4.3" (Poppins Bold 48, #012D1D, height 1.1)
+#     - Row (5 Stars): 4 star penuh, 1 star_half (size 18, color #F8BD00)
+#     - Text "10 reviews" (Poppins Medium 12, #414844)
+#   - Right Column (Distribution Bars): Expanded -> Column (gap 8px)
+#     - Row (5 Star): Text "5" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.7, height 8, radius 4)
+#     - Row (4 Star): Text "4" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.2, height 8, radius 4)
+#     - Row (3 Star): Text "3" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.1, height 8, radius 4)
+#     - Row (2 Star): Text "2" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.0, height 8, radius 4)
+#     - Row (1 Star): Text "1" (#414844) -> Stack/LinearProgressIndicator (bg #E6E2DD, valueColor #012D1D, value 0.0, height 8, radius 4)
+#     *Note: Lebar Stack/Progress Bar harus flex/Expanded agar menyesuaikan ruang.
+
+# --- 1C. REVIEWS LIST ---
+# Widget: SliverList
+# Layout Base: Padding horizontal 24px, gap antar item 16px, padding bottom 40px
+
+#   --- Reusable Review Card Component ---
+#   Container: bg #FFFFFF, borderRadius 24px, padding 24px, margin bottom 16px
+#   Children (Column, gap 16px):
+#     - Reviewer Header Row (Row, spaceBetween):
+#       - Left: Row -> Avatar (Circle 48x48) + Column -> Name "Sarah Jenkins" (Poppins Bold 16, #012D1D) & Date "Dec 30, 2025" (Poppins Regular 12, #414844)
+#       - Right: Row (5 Stars) -> size 14, color #F8BD00
+#     - Review Text: Text "Julian was incredibly helpful..." (Poppins Regular 14, #1C1C19, height 1.6)
+#     - Footer Action Row (Row, spaceBetween):
+#       - Helpful Button: Container bg #FDF9F4 (atau #C1ECD4 30% opacity), radius 20, padding 8x16, Row -> Icon thumb_up_off_alt (size 14, #012D1D) + Text "Helpful (2)" (Poppins Medium 12, #012D1D)
+#       - Rented Item Thumbnail (Optional): Container 48x48, borderRadius 8, DecorationImage (asset produk) -> Jika review untuk item tertentu.
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF" (Cream - latar belakang Scaffold)
+# Color_Card_Bg: "#FFFFFF" (White - latar belakang review card)
+# Color_Section_Bg: "#FDF9F4" (Off-White - latar belakang overall rating)
+# Color_Text_Dark: "#012D1D" (Deep Forest Green - judul dan angka besar)
+# Color_Text_Sub: "#414844" (Dark Gray - tanggal, review text)
+# Color_Accent_Star: "#F8BD00" (Premium Yellow Gold)
+# Color_Bar_Empty: "#E6E2DD" (Light Gray - sisa bar progress)
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. CustomScrollView: Gunakan CustomScrollView dengan SliverAppBar dan SliverList agar proses scroll halus dan app bar bereaksi secara dinamis.
+# 2. Progress Bar Sizing: Pada Overall Rating, bagian grafik baris (1-5 bintang) harus dibungkus dalam widget `Expanded` di dalam struktur Row agar otomatis mengisi sisa lebar layar dan tidak overflow.
+# 3. Padding Konsisten: Semua konten dalam halaman ini (baik section ringkasan maupun kartu review) harus memiliki margin horizontal 24px agar sejajar dengan Homepage.
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - SEARCH RESULT PAGE
+# =============================================================
+# Name: SewaIn Aja - Search Result Page
+# Description: Halaman yang menampilkan hasil pencarian barang (contoh: "Tech").
+#              Terdiri dari kolom pencarian, jumlah hasil, opsi urutkan, 
+#              grid kartu produk dengan badge overlay, dan fixed bottom navbar.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Manrope & Plus Jakarta Sans
+# Icons: Material Icons (arrow_back, person_outline, search, close, swap_vert, star, more_horiz)
+# Layout: Scaffold -> CustomScrollView -> SliverAppBar, SliverToBoxAdapter, SliverGrid
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+
+# --- 1A. TOP APP BAR ---
+# Widget: SliverAppBar (pinned: true, floating: true)
+# Background: #FFF8EF, elevation: 0
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "SewainAja" (Manrope Bold 20, #012D1D)
+# CenterTitle: true
+# Actions: IconButton person_outline terbungkus Container circle dengan border 1px #012D1D (#414844)
+
+# --- 1B. SEARCH INPUT BAR ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 16px, top 8px, bottom 16px
+# TextField Container:
+#   - Background: #FFFFFF
+#   - Border: 1px solid #012D1D, borderRadius 16px
+#   - Padding: 12px 16px
+#   - PrefixIcon: Icon search (#414844)
+#   - Text Input: "Tech" (Plus Jakarta Sans Medium 16, #012D1D)
+#   - SuffixIcon: Icon close (#414844)
+
+# --- 1C. RESULT HEADER & SORT OPTION ---
+# Layout: SliverToBoxAdapter -> Container
+# Margin: horizontal 16px, bottom 16px
+# Row (spaceBetween, crossAxisAlignment: center):
+#   - Left: Text 'Hasil untuk "Tech"' (Manrope Bold 18, #012D1D)
+#   - Right: Row -> Text "Urutkan" (Plus Jakarta Sans Medium 14, #414844) + Icon swap_vert / sort (#414844, size 18)
+
+# --- 1D. PRODUCT GRID (SEARCH RESULTS) ---
+# Widget: SliverPadding (padding: horizontal 16px, bottom 40px) -> SliverGrid
+# Grid Setup: crossAxisCount 2, mainAxisSpacing 16, crossAxisSpacing 16, childAspectRatio 0.65
+# 
+# ### [PRODUCT CARD STYLE] ###
+# Container: bg #FFFFFF, border 1px solid #012D1D, borderRadius 16px
+# Children (Column, crossAxisAlignment: start):
+#   - Top (Image & Badge):
+#     - Stack:
+#       - Image: ClipRRect borderRadius_top 16px, height 155, asset cover produk, fit: cover
+#       - Overlay Badge (Positioned top: 8, left: 8):
+#         - Container: bg #000000 70% opacity, borderRadius 12px, padding 2x8
+#         - Row: Icon star (#FBBF24, size 12) + Text "4.8 (282)" (Plus Jakarta Sans Medium 10, #FFFFFF)
+#   - Bottom (Details):
+#     - Container padding 12px, Column (gap 8px):
+#       - Title: "Sony W830 with 8x Optical Zoom" (Plus Jakarta Sans Medium 14, #012D1D, maxLines 2, overflow: ellipsis, height 1.25)
+#       - Price Row (Row spaceBetween, crossAxisAlignment: end):
+#         - Left (Row): Text "Rp.120,000" (Manrope Bold 14, #012D1D) + Text "/Day" (Plus Jakarta Sans Medium 10, #414844)
+#         - Right: Icon more_horiz (#414844, size 16)
+
+# --- 1E. FIXED BOTTOM NAVBAR ---
+# Widget: BottomNavigationBar / Fixed Container di bottomNavigationBar Scaffold
+# Background: #FDF9F4, Border Top: 1px solid #012D1D 20% opacity
+# Layout: Row, spaceAround, padding vertical 12px
+# Items:
+#   1. Beranda: Column -> Icon home (#414844) + Text "Beranda" (Plus Jakarta Sans Medium 10, #414844)
+#   2. Cari (ACTIVE): Container bg #C1ECD4 (Light Mint), borderRadius 16px, padding 8x20, Column -> Icon search (#012D1D) + Text "Cari" (Plus Jakarta Sans Bold 10, #012D1D)
+#   3. Tambah: Column -> Icon add_box (#414844) + Text "Tambah" (#414844)
+#   4. Chat: Column -> Icon chat_bubble_outline (#414844) + Text "Chat" (#414844)
+#   5. Profil: Column -> Icon person_outline (#414844) + Text "Profil" (#414844)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF"
+# Color_Card_Bg: "#FFFFFF"
+# Color_Text_Dark: "#012D1D"
+# Color_Text_Sub: "#414844"
+# Color_Nav_Active_Bg: "#C1ECD4"
+# Color_Badge_Bg: "#000000"
+# Color_Accent_Star: "#FBBF24"
+
+# -------------------------------------------------------------
+# ## LAYOUT RULES (CRITICAL)
+# -------------------------------------------------------------
+# 1. Image Overlay: Pastikan komponen "Rating Badge" dimasukkan menggunakan widget Stack di dalam kartu produk agar posisinya melayang tepat di pojok kiri atas foto produk.
+# 2. Text Overflow: Judul produk pada item card dibatasi maksimal 2 baris (maxLines: 2) dengan efek ellipsis agar ukuran grid tetap konsisten meskipun nama barang panjang.
+# 3. Bottom Navbar: Berstatus statis (fixed) dan item "Cari" menjadi tab aktif yang disorot dengan latar belakang hijau mint (#C1ECD4).
+
+# =============================================================
+# ## AI PROMPT SPEC: SEWAINAJA - HELP & SUPPORT SCREEN
+# =============================================================
+# Name: SewaIn Aja - Help & Support
+# Description: Pusat bantuan pengguna yang berisi kolom pencarian, 
+#              kartu akses cepat (Chat Support & Laporan Kendala), 
+#              dan daftar kategori kendala operasional/keamanan.
+# Theme: Premium Clean & Minimalist (Green Forest Palette Sync)
+
+# -------------------------------------------------------------
+# ## DEPENDENCIES SYNC
+# -------------------------------------------------------------
+# Primary Font: Plus Jakarta Sans & Poppins
+# Icons: Material Icons / Tabler Icons (arrow_back, search, chat, warning_amber, store, shopping_bag, payments, security, description)
+# Layout: Scaffold -> CustomScrollView / SingleChildScrollView
+
+# =============================================================
+# ## UI STRUCTURE NODES
+# =============================================================
+
+# ### [LAYER 1: MAIN BACKGROUND]
+# ID: Background -> Scaffold backgroundColor: #FFF8EF (Cream Background)
+
+# --- 1A. TOP APP BAR ---
+# Widget: AppBar (elevation: 0, bg: transparent)
+# Leading: IconButton arrow_back (#012D1D) -> onTap: Navigator.pop
+# Title: Text "Help & Support" (Poppins SemiBold 18, #012D1D)
+# CenterTitle: false
+
+# --- 1B. HEADER & SEARCH SECTION ---
+# Layout: Column, padding horizontal 20px, top 16px
+# Children:
+#   - Title: "Halo, ada yang bisa kami bantu?" (Plus Jakarta Sans Bold 24, #012D1D, height 1.3)
+#   - Subtitle: "Cari solusi atau masalah yang sedang Anda alami." (Plus Jakarta Sans Regular 14, #414844)
+#   - Margin: height 24px
+#   - Search Bar:
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 999px, padding 12x16
+#       - Row: Icon search (#717973) + SizedBox(width 12) + Text "Cari solusi atau masalah" (Plus Jakarta Sans Regular 14, #717973)
+
+# --- 1C. SUPPORT ACTION CARDS ---
+# Layout: Column, padding horizontal 20px, top 24px, gap 16px
+# Children:
+#
+#   # Card 1: Chat Layanan Bantuan
+#   - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (crossAxisAlignment: start):
+#       - Icon Badge: Container bg #C1ECD4 (Light Mint), radius 8px, padding 8px -> Icon chat (#012D1D, size 20)
+#       - Margin: height 12px
+#       - Title: "Chat Layanan Bantuan" (Plus Jakarta Sans Bold 16, #012D1D)
+#       - Description: "Hubungi tim support kami secara langsung untuk bantuan cepat." (Plus Jakarta Sans Regular 12, #414844, height 1.4)
+#       - Margin: height 12px
+#       - Action Link: Row -> Text "Mulai Chat" (Plus Jakarta Sans SemiBold 12, #012D1D) + Icon arrow_forward (#012D1D, size 16)
+#
+#   # Card 2: Laporan Kendala (Keamanan & Transaksi)
+#   - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 16px, padding 16px
+#   - Column (crossAxisAlignment: start):
+#       - Icon Badge: Container bg #FFDAD6 (Light Red), radius 8px, padding 8px -> Icon warning_amber (#93000A, size 20)
+#       - Margin: height 12px
+#       - Title: "Laporan Kendala" (Plus Jakarta Sans Bold 16, #012D1D)
+#       - Description: "Pilih peran Anda untuk melaporkan masalah transaksi atau indikasi penipuan." (Plus Jakarta Sans Regular 12, #414844, height 1.4)
+#       - Margin: height 16px
+#       - Action Buttons Row (gap 12px):
+#           - Button Owner (Expanded): OutlinedButton, border 1px #012D1D, radius 8px, padding vertical 12px -> Column -> Icon store (#012D1D, size 18) + Text "Saya Pemilik" (Plus Jakarta Sans SemiBold 12, #012D1D)
+#           - Button Renter (Expanded): OutlinedButton, border 1px #012D1D, radius 8px, padding vertical 12px -> Column -> Icon shopping_bag (#012D1D, size 18) + Text "Saya Penyewa" (Plus Jakarta Sans SemiBold 12, #012D1D)
+
+# --- 1D. HELP CATEGORIES SECTION ---
+# Layout: Column, padding horizontal 20px, top 32px, bottom 40px
+# Children:
+#   - Title: "Kategori Bantuan" (Plus Jakarta Sans Bold 18, #012D1D)
+#   - Margin: height 16px
+#   - List of Category Cards (gap 12px):
+#
+#       # Item 1: Pembayaran
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon payments (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Pembayaran" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Tagihan, deposit, refund" (Plus Jakarta Sans Regular 12, #414844)
+#
+#       # Item 2: Akun & Keamanan
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon security (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Akun & Keamanan" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Password, verifikasi, privasi" (Plus Jakarta Sans Regular 12, #414844)
+#
+#       # Item 3: Ketentuan Sewa
+#       - Container: bg #FFFFFF, border 1px solid rgba(1, 45, 29, 0.1), borderRadius 12px, padding 12px 16px
+#       - Row (alignItems: center):
+#           - Icon Badge: Container bg #F3F4F6, radius 8px, padding 8px -> Icon description (#012D1D, size 20)
+#           - Margin: width 16px
+#           - Column (Expanded):
+#               - Title: "Ketentuan Sewa" (Plus Jakarta Sans SemiBold 14, #012D1D)
+#               - Subtitle: "Aturan, sanksi, durasi" (Plus Jakarta Sans Regular 12, #414844)
+
+# =============================================================
+# ## GLOBAL STYLE DEFINITIONS
+# =============================================================
+# Color_Main_Bg: "#FFF8EF"
+# Color_Card_Bg: "#FFFFFF"
+# Color_Primary: "#012D1D" (Deep Forest Green)
+# Color_Text_Sub: "#414844"
+# Color_Icon_Bg_Mint: "#C1ECD4"
+# Color_Icon_Bg_Red: "#FFDAD6"
+# Color_Icon_Red: "#93000A"
+# Color_Icon_Bg_Gray: "#F3F4F6"

@@ -1,5 +1,12 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:sewainaja/onboarding_screen.dart'; // Import OnboardingScreen
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sewainaja/login_screen.dart';
+import 'package:sewainaja/main_navigation_screen.dart';
+import 'package:sewainaja/onboarding_screen.dart';
+import 'package:sewainaja/return_evidence_screen.dart';
+import 'package:sewainaja/owner_return_evidence_screen.dart';
 
 class AnimatedSplashScreen extends StatefulWidget {
   const AnimatedSplashScreen({super.key});
@@ -21,6 +28,57 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
 
   // Fase 2: Mengontrol teks merapatkan spasi antar huruf
   bool _startStep2 = false;
+
+  Future<Widget> _resolveNextScreen() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('onboarding_seen') ?? false;
+    final savedToken = prefs.getString('token') ?? '';
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    if (currentUser != null) {
+      try {
+        final freshToken = await currentUser.getIdToken();
+        if (freshToken != null && freshToken.isNotEmpty) {
+          await prefs.setString('token', freshToken);
+        }
+      } catch (_) {}
+
+      // Check for pending rating state
+      final pendingRatingId = prefs.getString('pending_rating_id') ?? '';
+      if (pendingRatingId.isNotEmpty) {
+        final pendingRole = prefs.getString('pending_rating_role') ?? 'renter';
+        final pendingItemName =
+            prefs.getString('pending_rating_item_name') ?? 'Barang Sewaan';
+        if (pendingRole == 'renter') {
+          return ReturnEvidenceScreen(
+            transactionId: pendingRatingId,
+            itemName: pendingItemName,
+            isForced: true,
+            isRoot: true,
+          );
+        } else {
+          return OwnerReturnEvidenceScreen(
+            transactionId: pendingRatingId,
+            itemName: pendingItemName,
+            isForced: true,
+            isRoot: true,
+          );
+        }
+      }
+
+      return const MainNavigationScreen();
+    }
+
+    if (savedToken.isNotEmpty) {
+      return const MainNavigationScreen();
+    }
+
+    if (hasSeenOnboarding) {
+      return const LoginScreen();
+    }
+
+    return const OnboardingScreen();
+  }
 
   @override
   void initState() {
@@ -65,15 +123,13 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
     // ---------------------------------------------------------
     // Tunggu animasi step 2 selesai (500ms) + delay navigasi (1000ms) = 1500ms
     await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      // Ganti Scaffold dummy dengan OnboardingScreen yang sebenarnya
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
-      );
-    }
+    if (!mounted) return;
+    final nextScreen = await _resolveNextScreen();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => nextScreen),
+    );
   }
 
   @override
@@ -84,24 +140,17 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
       body: Stack(
         children: [
           // ==========================================
-          // BACKGROUND: Fade in Radial Gradient
+          // BACKGROUND: Fade in Image
           // ==========================================
           AnimatedOpacity(
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeIn,
             opacity: _startBackgroundFade ? 1.0 : 0.0,
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.0,
-                  colors: [
-                    Color(0xFF1B4332), // Tengah
-                    Color(0xFF012D1D), // Pinggir
-                  ],
-                  stops: [0.0, 1.0],
-                ),
-              ),
+            child: Image.asset(
+              'assets/images/backgroudn_splash.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             ),
           ),
 
@@ -132,10 +181,36 @@ class _AnimatedSplashScreenState extends State<AnimatedSplashScreen> {
                     // ==========================================
                     // KOMPONEN: LOGO IMAGE
                     // ==========================================
-                    Image.asset(
-                      'assets/images/logo.png',
-                      width: 250,
-                      height: 250,
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Shadow (bayangan gelap di kanan-bawah)
+                        Transform.translate(
+                          offset: const Offset(8, 8),
+                          child: ImageFiltered(
+                            imageFilter: ImageFilter.blur(sigmaX: 7, sigmaY: 7),
+                            child: ColorFiltered(
+                              colorFilter: ColorFilter.mode(
+                                Colors.black.withValues(alpha: 0.6),
+                                BlendMode.srcATop,
+                              ),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 250,
+                                height: 250,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Logo asli di paling atas
+                        Image.asset(
+                          'assets/images/logo.png',
+                          width: 250,
+                          height: 250,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
                     ),
 
                     // ==========================================

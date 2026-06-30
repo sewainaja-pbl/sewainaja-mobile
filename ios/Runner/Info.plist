@@ -68,5 +68,13 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSCameraUsageDescription</key>
+		<string>Aplikasi memerlukan akses kamera untuk mengambil foto barang sewaan dan bukti transaksi.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Aplikasi memerlukan akses galeri untuk memilih foto barang dan verifikasi KTP.</string>
+		<key>NSLocationWhenInUseUsageDescription</key>
+		<string>Aplikasi memerlukan akses lokasi untuk mencari barang sewaan terdekat dari posisi Anda.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Aplikasi memerlukan akses lokasi untuk pelacakan barang saat waktu pengembalian terlambat.</string>
 	</dict>
 </plist>
