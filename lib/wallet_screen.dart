@@ -20,12 +20,19 @@ class _WalletScreenState extends State<WalletScreen> {
   double _escrowBalance = 0.0;
   bool _isLoading = true;
   List<Map<String, dynamic>> _history = [];
+  String _userName = '';
+  String _userEmail = '';
 
   @override
   void initState() {
     super.initState();
     _balance = widget.currentBalance;
     _fetchWalletData();
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    return '${dt.day} ${months[dt.month - 1]} ${dt.year}, ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _fetchWalletData() async {
@@ -53,6 +60,8 @@ class _WalletScreenState extends State<WalletScreen> {
           final data = userDoc.data();
           setState(() {
             _balance = (data?['walletBalance'] as num?)?.toDouble() ?? 0.0;
+            _userName = data?['name'] ?? '';
+            _userEmail = data?['email'] ?? '';
           });
           
           // Save back to local cache
@@ -83,9 +92,58 @@ class _WalletScreenState extends State<WalletScreen> {
           }
         }
 
+        // 3. Fetch history: Earnings (completed transactions) and Withdrawals
+        final List<Map<String, dynamic>> tempHistory = [];
+
+        // 3a. Withdrawals
+        final withdrawalsSnap = await FirebaseFirestore.instance
+            .collection('withdrawals')
+            .where('userId', isEqualTo: currentUserId)
+            .get();
+            
+        for (var doc in withdrawalsSnap.docs) {
+          final data = doc.data();
+          final createdAt = (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
+          final statusRaw = data['status'] ?? 'pending';
+          String statusText = 'Diproses';
+          if (statusRaw == 'approved') statusText = 'Selesai';
+          if (statusRaw == 'rejected') statusText = 'Ditolak';
+          
+          tempHistory.add({
+            'type': 'withdrawal',
+            'title': 'Penarikan Saldo (${data['bankName']})',
+            'amount': (data['amount'] as num).toDouble(),
+            'status': statusText,
+            'date': _formatDateTime(createdAt),
+            'timestamp': createdAt,
+          });
+        }
+
+        // 3b. Earnings
+        for (var doc in myTransactionsSnap.docs) {
+          final data = doc.data();
+          if (data['status'] == 'completed') {
+            final checkoutAt = (data['checkoutAt'] as Timestamp?)?.toDate() ?? 
+                               (data['updatedAt'] as Timestamp?)?.toDate() ?? 
+                               DateTime.now();
+            tempHistory.add({
+              'type': 'earning',
+              'title': 'Pendapatan Sewa #${doc.id.substring(0, 5).toUpperCase()}',
+              'amount': (data['totalPrice'] as num).toDouble(),
+              'status': 'Selesai',
+              'date': _formatDateTime(checkoutAt),
+              'timestamp': checkoutAt,
+            });
+          }
+        }
+
+        // Sort history by timestamp desc
+        tempHistory.sort((a, b) => (b['timestamp'] as DateTime).compareTo(a['timestamp'] as DateTime));
+
         if (mounted) {
           setState(() {
             _escrowBalance = pendingSum;
+            _history = tempHistory;
           });
         }
       }
@@ -93,14 +151,10 @@ class _WalletScreenState extends State<WalletScreen> {
       debugPrint("Error loading wallet details: $e");
     }
 
-
-    
     if (mounted) {
       setState(() => _isLoading = false);
     }
   }
-
-
 
   String _formatRupiah(double amount) {
     return 'Rp. ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
@@ -113,24 +167,43 @@ class _WalletScreenState extends State<WalletScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _WithdrawBottomSheet(
         maxBalance: _balance,
-        onWithdrawSuccess: (amount) {
+        onWithdrawSuccess: (amount, bank, account) {
+          final newBalance = _balance - amount;
           setState(() {
-            _balance -= amount;
+            _balance = newBalance;
           });
           // Update SharedPreferences
           SharedPreferences.getInstance().then((prefs) {
-            prefs.setDouble('user_wallet_balance', _balance);
+            prefs.setDouble('user_wallet_balance', newBalance);
           });
-          // Update Firestore for real balance decrease (No Dummy UI)
+          // Update Firestore for real balance decrease & create withdrawal request document
           final currentUserId = FirebaseAuth.instance.currentUser?.uid;
           if (currentUserId != null) {
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(currentUserId)
-                .update({'walletBalance': _balance}).then((_) {
+            final batch = FirebaseFirestore.instance.batch();
+            
+            final userRef = FirebaseFirestore.instance.collection('users').doc(currentUserId);
+            batch.update(userRef, {'walletBalance': newBalance});
+            
+            final withdrawalRef = FirebaseFirestore.instance.collection('withdrawals').doc();
+            batch.set(withdrawalRef, {
+              'id': withdrawalRef.id,
+              'userId': currentUserId,
+              'userName': _userName,
+              'userEmail': _userEmail,
+              'amount': amount,
+              'bankName': bank,
+              'accountNumber': account,
+              'status': 'pending',
+              'createdAt': FieldValue.serverTimestamp(),
+              'processedAt': null,
+              'processedBy': null,
+              'rejectionReason': null,
+            });
+
+            batch.commit().then((_) {
               ProfileSyncService.profileRevision.value++;
             }).catchError((e) {
-              debugPrint('Failed to update Firestore wallet balance: $e');
+              debugPrint('Failed to submit withdrawal request: $e');
             });
           }
           // Refresh data after a delay
@@ -524,7 +597,7 @@ class _WalletScreenState extends State<WalletScreen> {
 // ─────────────────────────────────────────────
 class _WithdrawBottomSheet extends StatefulWidget {
   final double maxBalance;
-  final Function(double) onWithdrawSuccess;
+  final Function(double amount, String bank, String account) onWithdrawSuccess;
 
   const _WithdrawBottomSheet({
     required this.maxBalance,
@@ -604,7 +677,7 @@ class _WithdrawBottomSheetState extends State<_WithdrawBottomSheet> {
       Navigator.pop(context);
       
       // Callback to update parent widget state
-      widget.onWithdrawSuccess(amount);
+      widget.onWithdrawSuccess(amount, _selectedBank, accountText);
       
       // Show Success Dialog
       _showSuccessDialog();

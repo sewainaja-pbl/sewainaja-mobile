@@ -31,6 +31,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
   String _selectedMethod = 'midtrans'; // 'midtrans' or 'cash'
   bool _hasInitiatedMidtrans = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.totalPrice < 10000) {
+      _selectedMethod = 'cash';
+    }
+  }
+
   String _formatCurrency(double val) {
     return val.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
@@ -380,11 +388,20 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                   // Method 1: Cashless / Midtrans
                   GestureDetector(
-                    onTap: () => setState(() => _selectedMethod = 'midtrans'),
+                    onTap: widget.totalPrice < 10000
+                        ? () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Minimal transaksi via Midtrans adalah Rp 10.000. Silakan gunakan metode Tunai (COD).'),
+                                backgroundColor: Color(0xFFB42318),
+                              ),
+                            );
+                          }
+                        : () => setState(() => _selectedMethod = 'midtrans'),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: widget.totalPrice < 10000 ? const Color(0xFFF5F5F5) : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: _selectedMethod == 'midtrans' ? const Color(0xFF7B5804) : Colors.transparent,
@@ -402,33 +419,39 @@ class _PaymentScreenState extends State<PaymentScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFFF3CD),
+                            decoration: BoxDecoration(
+                              color: widget.totalPrice < 10000 ? const Color(0xFFE0E0E0) : const Color(0xFFFFF3CD),
                               shape: BoxShape.circle,
                             ),
-                            child: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF7B5804)),
+                            child: Icon(
+                              Icons.account_balance_wallet_outlined,
+                              color: widget.totalPrice < 10000 ? Colors.grey : const Color(0xFF7B5804),
+                            ),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
                                 Text(
                                   'Pembayaran Cashless (Online)',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
-                                    color: Color(0xFF012D1D),
+                                    color: widget.totalPrice < 10000 ? Colors.grey : const Color(0xFF012D1D),
                                   ),
                                 ),
-                                SizedBox(height: 2),
+                                const SizedBox(height: 2),
                                 Text(
-                                  'Bayar otomatis via Midtrans (E-Wallet/VA). Uang ditahan aman oleh sistem.',
+                                  widget.totalPrice < 10000
+                                      ? 'Batas minimal transaksi Midtrans adalah Rp 10.000 (Sewa saat ini: Rp ${_formatCurrency(widget.totalPrice)}).'
+                                      : 'Bayar otomatis via Midtrans (E-Wallet/VA). Uang ditahan aman oleh sistem.',
                                   style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 11,
-                                    color: Color(0xFF717973),
+                                    color: widget.totalPrice < 10000 ? const Color(0xFFB42318) : const Color(0xFF717973),
+                                    fontWeight: widget.totalPrice < 10000 ? FontWeight.w500 : FontWeight.normal,
                                   ),
                                 ),
                               ],
@@ -436,7 +459,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ),
                           Icon(
                             _selectedMethod == 'midtrans' ? Icons.radio_button_checked : Icons.radio_button_off,
-                            color: _selectedMethod == 'midtrans' ? const Color(0xFF7B5804) : const Color(0xFFC1C8C2),
+                            color: widget.totalPrice < 10000
+                                ? Colors.grey.shade400
+                                : (_selectedMethod == 'midtrans' ? const Color(0xFF7B5804) : const Color(0xFFC1C8C2)),
                           ),
                         ],
                       ),

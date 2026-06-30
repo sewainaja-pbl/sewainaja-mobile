@@ -493,6 +493,23 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> _showForegroundNotification(AppNotification notification) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final allEnabled = prefs.getBool('notif_all_enabled') ?? true;
+      if (!allEnabled) return;
+
+      final type = notification.type?.toLowerCase() ?? '';
+      if (type == 'chat') {
+        final chatEnabled = prefs.getBool('notif_chat_messages') ?? true;
+        if (!chatEnabled) return;
+      } else if (type == 'payment' || type == 'request' || type == 'transaction') {
+        final rentalEnabled = prefs.getBool('notif_rental_updates') ?? true;
+        if (!rentalEnabled) return;
+      }
+    } catch (e) {
+      debugPrint("Error checking notification preferences: $e");
+    }
+
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'high_importance_channel',
