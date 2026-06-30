@@ -126,11 +126,11 @@ class _ChatScreenState extends State<ChatScreen> {
         return count > 0;
       }).toList();
     } else if (selectedTab == "Request") {
-      // Request = rooms created by someone else (not the current user)
-      // and only show them if they haven't been read yet.
+      // Request = room yang mana current user masih ada dalam daftar itemCardUnreadFor.
+      // Ini berarti setiap kali partner embed barang baru, room masuk filter Request
+      // sampai current user membuka dan membacanya (yang akan menghapus user dari array tsb).
       filtered = filtered.where((room) {
-        final count = _unreadCounts[room.id] ?? 0;
-        return room.createdBy != null && room.createdBy != _currentUserId && count > 0;
+        return room.itemCardUnreadFor.contains(_currentUserId);
       }).toList();
     }
 

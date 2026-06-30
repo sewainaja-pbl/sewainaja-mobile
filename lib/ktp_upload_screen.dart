@@ -40,6 +40,26 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
   }
 
   Future<void> _loadUserStatus() async {
+    // Selalu sync dari API terlebih dahulu agar tidak bergantung pada cache lokal
+    // yang mungkin sudah stale (misalnya sisa sesi sebelumnya saat user daftar ulang).
+    try {
+      final synced = await _profileSyncService.syncProfileFromApi(
+        forceRefreshToken: true,
+        notify: false,
+      );
+      if (synced != null && mounted) {
+        setState(() {
+          _userStatus = synced.status.toLowerCase();
+          _rejectionReason = synced.rejectionReason;
+          if (_userStatus == 'pending') {
+            _currentStep = 2;
+          }
+        });
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback ke cache lokal jika API tidak tersedia (offline)
     try {
       final cached = await _profileSyncService.readCachedProfile();
       if (mounted) {
@@ -47,7 +67,7 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
           _userStatus = cached.status.toLowerCase();
           _rejectionReason = cached.rejectionReason;
           if (_userStatus == 'pending') {
-            _currentStep = 2; // Jump to under review if already submitted
+            _currentStep = 2;
           }
         });
       }

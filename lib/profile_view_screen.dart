@@ -1179,8 +1179,8 @@ class _ProfileViewScreenState extends State<ProfileViewScreen> {
                             name: itemModel.name,
                             price: itemModel.formattedPrice,
                             rating: itemModel.ownerRating > 0
-                                ? itemModel.ownerRating.toDouble()
-                                : 4.5,
+                                ? itemModel.ownerRating.toStringAsFixed(1)
+                                : '—',
                             image: itemModel.primaryPhoto,
                             isLocalAsset: !itemModel.primaryPhoto.startsWith(
                               'http',

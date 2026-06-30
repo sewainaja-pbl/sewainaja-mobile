@@ -276,14 +276,27 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
         }
       }
 
+      String? currentItemId = widget.itemId;
+      String? currentItemName = widget.itemName;
+      String? currentItemPhotoUrl = widget.itemPhotoUrl;
+
+      if (messageType == 'item_card') {
+        try {
+          final itemMap = json.decode(text) as Map<String, dynamic>;
+          currentItemId = itemMap['id'] as String? ?? currentItemId;
+          currentItemName = itemMap['name'] as String? ?? currentItemName;
+          currentItemPhotoUrl = itemMap['image'] as String? ?? currentItemPhotoUrl;
+        } catch (_) {}
+      }
+
       final roomId = await _chatRepository.sendMessage(
         existingRoomId: _roomId,
         partnerId: widget.partnerId,
         partnerName: _actualPartnerName ?? widget.partnerName,
         partnerAvatarUrl: _actualPartnerAvatarUrl ?? widget.partnerAvatarUrl,
-        itemId: widget.itemId,
-        itemName: widget.itemName,
-        itemPhotoUrl: widget.itemPhotoUrl,
+        itemId: currentItemId,
+        itemName: currentItemName,
+        itemPhotoUrl: currentItemPhotoUrl,
         messageText: text,
         messageType: messageType,
       );
@@ -1492,49 +1505,45 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
 
   Widget _buildBottomInputArea() {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildItemContextPreview(),
-        _buildQuickReplies(),
-        Container(
-          decoration: const BoxDecoration(
-            color: Color(0xFFFDF9F4),
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 12,
-                offset: Offset(0, -4),
-              ),
-            ],
+    final bool showContext = _showItemContextPreview &&
+        widget.itemName != null &&
+        widget.itemName!.isNotEmpty;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFFDF9F4),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 12,
+            offset: Offset(0, -4),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildMainInputRow(),
-              // Fill the system nav bar area so there's no gap on any device
-              SizedBox(height: bottomPadding > 0 ? bottomPadding : 16.0),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Preview barang + quick replies — semua di dalam container yang sama
+          if (showContext) _buildItemContextPreviewInner(),
+          if (showContext) _buildQuickRepliesInner(),
+          if (showContext)
+            Divider(height: 1, thickness: 1, color: const Color(0xFFE5E7EB)),
+          _buildMainInputRow(),
+          SizedBox(height: bottomPadding > 0 ? bottomPadding : 16.0),
+        ],
+      ),
     );
   }
 
-  Widget _buildItemContextPreview() {
-    if (!_showItemContextPreview || widget.itemName == null || widget.itemName!.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
-      ),
+  /// Preview barang — muncul DI DALAM panel bawah (di atas divider, bukan di luar)
+  Widget _buildItemContextPreviewInner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 4, 6),
       child: Row(
         children: [
+          // Thumbnail barang
           GestureDetector(
             onTap: () {
               if (widget.itemId != null && widget.itemId!.isNotEmpty) {
@@ -1547,29 +1556,36 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
               }
             },
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(8),
               child: (widget.itemPhotoUrl != null && widget.itemPhotoUrl!.isNotEmpty)
                   ? Image(
                       image: _imageUploadService.buildImageProvider(widget.itemPhotoUrl!),
-                      width: 32,
-                      height: 32,
+                      width: 44,
+                      height: 44,
                       fit: BoxFit.cover,
                       errorBuilder: (ctx, err, stack) => Container(
-                        width: 32,
-                        height: 32,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Icon(Icons.image, size: 16, color: Colors.grey),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F0F0),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.image, size: 20, color: Colors.grey),
                       ),
                     )
                   : Container(
-                      width: 32,
-                      height: 32,
-                      color: const Color(0xFFF5F5F5),
-                      child: const Icon(Icons.image, size: 16, color: Colors.grey),
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F0F0),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.image, size: 20, color: Colors.grey),
                     ),
             ),
           ),
           const SizedBox(width: 12),
+          // Nama & harga
           Expanded(
             child: GestureDetector(
               onTap: () {
@@ -1586,21 +1602,42 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF012D1D).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'Penawaran',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF012D1D),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
                   Text(
                     widget.itemName ?? '',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
-                      fontSize: 12,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       color: Color(0xFF012D1D),
                     ),
                   ),
-                  const SizedBox(height: 2),
                   Text(
                     _itemPricePerHour != null
                         ? 'Rp${((_itemPricePerHour ?? 15000.0) * 24).toStringAsFixed(0).replaceAllMapped(RegExp(r"(\d{1,3})(?=(\d{3})+(?!\d))"), (Match m) => "${m[1]}.")}/hari'
-                        : 'Loading...',
+                        : 'Memuat harga...',
                     style: const TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
@@ -1612,53 +1649,57 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
               ),
             ),
           ),
+          // Tombol tutup
           IconButton(
-            icon: const Icon(Icons.close, size: 16, color: Color(0xFF012D1D)),
+            icon: const Icon(Icons.close_rounded, size: 18, color: Color(0xFF717973)),
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints(),
             onPressed: () {
               setState(() {
                 _showItemContextPreview = false;
               });
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
     );
   }
 
-  Widget _buildQuickReplies() {
-    if (!_showItemContextPreview) {
-      return const SizedBox.shrink();
-    }
+  /// Quick reply chips — muncul di dalam panel bawah, di bawah preview
+  Widget _buildQuickRepliesInner() {
     final replies = [
       "Hai, barang ini ready?",
       "Bisa disewa hari ini?",
     ];
 
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+    return SizedBox(
+      height: 42,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16, right: 8, bottom: 6),
         itemCount: replies.length,
         itemBuilder: (context, index) {
           final reply = replies[index];
-          return Container(
-            margin: const EdgeInsets.only(right: 8),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
             child: ActionChip(
               label: Text(
                 reply,
                 style: const TextStyle(
                   fontFamily: 'Plus Jakarta Sans',
                   fontSize: 12,
-                  color: Color(0xFF414844),
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF012D1D),
                 ),
               ),
-              backgroundColor: const Color(0xFFD1D5DB),
+              backgroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFFBFD8CA), width: 1),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide.none,
+                borderRadius: BorderRadius.circular(20),
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+              visualDensity: VisualDensity.compact,
               onPressed: () => _sendMessage(customText: reply),
             ),
           );
@@ -1666,6 +1707,11 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
       ),
     );
   }
+
+  // Legacy methods — kept for backward compat, now unused by _buildBottomInputArea
+  Widget _buildItemContextPreview() => const SizedBox.shrink();
+  Widget _buildQuickReplies() => const SizedBox.shrink();
+
 
   Widget _buildMainInputRow() {
     return Padding(

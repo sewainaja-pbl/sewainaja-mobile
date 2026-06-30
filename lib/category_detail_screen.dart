@@ -84,7 +84,9 @@ class _CategoryDetailScreenState extends State<CategoryDetailScreen> {
         id: item.id,
         name: item.name,
         price: item.formattedPricePerDay,
-        rating: item.ownerRating > 0 ? item.ownerRating.toDouble() : 4.5,
+        rating: item.ownerRating > 0
+            ? item.ownerRating.toStringAsFixed(1)
+            : '—',
         image: item.primaryPhoto,
         isLocalAsset: !item.primaryPhoto.startsWith('http'),
         originalItem: item,

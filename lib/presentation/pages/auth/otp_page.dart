@@ -291,6 +291,8 @@ class _OtpPageState extends State<OtpPage> {
     showAppSuccessSnack(context, 'Akun berhasil dibuat!');
 
     // Simpan data minimal ke SharedPreferences
+    // Reset user_status ke string kosong agar tidak ada sisa cache dari sesi lama
+    // (mencegah bug KYC fresh account langsung tampil pending).
     final prefs = await SharedPreferences.getInstance();
     final idToken =
         await FirebaseAuth.instance.currentUser?.getIdToken();
@@ -300,6 +302,7 @@ class _OtpPageState extends State<OtpPage> {
     await prefs.setString('user_email', data.email);
     await prefs.setString('user_phone', data.phone);
     await prefs.setBool('onboarding_seen', true);
+    await prefs.setString('user_status', 'unverified'); // Reset status untuk fresh account
 
     if (!mounted) return;
 
