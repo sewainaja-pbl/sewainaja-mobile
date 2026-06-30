@@ -181,102 +181,106 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
 
       // --- MAIN COLUMN CONTENT ---
-      body: Column(
-        children: [
-          // Fixed Headers Area (Search & Tabs)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
+      // --- MAIN COLUMN CONTENT ---
+      body: StreamBuilder<List<ChatRoomModel>>(
+        stream: _chatRepository.watchMyChatRooms(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)));
+          }
 
-                // ### [SECTION 2: SEARCH BAR] ###
-                _buildSearchBar(),
-                const SizedBox(height: 16),
-
-                // ### [SECTION 3: TAB FILTER BAR] ###
-                _buildTabFilterBar(),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
-
-          Expanded(
-            child: StreamBuilder<List<ChatRoomModel>>(
-              stream: _chatRepository.watchMyChatRooms(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF012D1D)));
+          final chats = snapshot.data ?? [];
+          
+          // Deduplicate by partnerId, keeping the room with the most recent lastMessageAt
+          final Map<String, ChatRoomModel> uniquePartnerRooms = {};
+          for (final room in chats) {
+            String partnerId = "";
+            for (final key in room.participants.keys) {
+              if (key != _currentUserId) {
+                partnerId = key;
+                break;
+              }
+            }
+            if (partnerId.isNotEmpty) {
+              final existing = uniquePartnerRooms[partnerId];
+              if (existing == null) {
+                uniquePartnerRooms[partnerId] = room;
+              } else {
+                final existingTime = existing.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                final roomTime = room.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+                if (roomTime.isAfter(existingTime)) {
+                  uniquePartnerRooms[partnerId] = room;
                 }
+              }
+            } else {
+              uniquePartnerRooms[room.id] = room;
+            }
+          }
+          
+          final deduplicatedChats = uniquePartnerRooms.values.toList();
+          deduplicatedChats.sort((a, b) {
+            final timeA = a.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final timeB = b.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return timeB.compareTo(timeA);
+          });
 
-                final chats = snapshot.data ?? [];
-                
-                // Deduplicate by partnerId, keeping the room with the most recent lastMessageAt
-                final Map<String, ChatRoomModel> uniquePartnerRooms = {};
-                for (final room in chats) {
-                  String partnerId = "";
-                  for (final key in room.participants.keys) {
-                    if (key != _currentUserId) {
-                      partnerId = key;
-                      break;
-                    }
-                  }
-                  if (partnerId.isNotEmpty) {
-                    final existing = uniquePartnerRooms[partnerId];
-                    if (existing == null) {
-                      uniquePartnerRooms[partnerId] = room;
-                    } else {
-                      final existingTime = existing.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                      final roomTime = room.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                      if (roomTime.isAfter(existingTime)) {
-                        uniquePartnerRooms[partnerId] = room;
-                      }
-                    }
-                  } else {
-                    uniquePartnerRooms[room.id] = room;
-                  }
-                }
-                
-                final deduplicatedChats = uniquePartnerRooms.values.toList();
-                deduplicatedChats.sort((a, b) {
-                  final timeA = a.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  final timeB = b.lastMessageAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-                  return timeB.compareTo(timeA);
-                });
+          // Subscribe to real-time unread counts and fetch partner profiles
+          for (final room in deduplicatedChats) {
+            _subscribeUnreadCount(room.id);
+            for (var entry in room.participants.entries) {
+              if (entry.key != _currentUserId) {
+                _fetchPartnerProfile(entry.key);
+              }
+            }
+          }
 
-                // Subscribe to real-time unread counts and fetch partner profiles
-                for (final room in deduplicatedChats) {
-                  _subscribeUnreadCount(room.id);
-                  for (var entry in room.participants.entries) {
-                    if (entry.key != _currentUserId) {
-                      _fetchPartnerProfile(entry.key);
-                    }
-                  }
-                }
+          int unreadCount = 0;
+          int requestCount = 0;
+          for (final room in deduplicatedChats) {
+            if ((_unreadCounts[room.id] ?? 0) > 0) unreadCount++;
+            if (room.itemCardUnreadFor.contains(_currentUserId)) requestCount++;
+          }
 
-                final filteredChats = _filterChats(deduplicatedChats);
+          final filteredChats = _filterChats(deduplicatedChats);
 
-                if (filteredChats.isEmpty) {
-                  return _buildEmptyState();
-                }
+          return Column(
+            children: [
+              // Fixed Headers Area (Search & Tabs)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    // ### [SECTION 2: SEARCH BAR] ###
+                    _buildSearchBar(),
+                    const SizedBox(height: 16),
+                    // ### [SECTION 3: TAB FILTER BAR] ###
+                    _buildTabFilterBar(unreadCount, requestCount),
+                    const SizedBox(height: 24),
+                  ],
+                ),
+              ),
 
-                return ListView.builder(
-                  physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.only(
-                    left: 24,
-                    right: 24,
-                    bottom: 110,
-                  ),
-                  itemCount: filteredChats.length,
-                  itemBuilder: (context, index) {
-                    return _buildChatCard(filteredChats[index]);
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+              Expanded(
+                child: filteredChats.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        physics: const ClampingScrollPhysics(),
+                        padding: const EdgeInsets.only(
+                          left: 24,
+                          right: 24,
+                          bottom: 110,
+                        ),
+                        itemCount: filteredChats.length,
+                        itemBuilder: (context, index) {
+                          return _buildChatCard(filteredChats[index]);
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -377,7 +381,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // Widget for Section 3: Tab Filter Bar
-  Widget _buildTabFilterBar() {
+  Widget _buildTabFilterBar([int unreadCount = 0, int requestCount = 0]) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final double availableWidth = constraints.maxWidth - 24; // 12 + 12 gap
@@ -389,11 +393,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
         return Row(
           children: [
-            _buildTabItem("All", getWidth("All")),
+            _buildTabItem("All", getWidth("All"), 0),
             const SizedBox(width: 12),
-            _buildTabItem("Unread", getWidth("Unread")),
+            _buildTabItem("Unread", getWidth("Unread"), unreadCount),
             const SizedBox(width: 12),
-            _buildTabItem("Request", getWidth("Request")),
+            _buildTabItem("Request", getWidth("Request"), requestCount),
           ],
         );
       },
@@ -401,7 +405,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // Helper Tab Item Widget
-  Widget _buildTabItem(String label, double width) {
+  Widget _buildTabItem(String label, double width, int badgeCount) {
     final bool isActive = selectedTab == label;
 
     return GestureDetector(
@@ -428,19 +432,48 @@ class _ChatScreenState extends State<ChatScreen> {
         alignment: Alignment.center,
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 200),
-          child: Text(
-            _getTabLabel(label),
-            key: ValueKey(_getTabLabel(label)),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-              color: isActive
-                  ? Colors.white
-                  : const Color(0xFF414844), // Text active/inactive
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            key: ValueKey('${_getTabLabel(label)}_$badgeCount'),
+            children: [
+              Flexible(
+                child: Text(
+                  _getTabLabel(label),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                    color: isActive
+                        ? Colors.white
+                        : const Color(0xFF414844), // Text active/inactive
+                  ),
+                ),
+              ),
+              if (badgeCount > 0) ...[
+                const SizedBox(width: 4),
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE2211C),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    badgeCount > 99 ? '99+' : badgeCount.toString(),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 10,
+                      height: 1,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
       ),

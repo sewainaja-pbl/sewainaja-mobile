@@ -180,42 +180,8 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
       }
     }
     
-    bool hasAlreadySentItem = false;
-    if (targetRoomId.isNotEmpty && widget.itemId != null) {
-      try {
-        final msgs = await FirebaseFirestore.instance
-            .collection('chat_rooms')
-            .doc(targetRoomId)
-            .collection('messages')
-            .where('messageType', isEqualTo: 'item_card')
-            .get();
-        
-        for (var doc in msgs.docs) {
-          final data = doc.data();
-          final text = data['message'] as String? ?? '';
-          try {
-            final itemMap = json.decode(text) as Map<String, dynamic>;
-            if (itemMap['id'] == widget.itemId) {
-              hasAlreadySentItem = true;
-              break;
-            }
-          } catch (_) {
-            if (text.contains('"id":"${widget.itemId}"') || text.contains('"id": "${widget.itemId}"')) {
-              hasAlreadySentItem = true;
-              break;
-            }
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (hasAlreadySentItem) {
-      if (mounted) {
-        setState(() {
-          _showItemContextPreview = false;
-        });
-      }
-    }
+    // Removed the history check that disables the item context preview.
+    // The "Penawaran" popup will now always appear if the chat was opened from the item detail page.
   }
 
   void _initMessagesStream() {
@@ -241,39 +207,8 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
           });
         }
         
-        bool shouldSendItemCard = true;
-        final checkRoomId = _roomId ?? await _chatRepository.findRoom(widget.partnerId);
-        if (checkRoomId != null && checkRoomId.isNotEmpty) {
-          try {
-            final msgs = await FirebaseFirestore.instance
-                .collection('chat_rooms')
-                .doc(checkRoomId)
-                .collection('messages')
-                .where('messageType', isEqualTo: 'item_card')
-                .get();
-            
-            for (var doc in msgs.docs) {
-              final data = doc.data();
-              final msgText = data['message'] as String? ?? '';
-              try {
-                final itemMap = json.decode(msgText) as Map<String, dynamic>;
-                if (itemMap['id'] == widget.itemId) {
-                  shouldSendItemCard = false;
-                  break;
-                }
-              } catch (_) {
-                if (msgText.contains('"id":"${widget.itemId}"') || msgText.contains('"id": "${widget.itemId}"')) {
-                  shouldSendItemCard = false;
-                  break;
-                }
-              }
-            }
-          } catch (_) {}
-        }
-        
-        if (shouldSendItemCard) {
-          await _sendItemCard();
-        }
+        // Removed the check that prevented sending the item card if it was previously sent.
+        await _sendItemCard();
       }
 
       String? currentItemId = widget.itemId;
