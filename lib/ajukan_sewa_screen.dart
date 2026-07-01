@@ -282,9 +282,18 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
           endDate: endDateTime,
         );
       } else {
+        final errCode = respData['error']?['code']?.toString() ?? '';
         final errMsg = respData['error']?['message']?.toString() ?? 'Gagal mengajukan sewa';
         if (!mounted) return;
-        showAppErrorSnack(context, errMsg);
+        // Jika error karena barang sudah disewa orang lain, tampilkan dialog informatif
+        if (errCode == 'ITEM_NOT_AVAILABLE' ||
+            errMsg.toLowerCase().contains('sudah disewa') ||
+            errMsg.toLowerCase().contains('already rented') ||
+            errMsg.toLowerCase().contains('not available')) {
+          _showItemUnavailableDialog(errMsg);
+        } else {
+          showAppErrorSnack(context, errMsg);
+        }
       }
     } catch (e) {
       if (!mounted) return;
@@ -294,6 +303,104 @@ class _AjukanSewaScreenState extends State<AjukanSewaScreen> {
         setState(() => _isSubmitting = false);
       }
     }
+  }
+
+  /// Menampilkan popup dialog ketika barang tidak tersedia pada rentang tanggal
+  /// yang dipilih karena sudah disewa oleh pengguna lain.
+  void _showItemUnavailableDialog(String serverMessage) {
+    final itemName = widget.itemData?['name']?.toString() ?? 'Barang ini';
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF8EF),
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 32,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Ikon ilustrasi
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0CC),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.event_busy_rounded,
+                  color: Color(0xFFB87A00),
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Judul
+              const Text(
+                'Sedang Tidak Tersedia',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF012D1D),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Pesan deskripsi
+              Text(
+                '$itemName sedang disewa oleh pengguna lain pada rentang tanggal yang kamu pilih. Coba pilih tanggal lain yang tersedia.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: Color(0xFF5C635E),
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 24),
+              // Tombol aksi
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF012D1D),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    'Pilih Tanggal Lain',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
