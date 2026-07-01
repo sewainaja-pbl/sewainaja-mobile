@@ -184,76 +184,8 @@ class _OwnerReturnShowQRScreenState extends State<OwnerReturnShowQRScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Penyewa harus membayar uang tunai sebesar $amountStr untuk perpanjangan sewa saat pengembalian barang.',
+                      'Anda harus membayar uang tunai sebesar $amountStr untuk perpanjangan sewa saat pengembalian barang. Pemilik akan mengkonfirmasi pembayaran ini di aplikasinya.',
                       style: const TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Color(0xFF414844)),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: const Color(0xFFFFF8EF),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              title: const Text('Konfirmasi Pembayaran COD', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Color(0xFF012D1D))),
-                              content: Text('Apakah Anda yakin telah menerima pembayaran tunai sebesar $amountStr dari penyewa?', style: const TextStyle(fontFamily: 'Poppins', color: Color(0xFF414844))),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: const Text('Batal', style: TextStyle(color: Colors.red, fontFamily: 'Poppins')),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF012D1D)),
-                                  child: const Text('Ya, Konfirmasi', style: TextStyle(color: Colors.white, fontFamily: 'Poppins')),
-                                ),
-                              ],
-                            ),
-                          );
-
-                          if (confirm == true) {
-                            try {
-                              final token = await const AuthSessionService().getValidIdToken(forceRefresh: true);
-                              if (token == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Sesi Anda telah berakhir. Harap login kembali.'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                                return;
-                              }
-                              final response = await http.post(
-                                Uri.parse('${ApiConfig.baseUrl}/payments/confirm-manual'),
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                  'Authorization': 'Bearer $token',
-                                },
-                                body: jsonEncode({
-                                  'transactionId': widget.transactionId,
-                                  'method': 'cash',
-                                  'amount': adendum['additionalCost'] ?? 0,
-                                }),
-                              );
-                              if (response.statusCode == 200) {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pembayaran COD berhasil dikonfirmasi!'), backgroundColor: Color(0xFF1B4332)));
-                              } else {
-                                final body = jsonDecode(response.body);
-                                throw Exception(body['error']?['message'] ?? body['message'] ?? 'Gagal mengonfirmasi pembayaran.');
-                              }
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Terjadi kesalahan koneksi.'), backgroundColor: Colors.red));
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF012D1D),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('Konfirmasi Uang Diterima', style: TextStyle(fontFamily: 'Poppins', color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
                     ),
                   ],
                 ),
