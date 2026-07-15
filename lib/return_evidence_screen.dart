@@ -120,7 +120,7 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
     try {
       // Kamera saja (Camera Only) untuk validasi keaslian
       final picked = await _imageService.pickSingleImageFromSource(
-        policy: UploadImagePolicy.product,
+        policy: UploadImagePolicy.evidence,
         source: ImageSource.camera,
       );
       if (picked == null || !mounted) return;
@@ -217,14 +217,11 @@ class _ReturnEvidenceScreenState extends State<ReturnEvidenceScreen> {
         if (idToken != null) 'Authorization': 'Bearer $idToken',
       };
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      
-      // 1. Upload semua foto ke Storage & kirim ke API evidences (type: 'after')
+      // 1. Upload semua foto ke Cloudinary via backend API & kirim ke API evidences (type: 'after')
       for (int i = 0; i < _selectedImages.length; i++) {
-        final storagePath = 'transactions/$tId/evidences/after_${timestamp}_$i.jpg';
         final downloadUrl = await _imageService.uploadProcessedImage(
           processed: _selectedImages[i],
-          storagePath: storagePath,
+          kind: 'evidence',
         );
 
         http.Response? evidenceResp;

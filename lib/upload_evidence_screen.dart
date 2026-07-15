@@ -41,7 +41,7 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
     try {
       // Kamera saja (Camera Only) untuk validasi keaslian
       final picked = await _imageUploadService.pickSingleImageFromSource(
-        policy: UploadImagePolicy.product,
+        policy: UploadImagePolicy.evidence,
         source: ImageSource.camera,
       );
       if (picked == null || !mounted) return;
@@ -110,14 +110,11 @@ class _UploadEvidenceScreenState extends State<UploadEvidenceScreen> {
         if (idToken != null) 'Authorization': 'Bearer $idToken',
       };
 
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      
-      // 1. Upload foto ke Storage & kirim ke API evidences
+      // 1. Upload foto ke Cloudinary via backend API & kirim ke API evidences
       for (int i = 0; i < _photos.length; i++) {
-        final storagePath = 'transactions/$tId/evidences/before_${timestamp}_$i.jpg';
         final downloadUrl = await _imageUploadService.uploadProcessedImage(
           processed: _photos[i],
-          storagePath: storagePath,
+          kind: 'evidence',
         );
 
         http.Response? evidenceResp;

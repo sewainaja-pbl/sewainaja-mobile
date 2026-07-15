@@ -1519,10 +1519,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           final photo = _productPhotos[i];
           final photoUrl = await _imageUploadService.uploadProcessedImage(
             processed: photo,
-            storagePath: _imageUploadService.buildItemPhotoStoragePath(
-              itemId: itemId,
-              index: _existingPhotos.length + i + 1,
-            ),
+            kind: 'item',
           );
 
           final photoResp = await http.post(
@@ -1580,10 +1577,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         final photo = _productPhotos[i];
         final photoUrl = await _imageUploadService.uploadProcessedImage(
           processed: photo,
-          storagePath: _imageUploadService.buildItemPhotoStoragePath(
-            itemId: itemId,
-            index: i + 1,
-          ),
+          kind: 'item',
         );
 
         final photoResp = await http.post(
