@@ -99,7 +99,7 @@ Aplikasi ini mencakup seluruh alur sewa dari awal sampai akhir: pencarian barang
 | Auth               | firebase_auth, google_sign_in                   |
 | Database           | cloud_firestore                                 |
 | Realtime DB        | firebase_database (GPS live tracking)           |
-| File Storage       | firebase_storage                                |
+| File Storage       | cloudinary (via Backend API)                    |
 | Push Notifications | firebase_messaging, flutter_local_notifications |
 | QR Code            | mobile_scanner, qr_flutter                      |
 | Payment            | webview_flutter (Midtrans Snap)                 |

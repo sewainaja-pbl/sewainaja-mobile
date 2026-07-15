@@ -386,13 +386,9 @@ class _RoomChatScreenState extends State<RoomChatScreen> with WidgetsBindingObse
       );
 
       if (processed != null && mounted) {
-        final folderId = _roomId ?? '${_currentUserId}_${widget.partnerId}';
-        final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-        final storagePath = 'chat_media/$folderId/$fileName.jpg';
-        
         final downloadUrl = await _imageUploadService.uploadProcessedImage(
           processed: processed,
-          storagePath: storagePath,
+          kind: 'chat',
         );
 
         if (downloadUrl.isNotEmpty && mounted) {

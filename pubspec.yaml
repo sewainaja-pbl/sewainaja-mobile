@@ -46,8 +46,8 @@ dependencies:
   firebase_auth: ^6.5.1
   # Firebase Cloud Messaging — push notification untuk rental & chat
   firebase_messaging: ^16.0.4
-  # Firebase Storage — upload & akses foto barang dan bukti serah terima
-  firebase_storage: ^13.3.0
+  # Firebase Storage — DIHAPUS: digantikan oleh Cloudinary via backend API (POST /uploads/image)
+  # firebase_storage: ^13.3.0
   # Cloud Firestore — database utama: items, users, transaksi, chat
   cloud_firestore: ^6.4.1
   # Firebase Realtime Database — untuk tracker live GPS yang lebih cepat dibanding Firestore

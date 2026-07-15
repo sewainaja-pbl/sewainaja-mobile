@@ -79,7 +79,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         }
         finalPhotoUrl = await _imageUploadService.uploadProcessedImage(
           processed: _pendingProfilePhoto!,
-          storagePath: _imageUploadService.buildUserAvatarStoragePath(userId),
+          kind: 'profile',
         );
         await prefs.setString('user_profile_photo_url', finalPhotoUrl);
       }

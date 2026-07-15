@@ -209,7 +209,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         }
         resolvedPhotoUrl = await _imageUploadService.uploadProcessedImage(
           processed: _pendingProfilePhoto!,
-          storagePath: _imageUploadService.buildUserAvatarStoragePath(userId),
+          kind: 'profile',
         );
       }
 

@@ -61,7 +61,7 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
 
       if (sourceChoice == ImageSourceChoice.camera) {
         final picked = await _imageService.pickSingleImageFromSource(
-          policy: UploadImagePolicy.product,
+          policy: UploadImagePolicy.dispute,
           source: ImageSource.camera,
         );
         if (picked == null || !mounted) return;
@@ -72,7 +72,7 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
       }
 
       final picked = await _imageService.pickMultipleImages(
-        policy: UploadImagePolicy.product,
+        policy: UploadImagePolicy.dispute,
         remainingSlots: remainingSlots,
       );
       if (picked.isEmpty || !mounted) return;
@@ -107,15 +107,17 @@ class _DisputeFormScreenState extends State<DisputeFormScreen> {
         return;
       }
 
-      // Upload all selected images
+      // Upload all selected images ke Cloudinary via backend
       List<String> uploadedPhotoUrls = [];
       for (int i = 0; i < _selectedImages.length; i++) {
-        final url = await _imageService.uploadProcessedImage(
-          processed: _selectedImages[i],
-          storagePath: 'disputes/${widget.transactionId}/evidence_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
-        );
-        if (url != null) {
+        try {
+          final url = await _imageService.uploadProcessedImage(
+            processed: _selectedImages[i],
+            kind: 'dispute',
+          );
           uploadedPhotoUrls.add(url);
+        } catch (_) {
+          // Lanjutkan meski salah satu foto gagal upload
         }
       }
 

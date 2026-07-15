@@ -1,11 +1,15 @@
-import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'upload_image_policy.dart';
+import 'api_config.dart';
 
 class ProcessedImageFile {
   final String localPath;
@@ -40,19 +44,16 @@ String getSafeImageUrl(String pathOrUrl) {
     'tas_carrier.png', 'tenda_camping.png'
   };
   if (productFiles.contains(filename)) {
-    // Use actual storage path for product images
+    // URL Firebase Storage khusus untuk seed data demo — tidak diubah
     return 'https://firebasestorage.googleapis.com/v0/b/sewainaja-b4834.firebasestorage.app/o/items%2F$filename?alt=media';
   }
   return trimmed;
 }
 
 class ImageUploadService {
-  ImageUploadService({ImagePicker? picker, FirebaseStorage? storage})
-    : _picker = picker ?? ImagePicker(),
-      _storage = storage ?? FirebaseStorage.instance;
+  ImageUploadService({ImagePicker? picker}) : _picker = picker ?? ImagePicker();
 
   final ImagePicker _picker;
-  final FirebaseStorage _storage;
 
   Future<ImageSourceChoice?> chooseImageSource(BuildContext context) {
     return showModalBottomSheet<ImageSourceChoice>(
@@ -209,36 +210,96 @@ class ImageUploadService {
     return null;
   }
 
+  /// Upload gambar ke Cloudinary melalui backend API (POST /uploads/image).
+  /// Parameter [kind] menentukan folder di Cloudinary: 'profile', 'item', 'evidence', 'kyc', 'chat', 'dispute'.
+  /// Mengembalikan secure_url dari Cloudinary.
+  ///
+  /// Catatan: parameter [storagePath] sudah tidak digunakan (legacy Firebase Storage path),
+  /// digantikan oleh [kind] yang lebih sederhana.
   Future<String> uploadProcessedImage({
     required ProcessedImageFile processed,
-    required String storagePath,
+    String? storagePath, // deprecated — tidak digunakan lagi, hanya untuk kompatibilitas
+    String? kind,
   }) async {
-    final ref = _storage.ref().child(storagePath);
-    final task = await ref.putData(
-      processed.bytes,
-      SettableMetadata(
-        contentType: 'image/jpeg',
-        customMetadata: {
-          'kind': processed.policy.kind.name,
-          'sanitized': 'true',
-          'source': 'mobile-app',
-        },
+    // Tentukan kind dari policy jika tidak diberikan secara eksplisit
+    final uploadKind = kind ?? _kindFromPolicy(processed.policy);
+
+    // Ambil Firebase ID token untuk autentikasi ke backend
+    final user = FirebaseAuth.instance.currentUser;
+    final token = await user?.getIdToken();
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/uploads/image');
+    final request = http.MultipartRequest('POST', uri);
+
+    if (token != null && token.isNotEmpty) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    request.fields['kind'] = uploadKind;
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'file',
+        processed.bytes,
+        filename: 'upload_${DateTime.now().millisecondsSinceEpoch}.jpg',
       ),
     );
-    return task.ref.getDownloadURL();
+
+    final streamedResponse = await request.send();
+    final responseBody = await streamedResponse.stream.bytesToString();
+
+    if (streamedResponse.statusCode != 200 && streamedResponse.statusCode != 201) {
+      throw Exception(
+        'Upload gagal (${streamedResponse.statusCode}): $responseBody',
+      );
+    }
+
+    final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
+    if (decoded['success'] != true) {
+      final errorMsg = decoded['error']?['message'] ?? 'Upload gagal';
+      throw Exception('Upload gagal: $errorMsg');
+    }
+
+    final url = decoded['data']?['url'] as String?;
+    if (url == null || url.isEmpty) {
+      throw Exception('Backend tidak mengembalikan URL gambar');
+    }
+
+    return url;
   }
 
+  /// Petakan UploadImagePolicy ke nama kind yang sesuai untuk backend.
+  String _kindFromPolicy(UploadImagePolicy policy) {
+    switch (policy.kind) {
+      case UploadImageKind.profile:
+        return 'profile';
+      case UploadImageKind.product:
+        return 'item';
+      case UploadImageKind.kyc:
+        return 'kyc';
+      case UploadImageKind.chat:
+        return 'chat';
+      case UploadImageKind.evidence:
+        return 'evidence';
+      case UploadImageKind.dispute:
+        return 'dispute';
+    }
+  }
+
+  /// Deprecated: gunakan uploadProcessedImage dengan kind='profile' saja.
+  /// Dipertahankan untuk backward compat — storagePath tidak digunakan.
   String buildUserAvatarStoragePath(String userId) {
-    return 'users/$userId/profile/avatar.jpg';
+    return 'users/$userId/profile/avatar.jpg'; // legacy, tidak digunakan
   }
 
+  /// Deprecated: gunakan uploadProcessedImage dengan kind='item' saja.
+  /// Dipertahankan untuk backward compat — storagePath tidak digunakan.
   String buildItemPhotoStoragePath({
     required String itemId,
     required int index,
     int? timestamp,
   }) {
     final safeTimestamp = timestamp ?? DateTime.now().millisecondsSinceEpoch;
-    return 'items/$itemId/photos/${safeTimestamp}_$index.jpg';
+    return 'items/$itemId/photos/${safeTimestamp}_$index.jpg'; // legacy, tidak digunakan
   }
 
   ImageProvider buildImageProvider(String? pathOrUrl, {int? targetWidth}) {

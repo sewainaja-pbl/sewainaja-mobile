@@ -1,4 +1,4 @@
-enum UploadImageKind { profile, product, kyc, chat }
+enum UploadImageKind { profile, product, kyc, chat, evidence, dispute }
 
 class UploadImagePolicy {
   final UploadImageKind kind;
@@ -57,6 +57,26 @@ class UploadImagePolicy {
     targetLongestSide: 1200,
     initialQuality: 80,
     minimumQuality: 60,
+  );
+
+  static const evidence = UploadImagePolicy(
+    kind: UploadImageKind.evidence,
+    storageFolder: 'evidences',
+    maxBytes: 2 * 1024 * 1024,
+    maxImages: 4,
+    targetLongestSide: 1600,
+    initialQuality: 85,
+    minimumQuality: 65,
+  );
+
+  static const dispute = UploadImagePolicy(
+    kind: UploadImageKind.dispute,
+    storageFolder: 'disputes',
+    maxBytes: 2 * 1024 * 1024,
+    maxImages: 4,
+    targetLongestSide: 1600,
+    initialQuality: 85,
+    minimumQuality: 65,
   );
 
   String get sizeLabelMb => (maxBytes / (1024 * 1024)).toStringAsFixed(

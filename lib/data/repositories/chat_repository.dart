@@ -2,8 +2,9 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:http/http.dart' as http;
 import '../models/chat_model.dart';
+import '../../api_config.dart';
 class ChatRepository {
   ChatRepository({FirebaseFirestore? firestore})
       : _db = firestore ?? FirebaseFirestore.instance;
@@ -277,22 +278,40 @@ class ChatRepository {
     }
   }
 
-  /// Upload image to Firebase Storage
+  /// Upload image via backend API ke Cloudinary (menggantikan Firebase Storage).
   Future<String?> uploadImage(File file, String roomId) async {
     try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('chat_media')
-          .child(roomId)
-          .child('$fileName.jpg');
-      
-      final uploadTask = ref.putFile(file);
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      // Ambil token autentikasi Firebase
+      final user = FirebaseAuth.instance.currentUser;
+      final token = await user?.getIdToken();
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/uploads/image');
+      final request = http.MultipartRequest('POST', uri);
+
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields['kind'] = 'chat';
+      request.files.add(await http.MultipartFile.fromPath('file', file.path));
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+
+      if (streamedResponse.statusCode != 200 && streamedResponse.statusCode != 201) {
+        print('Upload image failed (${streamedResponse.statusCode}): $responseBody');
+        return null;
+      }
+
+      final decoded = jsonDecode(responseBody) as Map<String, dynamic>;
+      if (decoded['success'] != true) {
+        print('Upload image error: ${decoded["error"]?["message"]}');
+        return null;
+      }
+
+      return decoded['data']?['url'] as String?;
     } catch (e) {
-      print("Error uploading image: $e");
+      print('Error uploading image: $e');
       return null;
     }
   }

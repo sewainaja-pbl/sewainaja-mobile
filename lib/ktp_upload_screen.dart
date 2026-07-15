@@ -134,13 +134,13 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
       try {
         ktpUrl = await _imageUploadService.uploadProcessedImage(
           processed: _ktpFile!,
-          storagePath: 'users/$currentUserId/kyc/ktp_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          kind: 'kyc',
         );
       } catch (uploadError) {
         if (!kDebugMode) {
           rethrow;
         }
-        debugPrint('Firebase Storage upload failed: $uploadError. Using mock URL for dev.');
+        debugPrint('Cloudinary upload failed: $uploadError. Using mock URL for dev.');
         ktpUrl = 'https://mock.storage/users/$currentUserId/kyc/ktp.jpg';
       }
 
@@ -149,13 +149,13 @@ class _KtpUploadScreenState extends State<KtpUploadScreen> {
       try {
         selfieUrl = await _imageUploadService.uploadProcessedImage(
           processed: _selfieFile!,
-          storagePath: 'users/$currentUserId/kyc/selfie_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          kind: 'kyc',
         );
       } catch (uploadError) {
         if (!kDebugMode) {
           rethrow;
         }
-        debugPrint('Firebase Storage upload failed: $uploadError. Using mock URL for dev.');
+        debugPrint('Cloudinary upload failed: $uploadError. Using mock URL for dev.');
         selfieUrl = 'https://mock.storage/users/$currentUserId/kyc/selfie.jpg';
       }
 
